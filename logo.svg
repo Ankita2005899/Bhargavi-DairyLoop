@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <circle cx="100" cy="100" r="94" stroke="#1C3552" stroke-width="4" fill="#FAF6EE"/>
+  <circle cx="100" cy="100" r="82" stroke="#B23A2E" stroke-width="2" fill="none"/>
+  <path d="M86 48h28l6 20-10 10v48a14 14 0 0 1-14 14h0a14 14 0 0 1-14-14V78l-10-10 14-20Z" fill="#1C3552"/>
+  <path d="M86 92c9 6.4 19 6.4 28 0v20a14 14 0 0 1-28 0V92Z" fill="#B23A2E"/>
+  <path id="arcTop" d="M28,100 A72,72 0 0 1 172,100" fill="none"/>
+  <path id="arcBottom" d="M36,128 A64,64 0 0 0 164,128" fill="none"/>
+  <text font-family="Times New Roman, Times, serif" font-size="18" letter-spacing="4" fill="#1C3552">
+    <textPath href="#arcTop" startOffset="50%" text-anchor="middle">BHARGAVI</textPath>
+  </text>
+  <text font-family="Times New Roman, Times, serif" font-size="17" letter-spacing="3" fill="#B23A2E">
+    <textPath href="#arcBottom" startOffset="50%" text-anchor="middle">DAIRYLOOP</textPath>
+  </text>
+</svg>
