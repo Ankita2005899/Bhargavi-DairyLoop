@@ -636,6 +636,114 @@
       margin: 0 auto;
     }
 
+    /* ---------- data entry page: process panels ---------- */
+    .process-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 2.6rem;
+    }
+
+    .process-panel {
+      border-radius: 10px;
+      padding: 18px;
+      border: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      min-height: 360px;
+      transition: filter .25s ease, opacity .25s ease, transform .25s ease;
+    }
+
+    .process-grid.hovering .process-panel {
+      filter: blur(3px);
+      opacity: .4;
+    }
+
+    .process-grid.hovering .process-panel.active {
+      filter: none;
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+
+    .proc-procurement { background: #EAF3EC; border-color: #8FC1A0; }
+    .proc-processing  { background: #FDEDE7; border-color: var(--border-strong); }
+    .proc-distribution { background: #E9EEF7; border-color: #9AB3D9; }
+
+    .process-panel-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .process-panel-head i { font-size: 22px; }
+    .proc-procurement .process-panel-head i, .proc-procurement .process-panel-title { color: #2F6B3E; }
+    .proc-processing .process-panel-head i, .proc-processing .process-panel-title { color: var(--fill-accent); }
+    .proc-distribution .process-panel-head i, .proc-distribution .process-panel-title { color: #2E4E8C; }
+
+    .process-panel-title { font-weight: 700; font-size: 14.5px; margin: 0; }
+    .process-panel-sub { font-size: 11.5px; color: var(--text-muted); margin: 2px 0 0; font-style: italic; }
+
+    .process-member-list {
+      list-style: none;
+      margin: 0 0 12px;
+      padding: 0;
+      overflow-y: auto;
+      max-height: 220px;
+      flex: 1;
+    }
+
+    .process-member-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 12.5px;
+    }
+
+    .process-member-list li:last-child { border-bottom: none; }
+    .process-member-list .pm-name { font-weight: 600; color: var(--text-primary); }
+    .process-member-list .pm-role { color: var(--text-muted); font-size: 11.5px; }
+
+    .process-add-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .process-add-row input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface-0);
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-family: inherit;
+    }
+
+    .process-add-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 4px;
+      border: none;
+      font-size: 12.5px;
+      cursor: pointer;
+      background: var(--text-primary);
+      color: var(--surface-0);
+    }
+
+    @media (max-width: 860px) {
+      .process-grid { grid-template-columns: 1fr; }
+    }
+
     /* ---------- data entry page ---------- */
     .de-block {
       margin-bottom: 2.2rem;
@@ -1219,6 +1327,56 @@
     </div>
 
     <div class="studio-inner">
+      <div class="process-grid" id="process-grid">
+        <div class="process-panel proc-procurement" data-panel="procurement">
+          <div class="process-panel-head">
+            <i class="ti ti-truck-delivery" aria-hidden="true"></i>
+            <div>
+              <p class="process-panel-title">Procurement</p>
+              <p class="process-panel-sub">Raw material providers</p>
+            </div>
+          </div>
+          <ul class="process-member-list" id="procurement-list"></ul>
+          <div class="process-add-row">
+            <input type="text" class="process-add-name" placeholder="Member name" />
+            <input type="text" class="process-add-role" placeholder="Role" />
+            <button class="process-add-btn" data-add="procurement"><i class="ti ti-plus" aria-hidden="true"></i>Add member</button>
+          </div>
+        </div>
+
+        <div class="process-panel proc-processing" data-panel="processing">
+          <div class="process-panel-head">
+            <i class="ti ti-settings" aria-hidden="true"></i>
+            <div>
+              <p class="process-panel-title">Processing</p>
+              <p class="process-panel-sub">Raw to product creators</p>
+            </div>
+          </div>
+          <ul class="process-member-list" id="processing-list"></ul>
+          <div class="process-add-row">
+            <input type="text" class="process-add-name" placeholder="Member name" />
+            <input type="text" class="process-add-role" placeholder="Role" />
+            <button class="process-add-btn" data-add="processing"><i class="ti ti-plus" aria-hidden="true"></i>Add member</button>
+          </div>
+        </div>
+
+        <div class="process-panel proc-distribution" data-panel="distribution">
+          <div class="process-panel-head">
+            <i class="ti ti-truck" aria-hidden="true"></i>
+            <div>
+              <p class="process-panel-title">Distribution</p>
+              <p class="process-panel-sub">Product suppliers</p>
+            </div>
+          </div>
+          <ul class="process-member-list" id="distribution-list"></ul>
+          <div class="process-add-row">
+            <input type="text" class="process-add-name" placeholder="Member name" />
+            <input type="text" class="process-add-role" placeholder="Role" />
+            <button class="process-add-btn" data-add="distribution"><i class="ti ti-plus" aria-hidden="true"></i>Add member</button>
+          </div>
+        </div>
+      </div>
+
       <div class="de-block">
         <p class="de-block-title">Categories</p>
         <div class="chip-row" id="category-chips"></div>
@@ -1318,6 +1476,89 @@
       showPage(dataEntryPage);
     });
     document.querySelectorAll("[data-back]").forEach(btn => btn.addEventListener("click", () => showPage(publicView)));
+
+    /* ---------- data entry: procurement / processing / distribution panels ---------- */
+    const processData = {
+      procurement: [
+        { name: "Ramesh Yadav", role: "Milk supplier" },
+        { name: "Sunita Devi", role: "Milk supplier" },
+        { name: "Vikram Patil", role: "Fodder supplier" },
+        { name: "Anil Kumar", role: "Milk supplier" },
+        { name: "Geeta Bai", role: "Milk supplier" },
+        { name: "Suresh Chavan", role: "Cattle feed supplier" },
+        { name: "Meena Kale", role: "Milk supplier" },
+        { name: "Prakash Jadhav", role: "Milk supplier" },
+        { name: "Lata Pawar", role: "Fodder supplier" },
+        { name: "Dinesh More", role: "Milk supplier" }
+      ],
+      processing: [
+        { name: "Rita Sharma", role: "Quality check" },
+        { name: "Mohan Lal", role: "Ghee production" },
+        { name: "Priya Deshmukh", role: "Paneer production" },
+        { name: "Arjun Rao", role: "Packaging" },
+        { name: "Kavita Joshi", role: "Quality check" },
+        { name: "Sanjay Pillai", role: "Milk cake production" },
+        { name: "Neha Kulkarni", role: "Packaging" },
+        { name: "Rahul Naik", role: "Quality check" },
+        { name: "Pooja Shinde", role: "Ghee production" },
+        { name: "Vivek Salunkhe", role: "Paneer production" }
+      ],
+      distribution: [
+        { name: "BigBasket Team", role: "Big store dispatch" },
+        { name: "Reliance Fresh Team", role: "Big store dispatch" },
+        { name: "Sharma Kirana Store", role: "Small store dispatch" },
+        { name: "Ajay Transport", role: "Logistics" },
+        { name: "Gupta Distributors", role: "Regional distributor" },
+        { name: "Fresh Mart", role: "Small store dispatch" },
+        { name: "Patel Wholesale", role: "Regional distributor" },
+        { name: "City Dairy Outlet", role: "Small store dispatch" },
+        { name: "Metro Supermart", role: "Big store dispatch" },
+        { name: "Verma Logistics", role: "Logistics" }
+      ]
+    };
+
+    function renderProcessList(key) {
+      const listEl = document.getElementById(`${key}-list`);
+      listEl.innerHTML = processData[key].map(m => `
+        <li><span class="pm-name">${m.name}</span><span class="pm-role">${m.role}</span></li>
+      `).join("");
+    }
+    Object.keys(processData).forEach(renderProcessList);
+
+    document.querySelectorAll("[data-add]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-add");
+        const panel = btn.closest(".process-panel");
+        const nameInput = panel.querySelector(".process-add-name");
+        const roleInput = panel.querySelector(".process-add-role");
+        const name = nameInput.value.trim();
+        const role = roleInput.value.trim();
+        if (!name || !role) return;
+        processData[key].push({ name, role });
+        renderProcessList(key);
+        nameInput.value = "";
+        roleInput.value = "";
+        nameInput.focus();
+      });
+    });
+
+    document.querySelectorAll(".process-add-role").forEach(input => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.closest(".process-panel").querySelector("[data-add]").click();
+      });
+    });
+
+    const processGrid = document.getElementById("process-grid");
+    document.querySelectorAll(".process-panel").forEach(panel => {
+      panel.addEventListener("mouseenter", () => {
+        processGrid.classList.add("hovering");
+        panel.classList.add("active");
+      });
+      panel.addEventListener("mouseleave", () => {
+        processGrid.classList.remove("hovering");
+        panel.classList.remove("active");
+      });
+    });
 
     /* ---------- data entry: categories + member places ---------- */
     let categories = ["Milk Collection", "Quality Check", "Packaging", "Dispatch"];
