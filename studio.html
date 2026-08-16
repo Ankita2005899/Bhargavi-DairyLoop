@@ -659,9 +659,13 @@
   .month-cal-day.pending-day{ background:#fbf6ea; border-color:#cbbf9e; }
   .month-cal-day.tick{ background:#e4f5e8; border-color:#1f8a3b; }
   .month-cal-day.today{ box-shadow:0 0 0 2px #6E9BE0; }
+  .month-cal-day.future{ cursor:not-allowed; }
+  .month-cal-day.clickable{ cursor:pointer; }
+  .month-cal-day.clickable:hover{ border-color:#6E9BE0; }
   .month-cal-daynum{ font-size:11.5px; color:#3E3324; font-weight:600; }
   .month-cal-tick{ color:#1f8a3b; font-size:15px; font-weight:700; line-height:1; margin-top:2px; }
   .month-cal-summary{ font-size:12.5px; color:#3E3324; font-weight:700; margin-top:12px; }
+  .month-cal-actions{ margin-bottom:14px; }
   @media (max-width: 860px){
     .month-cal-daynum{ font-size:10px; }
     .month-cal-tick{ font-size:12px; }
@@ -689,13 +693,126 @@
     .add-member-grid{ grid-template-columns:1fr 1fr; }
     .form-doc{ max-width:100%; }
   }
+
+  /* --- studio account auth gate --- */
+  .auth-gate{
+    position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(200,155,76,0.30), transparent 45%),
+      radial-gradient(circle at 82% 78%, rgba(79,191,170,0.25), transparent 45%),
+      linear-gradient(135deg, #17233F 0%, #1F2E52 55%, #17393B 100%);
+  }
+  .auth-gate.hidden{ display:none; }
+  .auth-card{
+    width:100%; max-width:400px; background:rgba(251,246,234,0.98); border-radius:16px;
+    padding:36px 32px 28px; box-shadow:0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,155,76,0.35);
+    position:relative; overflow:hidden; animation: authPop .45s ease;
+  }
+  @keyframes authPop{ from{ opacity:0; transform:translateY(18px) scale(.97); } to{ opacity:1; transform:none; } }
+  .auth-card::before{
+    content:''; position:absolute; top:-60px; right:-60px; width:170px; height:170px; border-radius:50%;
+    background:radial-gradient(circle, rgba(200,155,76,0.35), transparent 70%); pointer-events:none;
+  }
+  .auth-brand{ text-align:center; margin-bottom:22px; position:relative; }
+  .auth-brand .ab-icon{ font-size:34px; }
+  .auth-brand .ab-title{ font-family:'Times New Roman', Times, serif; font-weight:700; font-size:19px; color:#3E3324; margin-top:6px; }
+  .auth-brand .ab-sub{ font-size:12px; color:#8a7a58; margin-top:4px; }
+  .auth-name-row{ display:flex; gap:10px; }
+  .auth-name-row .auth-field{ flex:1; }
+  .auth-field{ margin-bottom:15px; position:relative; }
+  .auth-field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#8a7a58; font-weight:700; margin-bottom:6px; }
+  .auth-field input{
+    width:100%; padding:11px 13px; border-radius:8px; border:1px solid #cbbf9e; font-family:inherit; font-size:14px;
+    background:#fff; color:#3E3324; transition:border-color .15s, box-shadow .15s;
+  }
+  .auth-field input:focus{ outline:none; border-color:#C89B4C; box-shadow:0 0 0 3px rgba(200,155,76,0.25); }
+  .auth-error{ font-size:12.5px; color:#c0392b; margin-bottom:12px; min-height:1px; }
+  .auth-submit-btn{
+    width:100%; padding:12px; border:none; border-radius:8px; background:#17233F; color:#fff; font-weight:700;
+    font-size:14.5px; cursor:pointer; letter-spacing:0.02em; transition:background .15s, transform .08s; font-family:inherit;
+  }
+  .auth-submit-btn:hover{ background:#1F2E52; }
+  .auth-submit-btn:active{ transform:scale(.98); }
+  .auth-switch{ text-align:center; margin-top:16px; font-size:12.5px; color:#7a6c4d; }
+  .auth-switch button, .auth-signup-hint button{ background:none; border:none; color:#26407a; font-weight:700; cursor:pointer; text-decoration:underline; font-size:inherit; font-family:inherit; padding:0; }
+  .auth-signup-hint{ display:none; text-align:center; margin-top:12px; font-size:12.5px; color:#7a6c4d; background:#fbeee0; border:1px solid #e7cfa4; border-radius:6px; padding:10px 12px; }
+  .auth-signup-hint.show{ display:block; }
+
+  /* --- generic info modal (account / login / owner panels) --- */
+  .info-modal-overlay{ position:fixed; inset:0; background:rgba(11,11,12,0.6); z-index:600; display:none; align-items:center; justify-content:center; padding:20px; }
+  .info-modal-overlay.show{ display:flex; }
+  .info-modal-box{
+    width:100%; max-width:480px; max-height:82vh; overflow-y:auto; background:#FBF6EA; border-radius:12px;
+    padding:26px 26px 22px; position:relative; box-shadow:0 30px 70px rgba(0,0,0,0.5);
+  }
+  .info-modal-close{ position:absolute; top:14px; right:16px; background:none; border:none; font-size:16px; color:#8a7a58; cursor:pointer; }
+  .info-modal-title{ font-size:18px; font-weight:700; color:#3E3324; margin-bottom:14px; padding-right:24px; }
+  .info-row{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #e2d9c4; font-size:13.5px; }
+  .info-row:last-child{ border-bottom:none; }
+  .info-row .ir-label{ color:#8a7a58; font-weight:700; }
+  .info-row .ir-value{ color:#3E3324; text-align:right; }
+  .info-list-item{ padding:10px 0; border-bottom:1px solid #e2d9c4; font-size:13px; color:#3E3324; line-height:1.5; }
+  .info-list-item:last-child{ border-bottom:none; }
+  .info-empty{ font-size:13px; color:#8a7a58; text-align:center; padding:20px 0; }
 </style>
 </head>
 <body>
 
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="ab-icon">🥛</div>
+      <div class="ab-title">Bhargavi DairyLoop</div>
+      <div class="ab-sub">Manage Studio — sign in to continue</div>
+    </div>
 
+    <div class="auth-name-row" id="authSignupNameRow" style="display:none;">
+      <div class="auth-field">
+        <label>Full Name</label>
+        <input type="text" id="authName" placeholder="Your name" autocomplete="name">
+      </div>
+      <div class="auth-field">
+        <label>Phone</label>
+        <input type="tel" id="authPhone" placeholder="Phone number" autocomplete="tel">
+      </div>
+    </div>
 
-<div class="page" id="pageRoot">
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="username">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
+    </div>
+    <div class="auth-field" id="authConfirmField" style="display:none;">
+      <label>Confirm Password</label>
+      <input type="password" id="authConfirmPassword" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <button class="auth-submit-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Log In</button>
+
+    <div class="auth-switch" id="authSwitchLine">
+      New here? <button onclick="switchAuthMode('signup')">Create an account</button>
+    </div>
+    <div class="auth-signup-hint" id="authSignupHint">
+      Couldn't find that account. <button onclick="switchAuthMode('signup')">Sign up instead</button>
+    </div>
+  </div>
+</div>
+
+<div class="info-modal-overlay" id="infoModalOverlay">
+  <div class="info-modal-box">
+    <button class="info-modal-close" onclick="closeInfoModal()">✕</button>
+    <div class="info-modal-title" id="infoModalTitle"></div>
+    <div id="infoModalBody"></div>
+  </div>
+</div>
+
+<div class="page" id="pageRoot" style="display:none;">
 
   <section class="stage" id="procurement">
     <div class="stage-number">01 — Sourcing</div>
@@ -846,6 +963,13 @@
       return await res.json();
     }catch(e){ return null; }
   }
+  async function dbGetOne(collection, id){
+    try{
+      const res = await fetch(`/api/store/${collection}/${encodeURIComponent(id)}`);
+      if(!res.ok) return null;
+      return await res.json();
+    }catch(e){ return null; }
+  }
   async function dbPut(collection, id, record){
     try{
       await fetch(`/api/store/${collection}/${encodeURIComponent(id)}`, {
@@ -864,6 +988,182 @@
     try{ await fetch(`/api/store/${collection}/${encodeURIComponent(id)}`, { method:'DELETE' }); }
     catch(e){ /* offline */ }
   }
+
+  // ---- Studio account auth (email + password) ---------------------------
+  // One record per account in the 'studioAccounts' collection, keyed by
+  // lower-cased email. loginHistory records every signup/login/logout so
+  // the Login Detail panel has something real to show.
+  const AUTH_COLLECTION = 'studioAccounts';
+  let authMode = 'login';
+  let currentAccount = null;
+
+  async function sha256Hex(text){
+    if(window.crypto && window.crypto.subtle){
+      try{
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }catch(e){ /* fall through to the fallback below */ }
+    }
+    // Fallback hash for non-secure contexts where crypto.subtle is unavailable.
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(let i = 0; i < text.length; i++){
+      const ch = text.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+  }
+
+  function normalizeEmailKey(email){ return email.trim().toLowerCase(); }
+
+  function switchAuthMode(mode){
+    authMode = mode;
+    document.getElementById('authError').textContent = '';
+    document.getElementById('authSignupHint').classList.remove('show');
+    const nameRow = document.getElementById('authSignupNameRow');
+    const confirmField = document.getElementById('authConfirmField');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const switchLine = document.getElementById('authSwitchLine');
+    if(mode === 'signup'){
+      nameRow.style.display = 'flex';
+      confirmField.style.display = 'block';
+      submitBtn.textContent = 'Create Account';
+      switchLine.innerHTML = `Already have an account? <button onclick="switchAuthMode('login')">Log in</button>`;
+    } else {
+      nameRow.style.display = 'none';
+      confirmField.style.display = 'none';
+      submitBtn.textContent = 'Log In';
+      switchLine.innerHTML = `New here? <button onclick="switchAuthMode('signup')">Create an account</button>`;
+    }
+  }
+
+  async function handleAuthSubmit(){
+    const errEl = document.getElementById('authError');
+    errEl.textContent = '';
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    if(!email || !password){ errEl.textContent = 'Email and password are required.'; return; }
+    const emailKey = normalizeEmailKey(email);
+
+    if(authMode === 'signup'){
+      const name = document.getElementById('authName').value.trim();
+      const phone = document.getElementById('authPhone').value.trim();
+      const confirmPassword = document.getElementById('authConfirmPassword').value;
+      if(password !== confirmPassword){ errEl.textContent = 'Passwords do not match.'; return; }
+      const existing = await dbGetOne(AUTH_COLLECTION, emailKey);
+      if(existing && existing.email){
+        errEl.textContent = 'An account with this email already exists — please log in.';
+        switchAuthMode('login');
+        return;
+      }
+      const passwordHash = await sha256Hex(password);
+      const record = {
+        email: emailKey, name: name || emailKey, phone: phone || '',
+        passwordHash, createdAt: new Date().toISOString(),
+        loginHistory: [{ type: 'signup', at: new Date().toISOString() }]
+      };
+      await dbPut(AUTH_COLLECTION, emailKey, record);
+      enterStudioSession(record);
+      return;
+    }
+
+    // login mode
+    const account = await dbGetOne(AUTH_COLLECTION, emailKey);
+    const passwordHash = await sha256Hex(password);
+    if(!account || account.email === undefined || account.passwordHash !== passwordHash){
+      errEl.textContent = 'Email or password is incorrect.';
+      document.getElementById('authSignupHint').classList.add('show');
+      return;
+    }
+    account.loginHistory = account.loginHistory || [];
+    account.loginHistory.push({ type: 'login', at: new Date().toISOString() });
+    await dbPut(AUTH_COLLECTION, emailKey, account);
+    enterStudioSession(account);
+  }
+
+  function enterStudioSession(account){
+    currentAccount = account;
+    localStorage.setItem('studioSessionEmail', account.email);
+    document.getElementById('authGate').classList.add('hidden');
+    document.getElementById('pageRoot').style.display = '';
+  }
+
+  async function tryRestoreSession(){
+    const savedEmail = localStorage.getItem('studioSessionEmail');
+    if(!savedEmail) return;
+    const account = await dbGetOne(AUTH_COLLECTION, savedEmail);
+    if(account && account.email){
+      currentAccount = account;
+      document.getElementById('authGate').classList.add('hidden');
+      document.getElementById('pageRoot').style.display = '';
+    } else {
+      localStorage.removeItem('studioSessionEmail');
+    }
+  }
+  tryRestoreSession();
+
+  // ---- Account Detail / Login Detail / Log Out / Owner Section panels ---
+  // These four are exposed on window so the "🛠 Manage Studio" bar in
+  // index.html (which loads this page in an iframe) can trigger them.
+  function openInfoModal(title, bodyHtml){
+    document.getElementById('infoModalTitle').textContent = title;
+    document.getElementById('infoModalBody').innerHTML = bodyHtml;
+    document.getElementById('infoModalOverlay').classList.add('show');
+  }
+  function closeInfoModal(){ document.getElementById('infoModalOverlay').classList.remove('show'); }
+
+  window.openAccountDetail = function(){
+    if(!currentAccount){ openInfoModal('Account Detail', '<div class="info-empty">Please log in first.</div>'); return; }
+    const a = currentAccount;
+    openInfoModal('Account Detail', `
+      <div class="info-row"><span class="ir-label">Name</span><span class="ir-value">${a.name || '—'}</span></div>
+      <div class="info-row"><span class="ir-label">Email</span><span class="ir-value">${a.email}</span></div>
+      <div class="info-row"><span class="ir-label">Phone</span><span class="ir-value">${a.phone || '—'}</span></div>
+      <div class="info-row"><span class="ir-label">Account Created</span><span class="ir-value">${a.createdAt ? new Date(a.createdAt).toLocaleString('en-IN') : '—'}</span></div>
+      <div class="info-row"><span class="ir-label">Total Sign-ins</span><span class="ir-value">${(a.loginHistory || []).filter(h => h.type === 'login' || h.type === 'signup').length}</span></div>
+    `);
+  };
+
+  window.openLoginDetail = function(){
+    if(!currentAccount){ openInfoModal('Login Detail', '<div class="info-empty">Please log in first.</div>'); return; }
+    const hist = (currentAccount.loginHistory || []).slice().reverse();
+    const rows = hist.length
+      ? hist.map(h => `<div class="info-list-item"><b>${h.type === 'signup' ? 'Account Created' : h.type === 'logout' ? 'Logged Out' : 'Logged In'}</b> — ${new Date(h.at).toLocaleString('en-IN')}</div>`).join('')
+      : '<div class="info-empty">No login history yet.</div>';
+    openInfoModal('Login Detail', `<div style="font-size:12.5px;color:#8a7a58;margin-bottom:10px;">History for ${currentAccount.email}</div>${rows}`);
+  };
+
+  window.doLogout = async function(){
+    if(!currentAccount) return;
+    const a = currentAccount;
+    a.loginHistory = a.loginHistory || [];
+    a.loginHistory.push({ type: 'logout', at: new Date().toISOString() });
+    await dbPut(AUTH_COLLECTION, a.email, a);
+    currentAccount = null;
+    localStorage.removeItem('studioSessionEmail');
+    document.getElementById('pageRoot').style.display = 'none';
+    document.getElementById('authEmail').value = '';
+    document.getElementById('authPassword').value = '';
+    switchAuthMode('login');
+    document.getElementById('authGate').classList.remove('hidden');
+  };
+
+  window.openOwnerSection = async function(){
+    const all = await dbGetAll(AUTH_COLLECTION);
+    const accounts = Array.isArray(all) ? all : [];
+    const rows = accounts.length
+      ? accounts.map(a => {
+          const lastActive = (a.loginHistory || []).slice().reverse().find(h => h.type === 'login' || h.type === 'signup');
+          return `<div class="info-list-item">
+            <b>${a.name || a.email}</b> — ${a.email}${a.phone ? ' · ' + a.phone : ''}<br>
+            <span style="color:#8a7a58;">Joined ${a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-IN') : '—'}${lastActive ? ' · Last active ' + new Date(lastActive.at).toLocaleString('en-IN') : ''}</span>
+          </div>`;
+        }).join('')
+      : '<div class="info-empty">No studio accounts registered yet.</div>';
+    openInfoModal('Owner Section — Registered Accounts', rows);
+  };
 
   function showPaymentSuccessPopup(msg){
     document.getElementById('paySuccessText').textContent = msg;
@@ -2226,8 +2526,8 @@ Issued by Processing Team.`;
   }
 
   // Turns a delivery-day label like "Mon, Wed, Fri" or "Daily (Mon–Sat)" into
-  // a set of JS weekday numbers (0=Sun..6=Sat) so we know which calendar days
-  // are scheduled delivery days for that outlet.
+  // a set of JS weekday numbers (0=Sun..6=Sat) — used only to show which days
+  // are on-schedule; it no longer decides the tick itself.
   function parseDeliveryDaySet(str){
     const map = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
     if(str.startsWith('Daily')){
@@ -2236,11 +2536,20 @@ Issued by Processing Team.`;
     return str.split(',').map(s => map[s.trim()]).filter(v => v !== undefined);
   }
 
-  // Builds this calendar month's per-day tick data for one outlet, always
-  // computed off the real current date — so a day flips from "scheduled" to
-  // "delivered ✓" on its own each day, with no stored/manual state, and this
-  // runs the same way for whichever outlet/user is currently selected.
-  function buildMonthlyTickCalendar(o){
+  function pad2(n){ return String(n).padStart(2, '0'); }
+  function dateStrFor(year, month, day){ return `${year}-${pad2(month + 1)}-${pad2(day)}`; }
+  function todayDateStr(){ const d = new Date(); return dateStrFor(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+  // Holds the calendar currently on screen so the click handlers below know
+  // which outlet/member to save a tick against.
+  let _dtrackCal = { memberId: null, ticks: {}, o: null };
+
+  // Builds this calendar month's per-day cell data for one outlet. The grid
+  // itself (today, days in month, weekday layout) is always computed off the
+  // real current date, so it moves forward on its own every day — but a day
+  // only shows a green tick once someone has actually confirmed that
+  // delivery with the button/click (manual tick, stored per outlet).
+  function buildMonthlyTickCalendar(o, ticks){
     const daySet = parseDeliveryDaySet(o.deliveryDay);
     const today = new Date();
     const year = today.getFullYear(), month = today.getMonth(), todayDate = today.getDate();
@@ -2253,37 +2562,69 @@ Issued by Processing Team.`;
     for(let d = 1; d <= daysInMonth; d++){
       const weekday = new Date(year, month, d).getDay();
       const scheduled = daySet.includes(weekday);
-      const delivered = scheduled && d <= todayDate;
+      const dateStr = dateStrFor(year, month, d);
+      const delivered = !!ticks[dateStr];
+      const isFuture = d > todayDate;
       if(scheduled) scheduledCount++;
       if(delivered) deliveredCount++;
-      cells.push({ day: d, scheduled, delivered, isToday: d === todayDate });
+      cells.push({ day: d, dateStr, scheduled, delivered, isFuture, isToday: d === todayDate });
     }
     const monthLabel = today.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
     return { cells, monthLabel, deliveredCount, scheduledCount };
   }
 
-  function renderMonthTickCalendarHtml(o){
-    const cal = buildMonthlyTickCalendar(o);
+  function renderMonthTickCalendarInner(o, ticks){
+    const cal = buildMonthlyTickCalendar(o, ticks);
     const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
       .map(d => `<div class="month-cal-weekday-label">${d}</div>`).join('');
     const dayCells = cal.cells.map(c => {
       if(!c) return `<div class="month-cal-day empty"></div>`;
       let cls = 'month-cal-day';
+      const clickable = !c.isFuture;
       if(c.delivered) cls += ' tick';
+      else if(c.isFuture) cls += ' off future';
       else if(c.scheduled) cls += ' pending-day';
       else cls += ' off';
       if(c.isToday) cls += ' today';
-      return `<div class="${cls}"><span class="month-cal-daynum">${c.day}</span>${c.delivered ? '<span class="month-cal-tick">&#10004;</span>' : ''}</div>`;
+      if(clickable) cls += ' clickable';
+      const title = clickable ? (c.delivered ? 'Click to undo' : 'Click to mark delivered') : 'Future date';
+      const onclick = clickable ? ` onclick="toggleDeliveryTick('${c.dateStr}')"` : '';
+      return `<div class="${cls}"${onclick} title="${title}"><span class="month-cal-daynum">${c.day}</span>${c.delivered ? '<span class="month-cal-tick">&#10004;</span>' : ''}</div>`;
     }).join('');
     return `
       <div class="expand-title" style="margin-top:28px;">Monthly Delivery Tracker — ${cal.monthLabel}</div>
-      <div class="month-cal-note">One green tick per day this outlet was delivered to (schedule: ${o.deliveryDay}). Refreshes automatically every day — no manual update needed.</div>
+      <div class="month-cal-note">Not automatic — click a day (or use the button) once the delivery is actually done. Schedule for this outlet: ${o.deliveryDay}.</div>
+      <div class="month-cal-actions"><button class="track-btn" onclick="markTodayDelivered()">&#10004; Mark Today Delivered</button></div>
       <div class="month-cal">
         <div class="month-cal-grid month-cal-headrow">${dayHeaders}</div>
         <div class="month-cal-grid">${dayCells}</div>
       </div>
-      <div class="month-cal-summary">${cal.deliveredCount} of ${cal.scheduledCount} scheduled deliveries ticked off so far this month</div>
+      <div class="month-cal-summary">${cal.deliveredCount} day(s) confirmed delivered this month</div>
     `;
+  }
+
+  function renderMonthTickCalendarHtml(o, ticks){
+    return `<div id="month-cal-section">${renderMonthTickCalendarInner(o, ticks)}</div>`;
+  }
+
+  function refreshMonthTickCalendar(){
+    const el = document.getElementById('month-cal-section');
+    if(el && _dtrackCal.o) el.innerHTML = renderMonthTickCalendarInner(_dtrackCal.o, _dtrackCal.ticks);
+  }
+
+  async function toggleDeliveryTick(dateStr){
+    if(!_dtrackCal.o) return;
+    if(_dtrackCal.ticks[dateStr]) delete _dtrackCal.ticks[dateStr];
+    else _dtrackCal.ticks[dateStr] = true;
+    refreshMonthTickCalendar();
+    await dbPut('deliveryLog', _dtrackCal.memberId, { memberId: _dtrackCal.memberId, ticks: _dtrackCal.ticks });
+  }
+
+  async function markTodayDelivered(){
+    if(!_dtrackCal.o) return;
+    _dtrackCal.ticks[todayDateStr()] = true;
+    refreshMonthTickCalendar();
+    await dbPut('deliveryLog', _dtrackCal.memberId, { memberId: _dtrackCal.memberId, ticks: _dtrackCal.ticks });
   }
 
   function getAllDeliveryAssignments(personId){
@@ -2676,7 +3017,7 @@ Issued by Processing Team.`;
     else document.getElementById('dtrack-chain-area').innerHTML = '<div class="result-placeholder">No deliveries assigned to this person yet.</div>';
   }
 
-  function renderDeliveryChainInto(personId, outletKey){
+  async function renderDeliveryChainInto(personId, outletKey){
     const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
     const [cat, idxStr] = outletKey.split(':');
     const idx = parseInt(idxStr, 10);
@@ -2692,6 +3033,8 @@ Issued by Processing Team.`;
       </div>
     `).join('');
 
+    // Show the journey immediately; the monthly tick calendar loads its
+    // saved ticks (per outlet, from the server) just after.
     document.getElementById('dtrack-chain-area').innerHTML = `
       <div class="dtrack-summary-banner">
         <div class="avatar dsb-avatar">${initials(p.name)}</div>
@@ -2713,8 +3056,13 @@ Issued by Processing Team.`;
       </div>
       <div class="expand-title">Delivery Journey</div>
       <div class="delivery-chain">${stepsHtml}</div>
-      ${renderMonthTickCalendarHtml(o)}
+      <div id="month-cal-section"><div class="month-cal-note">Loading delivery tracker…</div></div>
     `;
+
+    const logRecord = await dbGetOne('deliveryLog', o.memberId);
+    _dtrackCal = { memberId: o.memberId, ticks: (logRecord && logRecord.ticks) || {}, o };
+    const calSection = document.getElementById('month-cal-section');
+    if(calSection) calSection.innerHTML = renderMonthTickCalendarInner(o, _dtrackCal.ticks);
   }
 
   function distProductsDetail(cat, i){

@@ -285,10 +285,15 @@
   /* ---------- studio overlay ---------- */
   .studio-overlay{ position:fixed; inset:0; background:#0B0B0C; z-index:150; display:none; flex-direction:column; }
   .studio-overlay.open{ display:flex; }
-  .studio-bar{ display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:var(--navy-3); color:var(--cream); flex-shrink:0; }
+  .studio-bar{ display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:var(--navy-3); color:var(--cream); flex-shrink:0; flex-wrap:wrap; gap:10px; }
   .studio-bar .st-title{ font-family:'Fraunces', serif; font-weight:700; font-size:15px; display:flex; align-items:center; gap:10px; }
   .studio-bar button{ background:var(--brick); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; }
   .studio-bar button:hover{ background:var(--brick-2); }
+  .studio-bar-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-left:auto; }
+  .studio-bar-actions button{ background:rgba(244,239,230,0.12); padding:8px 14px; font-size:12.5px; }
+  .studio-bar-actions button:hover{ background:rgba(244,239,230,0.22); }
+  .studio-bar-actions button.close-studio-btn{ background:var(--brick); }
+  .studio-bar-actions button.close-studio-btn:hover{ background:var(--brick-2); }
   .studio-overlay iframe{ flex:1; border:none; width:100%; }
 
   /* ---------- mobile ---------- */
@@ -472,7 +477,13 @@
 <div class="studio-overlay" id="studioOverlay">
   <div class="studio-bar">
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
-    <button onclick="closeStudio()">✕ Close Studio</button>
+    <div class="studio-bar-actions">
+      <button onclick="callStudio('openAccountDetail')">👤 Account Detail</button>
+      <button onclick="callStudio('openLoginDetail')">🔑 Login Detail</button>
+      <button onclick="callStudio('doLogout')">🚪 Log Out</button>
+      <button onclick="callStudio('openOwnerSection')">👑 Owner Section</button>
+      <button class="close-studio-btn" onclick="closeStudio()">✕ Close Studio</button>
+    </div>
   </div>
   <iframe id="studioFrame" title="Manage Studio"></iframe>
 </div>
@@ -772,6 +783,13 @@
   }
   function closeStudio(){
     document.getElementById('studioOverlay').classList.remove('open');
+  }
+  function callStudio(fnName){
+    const frame = document.getElementById('studioFrame');
+    try{
+      const win = frame && frame.contentWindow;
+      if(win && typeof win[fnName] === 'function') win[fnName]();
+    }catch(e){ /* iframe not ready yet */ }
   }
   window.addEventListener('message', e => { if(e.data === 'closeStudio') closeStudio(); });
 
