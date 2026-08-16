@@ -30,15 +30,28 @@
     background:#0B0B0C;
   }
 
-  #studioSearchResult:not(:empty){ background:#17233F; padding:14px 26px 16px; }
+  #studioSearchResult:not(:empty){ background:#17233F; padding:14px 26px 18px; }
   .ssb-result-card{
-    display:flex; align-items:center; gap:16px; background:#fff; border-left:5px solid #D9A441;
-    border-radius:10px; padding:14px 18px; margin-top:2px;
+    display:flex; align-items:center; gap:18px; background:#fff;
+    border-radius:14px; padding:16px 20px; margin-top:2px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.22); border:1px solid rgba(62,51,36,0.08);
   }
-  .ssb-result-avatar{ width:48px; height:48px; font-size:15px; flex-shrink:0; }
-  .ssb-result-name{ font-weight:700; font-size:15.5px; color:#3E3324; }
-  .ssb-result-sub{ font-size:12px; color:#8a7a58; margin-top:2px; }
-  .ssb-result-view{ margin-left:auto; background:#17233F; color:#fff; font-size:12.5px; font-weight:700; padding:9px 16px; border-radius:999px; white-space:nowrap; }
+  .ssb-result-avatar{ width:54px; height:54px; font-size:17px; flex-shrink:0; border-radius:50%; box-shadow:0 0 0 3px #fff, 0 0 0 4px rgba(62,51,36,0.12); }
+  .ssb-result-body{ min-width:0; flex:1; }
+  .ssb-result-name{ font-weight:700; font-size:16px; color:#20180D; line-height:1.25; }
+  .ssb-result-sub{ font-size:12.5px; color:#8a7a58; margin-top:3px; }
+  .ssb-result-tag{
+    display:inline-block; margin-top:7px; font-size:10.5px; font-weight:700; letter-spacing:0.05em;
+    text-transform:uppercase; padding:3px 10px; border-radius:999px;
+  }
+  .ssb-result-tag.tag-procurement{ background:rgba(200,155,76,0.16); color:#8a6a2d; }
+  .ssb-result-tag.tag-processing{ background:rgba(79,191,170,0.16); color:#1e746a; }
+  .ssb-result-tag.tag-distributor{ background:rgba(110,155,224,0.18); color:#2c4f92; }
+  .ssb-result-tag.tag-delivery{ background:rgba(23,35,63,0.1); color:#17233F; }
+  .ssb-result-view{
+    margin-left:auto; flex-shrink:0; background:#17233F; color:#fff; font-size:12.5px; font-weight:700;
+    padding:10px 18px; border-radius:999px; white-space:nowrap; transition:background 0.15s;
+  }
   .ssb-result-view:hover{ background:#28365c; }
   .ssb-result-empty{ font-size:13px; color:#F4EFE6; font-style:italic; padding:10px 0; }
   @media (max-width: 640px){
@@ -283,6 +296,15 @@
   }
 
   .avatar{ width:36px; height:36px; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+  .avatar-photo{ object-fit:cover; display:block; }
+  .photo-picker{ display:flex; align-items:center; gap:10px; grid-column:1 / -1; }
+  .photo-picker-preview{
+    width:56px; height:56px; border-radius:50%; background:#C89B4C; color:#3E3324; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden; border:2px solid rgba(217,164,65,0.5);
+  }
+  .photo-picker-preview img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-picker-btn{ background:#fff; color:#3E3324; border:1px solid rgba(62,51,36,0.25); font-size:12.5px; font-weight:700; padding:9px 16px; border-radius:999px; }
+  .photo-picker-btn:hover{ background:#F4EFE6; }
 
   .view-btn{ font-family:'Times New Roman', Times, serif; background:#17393B; color:#F7F3EA; border:none; padding:6px 14px; border-radius:3px; cursor:pointer; font-size:13px; }
   .view-btn:hover{ background:#4FBFAA; color:#17393B; }
@@ -975,6 +997,7 @@
 <button class="pay-pick-close-btn" id="paymentPickCloseBtn" onclick="closePaymentSelect()">Close ✕</button>
 
 <input type="file" id="shotFileInput" accept="image/*" style="display:none;">
+<input type="file" id="photoFileInput" accept="image/*" style="display:none;">
 
 <div class="custom-modal-overlay" id="paySuccessOverlay">
   <div class="custom-modal-box">
@@ -1416,11 +1439,53 @@
 
   function initials(name){ return name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase(); }
 
+  // Renders a member's real profile photo (uploaded at registration and
+  // stored as a data URL on the record) when one exists, and falls back to
+  // the initials badge otherwise — used everywhere a person's avatar shows
+  // up (tables, search results, form docs) so both stay in sync.
+  function avatarHTML(person, extraClass, styleAttr){
+    const cls = 'avatar' + (extraClass ? ' ' + extraClass : '');
+    const style = styleAttr ? ` style="${styleAttr}"` : '';
+    if(person && person.photo){
+      return `<img class="${cls} avatar-photo" src="${person.photo}" alt="${initials(person.name || '')}"${style}>`;
+    }
+    return `<div class="${cls}"${style}>${initials(person ? (person.name || '') : '')}</div>`;
+  }
+
+  // Opens the shared photo picker and hands back a data URL via callback —
+  // used by every "Add New Member" form's photo picker button.
+  function pickMemberPhoto(previewElId, callback){
+    const input = document.getElementById('photoFileInput');
+    input.onchange = () => {
+      const file = input.files[0];
+      input.value = '';
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const dataUrl = e.target.result;
+        const preview = document.getElementById(previewElId);
+        if(preview) preview.innerHTML = `<img src="${dataUrl}" alt="Preview">`;
+        callback(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  function newMemberPhotoPickerHTML(previewElId, onPick){
+    return `
+      <div class="photo-picker">
+        <div class="photo-picker-preview" id="${previewElId}">📷</div>
+        <button type="button" class="photo-picker-btn" onclick="${onPick}">Upload Photo</button>
+      </div>
+    `;
+  }
+
   function renderMembers(){
     let rows = members.map((m, i) => `
       <tr class="member-row" id="member-row-${i}">
         <td>${i+1}</td>
-        <td><div class="avatar">${initials(m.name)}</div></td>
+        <td>${avatarHTML(m)}</td>
         <td>${m.name}</td>
         <td>${m.email}</td>
         <td class="clickable" onclick="toggleExpand(${i}, 'number', this)"><span class="cell-inner">${m.phone}</span></td>
@@ -1456,6 +1521,7 @@
       <div class="add-member-panel">
         <div class="col-title">Add New Member</div>
         <div class="add-member-grid">
+          ${newMemberPhotoPickerHTML('new-photo-preview', "pickMemberPhoto('new-photo-preview', dataUrl => _newMemberPhoto = dataUrl)")}
           <input type="text" id="new-place" placeholder="Place" />
           <input type="text" id="new-id" placeholder="Member ID (optional)" />
           <input type="text" id="new-name" placeholder="Full name" />
@@ -1472,6 +1538,7 @@
     bindClose();
   }
 
+  let _newMemberPhoto = '';
   function addMemberFromForm(){
     const place = document.getElementById('new-place').value.trim();
     const memberId = document.getElementById('new-id').value.trim();
@@ -1487,6 +1554,7 @@
     const idx = members.length;
     const newMember = buildMemberRecord({
       name,
+      photo: _newMemberPhoto || undefined,
       email: email || '—',
       phone: phone || '—',
       altPhone: '—',
@@ -1501,6 +1569,7 @@
     members.push(newMember);
     renderMembers();
     dbPut('members', newMember.memberId, newMember);
+    _newMemberPhoto = '';
   }
 
   function openMemberFormDoc(i){
@@ -1520,7 +1589,7 @@
           </div>
           <div class="form-doc-body">
             <div class="form-doc-id">
-              <div class="avatar">${initials(m.name)}</div>
+              ${avatarHTML(m)}
               <div class="fname">${m.name}</div>
               <div class="fmeta">${m.memberId} — ${m.place}</div>
             </div>
@@ -1772,7 +1841,7 @@ Issued by Procurement Side.`;
     const strip = document.getElementById('placeHoverStrip');
     strip.innerHTML = matches.map(m => `
       <div class="strip-person">
-        <div class="avatar">${initials(m.name)}</div>
+        ${avatarHTML(m)}
         <div class="strip-name">${m.name}</div>
         <div class="strip-id">${m.memberId}</div>
       </div>
@@ -1810,7 +1879,7 @@ Issued by Procurement Side.`;
     return `
       <div class="member-detail-card">
         <div class="mdc-header">
-          <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(m.name)}</div>
+          ${avatarHTML(m, null, 'width:52px;height:52px;font-size:16px;')}
           <div>
             <div class="mdc-name">${m.name}</div>
             <div class="mdc-id">${m.memberId} — ${m.place}</div>
@@ -1881,7 +1950,7 @@ Issued by Procurement Side.`;
       <div class="col-title">Members in ${place}</div>
       ${matches.map(m => `<div class="member-detail-card" style="cursor:pointer;" onclick="showPaymentFor('${m.memberId}')">
         <div class="mdc-header">
-          <div class="avatar">${initials(m.name)}</div>
+          ${avatarHTML(m)}
           <div><div class="mdc-name">${m.name}</div><div class="mdc-id">${m.memberId}</div></div>
         </div>
       </div>`).join('')}
@@ -1934,7 +2003,7 @@ Issued by Procurement Side.`;
 
     return `
       <div class="pay-member-head">
-        <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(m.name)}</div>
+        ${avatarHTML(m, null, 'width:52px;height:52px;font-size:16px;')}
         <div>
           <div class="mdc-name">${m.name}</div>
           <div class="mdc-id">${m.memberId} — ${m.place}</div>
@@ -2192,7 +2261,7 @@ Issued by Procurement Side.`;
       const rows = list.map((m, idx) => `
         <tr class="member-row" id="proc-row-${slug}-${idx}">
           <td>${idx+1}</td>
-          <td><div class="avatar">${initials(m.name)}</div></td>
+          <td>${avatarHTML(m)}</td>
           <td>${m.name}</td>
           <td>${m.email}</td>
           <td class="clickable" onclick="toggleProcExpand('${slug}', ${idx}, 'number', this)"><span class="cell-inner">${m.phone}</span></td>
@@ -2222,6 +2291,7 @@ Issued by Procurement Side.`;
           <div class="add-member-panel">
             <div class="col-title">Add New Member — ${cat}</div>
             <div class="add-member-grid">
+              ${newMemberPhotoPickerHTML(`pm-${slug}-photo-preview`, `pickMemberPhoto('pm-${slug}-photo-preview', dataUrl => _newProcMemberPhoto = dataUrl)`)}
               <input type="text" id="pm-${slug}-name" placeholder="Full name" />
               <input type="email" id="pm-${slug}-email" placeholder="Email" />
               <input type="text" id="pm-${slug}-phone" placeholder="Number" />
@@ -2362,7 +2432,7 @@ Issued by Procurement Side.`;
           </div>
           <div class="form-doc-body">
             <div class="form-doc-id">
-              <div class="avatar">${initials(m.name)}</div>
+              ${avatarHTML(m)}
               <div class="fname">${m.name}</div>
               <div class="fmeta">${m.memberId} — ${m.post}</div>
             </div>
@@ -2409,6 +2479,7 @@ Issued by Processing Team.`;
     URL.revokeObjectURL(url);
   }
 
+  let _newProcMemberPhoto = '';
   function addProcessingMember(cat){
     const slug = cat.replace(/\s+/g, '-').toLowerCase();
     const name = document.getElementById(`pm-${slug}-name`).value.trim();
@@ -2423,7 +2494,7 @@ Issued by Processing Team.`;
     if(!name){ alert('Please enter at least the member name.'); return; }
 
     const raw = {
-      name, email: email || '—', phone: phone || '—', altPhone: altPhone || '—',
+      name, photo: _newProcMemberPhoto || undefined, email: email || '—', phone: phone || '—', altPhone: altPhone || '—',
       address: address || '—', altAddress: altAddress || '—',
       post: post || 'Team Member', payment: payment || '₹ 0'
     };
@@ -2432,6 +2503,7 @@ Issued by Processing Team.`;
     processingMembersRaw[cat].push(raw);
     renderProcessingMembers();
     dbPut('processingMembers', newMember.memberId, newMember);
+    _newProcMemberPhoto = '';
   }
 
   function formatKolkataNow(){
@@ -2992,7 +3064,7 @@ Issued by Processing Team.`;
     const procIdx = members.findIndex(m => (m.memberId || '').toLowerCase() === q);
     if(procIdx > -1){
       const m = members[procIdx];
-      return { name: m.name, sub: `${m.memberId} — Procurement Member`, action: () => goToProcMemberDetail(procIdx) };
+      return { name: m.name, photo: m.photo, sub: `${m.memberId} — Procurement Member`, tag: 'Procurement', action: () => goToProcMemberDetail(procIdx) };
     }
 
     for(const cat of Object.keys(processingMembers)){
@@ -3000,7 +3072,7 @@ Issued by Processing Team.`;
       if(idx > -1){
         const m = processingMembers[cat][idx];
         const slug = cat.replace(/\s+/g, '-').toLowerCase();
-        return { name: m.name, sub: `${m.memberId} — Processing (${cat})`, action: () => goToProcessingMemberDetail(slug, idx) };
+        return { name: m.name, photo: m.photo, sub: `${m.memberId} — Processing (${cat})`, tag: 'Processing', action: () => goToProcessingMemberDetail(slug, idx) };
       }
     }
 
@@ -3008,12 +3080,12 @@ Issued by Processing Team.`;
       const idx = DISTRIBUTION_OUTLETS[cat].findIndex(o => (o.memberId || '').toLowerCase() === q);
       if(idx > -1){
         const o = DISTRIBUTION_OUTLETS[cat][idx];
-        return { name: o.contactPerson || o.storeName, sub: `${o.memberId} — ${o.storeName}`, action: () => goToDistMemberDetail(cat, idx) };
+        return { name: o.contactPerson || o.storeName, photo: o.photo, sub: `${o.memberId} — ${o.storeName}`, tag: 'Distributor', action: () => goToDistMemberDetail(cat, idx) };
       }
     }
 
     const dp = DELIVERY_PERSONS.find(p => p.id.toLowerCase() === q);
-    if(dp) return { name: dp.name, sub: `${dp.id} — ${dp.vehicle}`, action: () => goToDeliveryTracking(dp.id) };
+    if(dp) return { name: dp.name, photo: dp.photo, sub: `${dp.id} — ${dp.vehicle}`, tag: 'Delivery', action: () => goToDeliveryTracking(dp.id) };
 
     return null;
   }
@@ -3029,7 +3101,7 @@ Issued by Processing Team.`;
 
     members.forEach((m, procIdx) => {
       if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
-        out.push({ name: m.name, sub: `${m.memberId} — Procurement Member`, tag: 'Procurement', action: () => goToProcMemberDetail(procIdx) });
+        out.push({ name: m.name, photo: m.photo, sub: `${m.memberId} — Procurement Member`, tag: 'Procurement', action: () => goToProcMemberDetail(procIdx) });
       }
     });
 
@@ -3037,7 +3109,7 @@ Issued by Processing Team.`;
       processingMembers[cat].forEach((m, idx) => {
         if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
           const slug = cat.replace(/\s+/g, '-').toLowerCase();
-          out.push({ name: m.name, sub: `${m.memberId} — Processing (${cat})`, tag: 'Processing', action: () => goToProcessingMemberDetail(slug, idx) });
+          out.push({ name: m.name, photo: m.photo, sub: `${m.memberId} — Processing (${cat})`, tag: 'Processing', action: () => goToProcessingMemberDetail(slug, idx) });
         }
       });
     });
@@ -3045,14 +3117,14 @@ Issued by Processing Team.`;
     Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
       DISTRIBUTION_OUTLETS[cat].forEach((o, idx) => {
         if((o.memberId || '').toLowerCase().includes(q) || (o.contactPerson || '').toLowerCase().includes(q) || (o.storeName || '').toLowerCase().includes(q)){
-          out.push({ name: o.contactPerson || o.storeName, sub: `${o.memberId} — ${o.storeName}`, tag: 'Distributor', action: () => goToDistMemberDetail(cat, idx) });
+          out.push({ name: o.contactPerson || o.storeName, photo: o.photo, sub: `${o.memberId} — ${o.storeName}`, tag: 'Distributor', action: () => goToDistMemberDetail(cat, idx) });
         }
       });
     });
 
     DELIVERY_PERSONS.forEach(p => {
       if((p.id || '').toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q)){
-        out.push({ name: p.name, sub: `${p.id} — ${p.vehicle}`, tag: 'Delivery', action: () => goToDeliveryTracking(p.id) });
+        out.push({ name: p.name, photo: p.photo, sub: `${p.id} — ${p.vehicle}`, tag: 'Delivery', action: () => goToDeliveryTracking(p.id) });
       }
     });
 
@@ -3071,12 +3143,14 @@ Issued by Processing Team.`;
       return;
     }
     _studioSearchAction = result.action;
+    const tag = result.tag || '';
     area.innerHTML = `
       <div class="ssb-result-card">
-        <div class="avatar ssb-result-avatar">${initials(result.name)}</div>
-        <div>
+        ${avatarHTML(result, 'ssb-result-avatar')}
+        <div class="ssb-result-body">
           <div class="ssb-result-name">${result.name}</div>
           <div class="ssb-result-sub">${result.sub}</div>
+          ${tag ? `<span class="ssb-result-tag tag-${tag.toLowerCase()}">${tag}</span>` : ''}
         </div>
         <button class="ssb-result-view" onclick="_studioSearchAction && _studioSearchAction()">View Full Detail →</button>
       </div>
@@ -3776,7 +3850,7 @@ Issued by Distribution Side.`;
     `).join('');
     return `
       <div class="pay-member-head">
-        <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(entity.name)}</div>
+        ${avatarHTML(entity, null, 'width:52px;height:52px;font-size:16px;')}
         <div>
           <div class="mdc-name">${entity.name}</div>
           <div class="mdc-id">${entity.sub}</div>
