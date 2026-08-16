@@ -443,6 +443,42 @@
     .owner-panel-body{ padding:16px; }
     .owner-panel-bar, .owner-panel-tabs{ padding-left:16px; padding-right:16px; }
   }
+
+  /* ---------- Owner Section: Add Emergency Member ---------- */
+  .op-emergency-btn{ background:var(--gold); color:var(--navy-3); font-size:13px; font-weight:700; padding:9px 16px; border-radius:999px; white-space:nowrap; }
+  .op-emergency-btn:hover{ filter:brightness(1.08); }
+  .em-overlay{ position:fixed; inset:0; background:rgba(13,27,43,0.62); z-index:650; display:none; align-items:center; justify-content:center; padding:20px; }
+  .em-overlay.show{ display:flex; }
+  .em-box{ width:100%; max-width:620px; max-height:88vh; overflow-y:auto; background:var(--cream); border-radius:var(--radius); padding:26px 26px 22px; position:relative; box-shadow:0 30px 70px rgba(0,0,0,0.45); }
+  .em-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .em-title{ font-family:'Fraunces', serif; font-size:18px; font-weight:700; color:var(--navy); }
+  .em-sub{ font-size:12.5px; color:var(--ink-soft); margin-bottom:18px; }
+  .em-close{ background:none; border:none; font-size:16px; color:var(--ink-soft); cursor:pointer; }
+  .em-role-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:6px; }
+  .em-role-card{ background:var(--white); border:1px solid rgba(28,53,82,0.14); border-radius:12px; padding:18px 14px; text-align:center; cursor:pointer; transition:border-color 0.15s, transform 0.08s; }
+  .em-role-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .em-role-card .em-role-icon{ font-size:26px; }
+  .em-role-card .em-role-name{ font-weight:700; font-size:13.5px; color:var(--navy); margin-top:8px; }
+  .em-role-card .em-role-desc{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; line-height:1.4; }
+  @media(max-width:560px){ .em-role-grid{ grid-template-columns:1fr; } }
+  .em-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }
+  .em-form-grid .em-field-full{ grid-column:1 / -1; }
+  @media(max-width:560px){ .em-form-grid{ grid-template-columns:1fr; } }
+  .em-field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); font-weight:700; margin-bottom:5px; }
+  .em-field input, .em-field select{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(28,53,82,0.22); font-family:inherit; font-size:13.5px;
+    background:#fff; color:var(--ink);
+  }
+  .em-field input:focus, .em-field select:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(217,164,65,0.25); }
+  .em-required{ color:var(--brick); }
+  .em-msg{ font-size:12.5px; margin-top:12px; min-height:16px; color:var(--brick); font-weight:600; }
+  .em-msg.ok{ color:#3E8E5A; }
+  .em-actions{ display:flex; gap:10px; margin-top:18px; }
+  .em-actions button{ flex:1; padding:11px; border-radius:999px; font-weight:700; font-size:13.5px; }
+  .em-actions .em-submit{ background:var(--brick); color:#fff; }
+  .em-actions .em-submit:hover{ background:var(--brick-2); }
+  .em-actions .em-back{ background:var(--cream-2); color:var(--navy); }
+  .em-actions .em-back:hover{ background:rgba(28,53,82,0.12); }
 </style>
 </head>
 <body>
@@ -520,7 +556,10 @@
 <div class="owner-panel-overlay" id="ownerPanelOverlay">
   <div class="owner-panel-bar">
     <div class="op-bar-title">👑 Owner Section — Everyone, at a glance</div>
-    <button class="op-close" onclick="closeOwnerPanel()">✕ Close</button>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="op-emergency-btn" onclick="openEmergencyAdd()">🚨 Add Emergency Member</button>
+      <button class="op-close" onclick="closeOwnerPanel()">✕ Close</button>
+    </div>
   </div>
   <div class="owner-panel-tabs" id="ownerPanelTabs">
     <button class="active" onclick="switchOwnerTab('accounts', this)">🌐 Site Accounts</button>
@@ -530,6 +569,10 @@
     <button onclick="switchOwnerTab('payments', this)">💰 Payments</button>
   </div>
   <div class="owner-panel-body" id="ownerPanelBody"></div>
+</div>
+
+<div class="em-overlay" id="emOverlay">
+  <div class="em-box" id="emBox"></div>
 </div>
 
 <div id="siteRoot" style="display:none;">
@@ -1097,6 +1140,262 @@
     } else if(tab === 'payments'){
       body.innerHTML = renderPaymentsTabHTML();
     }
+  }
+
+  // ---- Owner Section: Add Emergency Member -------------------------------
+  // A fast-track way for the owner to register someone directly from the
+  // Owner Section (e.g. a farmer, processing hand, or distributor who needs
+  // to be added on the spot). Choosing a role shows the exact fields that
+  // role needs, and saving writes straight into the same collections
+  // ('members' / 'processingMembers' / 'distributionOutlets') that Studio
+  // and this panel already read from — so the new entry shows up everywhere
+  // immediately, with safe blank defaults for the extra fields Studio's
+  // detail views expect (so nothing breaks when it's opened there later).
+  const EM_PROCESSING_CATEGORIES = ['Toned Milk', 'Curd', 'Paneer', 'Ghee', 'Butter', 'Cheese'];
+  const EM_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const EM_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const EM_YEARS = [2024, 2025, 2026];
+  let emRole = null;
+
+  function emGenId(prefix){
+    return prefix + Date.now().toString().slice(-6);
+  }
+
+  function emBlankPaymentYears(){
+    const paymentYears = {};
+    EM_YEARS.forEach(y => { const status = {}; EM_MONTHS.forEach(mo => status[mo] = false); paymentYears[y] = status; });
+    return paymentYears;
+  }
+
+  function openEmergencyAdd(){
+    emRole = null;
+    document.getElementById('emOverlay').classList.add('show');
+    emRenderRoleStep();
+  }
+
+  function closeEmergencyAdd(){
+    document.getElementById('emOverlay').classList.remove('show');
+  }
+
+  function emRenderRoleStep(){
+    document.getElementById('emBox').innerHTML = `
+      <div class="em-head">
+        <div>
+          <div class="em-title">🚨 Add Emergency Member</div>
+          <div class="em-sub">Choose which side of the chain this person belongs to. The right form will follow.</div>
+        </div>
+        <button class="em-close" onclick="closeEmergencyAdd()">✕</button>
+      </div>
+      <div class="em-role-grid">
+        <div class="em-role-card" onclick="emChooseRole('procurement')">
+          <div class="em-role-icon">🚜</div>
+          <div class="em-role-name">Procurement</div>
+          <div class="em-role-desc">Farmer supplying milk</div>
+        </div>
+        <div class="em-role-card" onclick="emChooseRole('processing')">
+          <div class="em-role-icon">🧑‍🍳</div>
+          <div class="em-role-name">Creator</div>
+          <div class="em-role-desc">Processing team member</div>
+        </div>
+        <div class="em-role-card" onclick="emChooseRole('distribution')">
+          <div class="em-role-icon">🏬</div>
+          <div class="em-role-name">Distributor</div>
+          <div class="em-role-desc">Retail outlet / bulk buyer</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function emChooseRole(role){
+    emRole = role;
+    if(role === 'procurement') emRenderProcurementForm();
+    else if(role === 'processing') emRenderProcessingForm();
+    else if(role === 'distribution') emRenderDistributionForm();
+  }
+
+  function emField(id, label, placeholder, opts){
+    opts = opts || {};
+    const req = opts.required ? ' <span class="em-required">*</span>' : '';
+    const full = opts.full ? ' em-field-full' : '';
+    if(opts.select){
+      const options = opts.select.map(o => `<option value="${o}">${o}</option>`).join('');
+      return `<div class="em-field${full}"><label>${label}${req}</label><select id="${id}">${options}</select></div>`;
+    }
+    return `<div class="em-field${full}"><label>${label}${req}</label><input type="${opts.type || 'text'}" id="${id}" placeholder="${placeholder || ''}"></div>`;
+  }
+
+  function emRenderProcurementForm(){
+    document.getElementById('emBox').innerHTML = `
+      <div class="em-head">
+        <div>
+          <div class="em-title">🚜 Emergency Add — Procurement (Farmer)</div>
+          <div class="em-sub">All fields shown in the Procurement tab. ID is auto-generated if left blank.</div>
+        </div>
+        <button class="em-close" onclick="closeEmergencyAdd()">✕</button>
+      </div>
+      <div class="em-form-grid">
+        ${emField('em-name', 'Full Name', 'e.g. Ramesh Patil', { required:true })}
+        ${emField('em-id', 'Member ID', 'auto-generated if blank')}
+        ${emField('em-place', 'Place', 'e.g. Village Karad')}
+        ${emField('em-phone', 'Phone', '98xxxxxxxx')}
+        ${emField('em-altphone', 'Alt Phone', '98xxxxxxxx')}
+        ${emField('em-email', 'Email', 'name@mail.com', { type:'email' })}
+        ${emField('em-upi', 'UPI ID', 'name@upi')}
+        ${emField('em-address', 'Address', 'Full address')}
+        ${emField('em-altaddress', 'Alt Address', 'Alternate address')}
+        ${emField('em-liter', 'Daily Liter', 'e.g. 15.0')}
+        ${emField('em-payment', 'Monthly Payment', 'e.g. ₹ 10,000')}
+      </div>
+      <div class="em-msg" id="emMsg"></div>
+      <div class="em-actions">
+        <button class="em-back" onclick="emRenderRoleStep()">← Back</button>
+        <button class="em-submit" onclick="emSubmitProcurement()">Save Member</button>
+      </div>
+    `;
+  }
+
+  function emRenderProcessingForm(){
+    document.getElementById('emBox').innerHTML = `
+      <div class="em-head">
+        <div>
+          <div class="em-title">🧑‍🍳 Emergency Add — Creator (Processing)</div>
+          <div class="em-sub">All fields shown in the Creators tab. ID is auto-generated if left blank.</div>
+        </div>
+        <button class="em-close" onclick="closeEmergencyAdd()">✕</button>
+      </div>
+      <div class="em-form-grid">
+        ${emField('em-name', 'Full Name', 'e.g. Suresh Kadam', { required:true })}
+        ${emField('em-id', 'Member ID', 'auto-generated if blank')}
+        ${emField('em-category', 'Team / Category', '', { select: EM_PROCESSING_CATEGORIES, required:true })}
+        ${emField('em-post', 'Role / Post', 'e.g. Maker, Supervisor')}
+        ${emField('em-phone', 'Phone', '98xxxxxxxx')}
+        ${emField('em-altphone', 'Alt Phone', '98xxxxxxxx')}
+        ${emField('em-email', 'Email', 'name@mail.com', { type:'email' })}
+        ${emField('em-upi', 'UPI ID', 'name@upi')}
+        ${emField('em-address', 'Address', 'Full address')}
+        ${emField('em-altaddress', 'Alt Address', 'Alternate address')}
+        ${emField('em-payment', 'Monthly Payment', 'e.g. ₹ 12,000')}
+      </div>
+      <div class="em-msg" id="emMsg"></div>
+      <div class="em-actions">
+        <button class="em-back" onclick="emRenderRoleStep()">← Back</button>
+        <button class="em-submit" onclick="emSubmitProcessing()">Save Member</button>
+      </div>
+    `;
+  }
+
+  function emRenderDistributionForm(){
+    document.getElementById('emBox').innerHTML = `
+      <div class="em-head">
+        <div>
+          <div class="em-title">🏬 Emergency Add — Distributor</div>
+          <div class="em-sub">All fields shown in the Distributors tab. ID is auto-generated if left blank.</div>
+        </div>
+        <button class="em-close" onclick="closeEmergencyAdd()">✕</button>
+      </div>
+      <div class="em-form-grid">
+        ${emField('em-store', 'Store Name', 'e.g. Shreeram General Store', { required:true, full:true })}
+        ${emField('em-id', 'Member ID', 'auto-generated if blank')}
+        ${emField('em-category', 'Category', '', { select: ['small','big'] })}
+        ${emField('em-contact', 'Contact Person', 'e.g. Anil Bhosale')}
+        ${emField('em-place', 'Place', 'e.g. Karad')}
+        ${emField('em-phone', 'Phone', '98xxxxxxxx')}
+        ${emField('em-altphone', 'Alt Phone', '98xxxxxxxx')}
+        ${emField('em-email', 'Email', 'name@mail.com', { type:'email' })}
+        ${emField('em-upi', 'UPI ID', 'store@upi')}
+        ${emField('em-address', 'Address', 'Full address', { full:true })}
+        ${emField('em-qty', 'Weekly Qty', 'e.g. 200', { type:'number' })}
+        ${emField('em-unit', 'Unit', '', { select: ['L','kg'] })}
+        ${emField('em-rate', 'Rate (₹)', 'e.g. 60', { type:'number' })}
+        ${emField('em-day', 'Delivery Day', 'e.g. Mon, Wed, Fri')}
+        ${emField('em-slot', 'Delivery Slot', 'e.g. Morning (7–9 AM)')}
+        ${emField('em-due', 'Outstanding Due (₹)', 'e.g. 0', { type:'number' })}
+      </div>
+      <div class="em-msg" id="emMsg"></div>
+      <div class="em-actions">
+        <button class="em-back" onclick="emRenderRoleStep()">← Back</button>
+        <button class="em-submit" onclick="emSubmitDistribution()">Save Distributor</button>
+      </div>
+    `;
+  }
+
+  function emVal(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  function emShowError(text){
+    const el = document.getElementById('emMsg');
+    el.textContent = text;
+    el.classList.remove('ok');
+  }
+
+  async function emAfterSave(collection, record, tab){
+    ownerData[tab === 'procurement' ? 'procurement' : tab === 'processing' ? 'processing' : 'distribution'].push(record);
+    await dbPut(collection, record.memberId, record);
+    closeEmergencyAdd();
+    showToast(`${record.name || record.storeName} added as an emergency member.`, true);
+    if(document.getElementById('ownerPanelOverlay').classList.contains('show')){
+      const activeBtn = document.querySelector('#ownerPanelTabs button.active');
+      renderOwnerTab(activeBtn ? tab : 'accounts');
+      document.querySelectorAll('#ownerPanelTabs button').forEach(b => b.classList.remove('active'));
+      const targetBtn = Array.from(document.querySelectorAll('#ownerPanelTabs button')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${tab}'`));
+      if(targetBtn) targetBtn.classList.add('active');
+    }
+  }
+
+  function emSubmitProcurement(){
+    const name = emVal('em-name');
+    if(!name){ emShowError('Please enter at least the member name.'); return; }
+    const memberId = emVal('em-id') || emGenId('MEM');
+    const literVal = emVal('em-liter');
+    const record = {
+      name, place: emVal('em-place') || '—', phone: emVal('em-phone') || '—', altPhone: emVal('em-altphone') || '—',
+      email: emVal('em-email') || '—', upiId: emVal('em-upi') || '—',
+      address: emVal('em-address') || '—', altAddress: emVal('em-altaddress') || '—',
+      liter: literVal ? (parseFloat(literVal) || 0).toFixed(1) + ' L/day' : '0.0 L/day',
+      payment: emVal('em-payment') || '₹ 0',
+      memberId,
+      weeklyByYear: (() => { const w = {}; EM_YEARS.forEach(y => { w[y] = EM_DAYS.map(d => ({ day:d, liter:0, provided:false })); }); return w; })(),
+      paymentYears: emBlankPaymentYears(),
+      paidDates: {}, currentYear: 2026, literYear: 2026
+    };
+    emAfterSave('members', record, 'procurement');
+  }
+
+  function emSubmitProcessing(){
+    const name = emVal('em-name');
+    if(!name){ emShowError('Please enter at least the member name.'); return; }
+    const memberId = emVal('em-id') || emGenId('PRC');
+    const record = {
+      name, category: emVal('em-category') || EM_PROCESSING_CATEGORIES[0],
+      post: emVal('em-post') || 'Team Member', phone: emVal('em-phone') || '—', altPhone: emVal('em-altphone') || '—',
+      email: emVal('em-email') || '—', upiId: emVal('em-upi') || '—',
+      address: emVal('em-address') || '—', altAddress: emVal('em-altaddress') || '—',
+      payment: emVal('em-payment') || '₹ 0',
+      memberId, paymentYears: emBlankPaymentYears(), paidDates: {}, currentYear: 2026
+    };
+    emAfterSave('processingMembers', record, 'processing');
+  }
+
+  function emSubmitDistribution(){
+    const storeName = emVal('em-store');
+    if(!storeName){ emShowError('Please enter at least the store name.'); return; }
+    const category = emVal('em-category') || 'small';
+    const memberId = emVal('em-id') || emGenId('DST' + category.slice(0,1).toUpperCase());
+    const weeklyQty = parseFloat(emVal('em-qty')) || 0;
+    const rate = parseFloat(emVal('em-rate')) || 0;
+    const weekly = [1,2,3,4].map(n => ({ week: `Week ${n}`, qty: 0, paid: false, amount: 0, paidDate: null }));
+    const record = {
+      storeName, category, contactPerson: emVal('em-contact') || '—', place: emVal('em-place') || '—',
+      phone: emVal('em-phone') || '—', altPhone: emVal('em-altphone') || '—', email: emVal('em-email') || '—',
+      upiId: emVal('em-upi') || '—', address: emVal('em-address') || '—', altAddress: emVal('em-address') || '—',
+      weeklyQty, unit: emVal('em-unit') || 'L', rate,
+      deliveryDay: emVal('em-day') || '—', deliverySlot: emVal('em-slot') || '—',
+      outstandingDue: parseFloat(emVal('em-due')) || 0,
+      memberId, weekly, monthlyQty: 0, monthlyPaid: false,
+      gstNumber: '—', packagingType: '—', coldStorage: '—', vehicleType: '—', creditLimit: 0,
+      specialInstructions: '—', fssaiLicense: '—', orderFrequency: '—', preferredPaymentMode: '—',
+      memberSince: `${EM_MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`, productsPurchased: []
+    };
+    emAfterSave('distributionOutlets', record, 'distribution');
   }
 
   // ---- Payments tab: paid / unpaid, across Procurement, Processing & -----
