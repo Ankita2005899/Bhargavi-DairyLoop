@@ -1106,42 +1106,101 @@
     document.body.removeChild(a);
   }
 
-  function opDownloadTextReceipt(lines, filename){
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  function opFmtDate(iso){
+    if(!iso) return '—';
+    try{ return new Date(iso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
+    catch(e){ return '—'; }
+  }
+
+  // Builds a self-contained, nicely laid-out HTML "receipt" document (opens in
+  // the browser, not Notepad) with every payment detail in a clear sequence —
+  // member/store info, then payment info (incl. UPI ID + date paid), then the
+  // uploaded payment screenshot underneath, if one exists, as visual proof.
+  function opBuildReceiptHTML({ title, subtitle, rows, shotDataUrl, status }){
+    const rowsHtml = rows.map(([label, value]) => `
+      <tr><td class="rc-label">${label}</td><td class="rc-value">${value}</td></tr>
+    `).join('');
+    const shotHtml = shotDataUrl ? `
+      <div class="rc-shot-head">Payment Screenshot</div>
+      <img class="rc-shot" src="${shotDataUrl}" alt="Payment screenshot">
+    ` : '';
+    return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>${title}</title>
+<style>
+  body{ font-family:'Segoe UI', Arial, sans-serif; background:#f4efe6; margin:0; padding:32px; color:#1c3552; }
+  .rc-card{ max-width:640px; margin:0 auto; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(28,53,82,0.15); }
+  .rc-head{ background:#1c3552; color:#f4efe6; padding:24px 28px; }
+  .rc-head h1{ margin:0; font-size:20px; }
+  .rc-head p{ margin:4px 0 0; font-size:13px; opacity:0.8; }
+  .rc-status{ display:inline-block; margin-top:10px; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:700; background:rgba(93,202,165,0.25); color:#eafff6; }
+  .rc-body{ padding:24px 28px; }
+  table.rc-table{ width:100%; border-collapse:collapse; }
+  table.rc-table td{ padding:10px 0; border-bottom:1px solid #eee2cf; font-size:14px; }
+  td.rc-label{ color:#7a7266; width:42%; font-weight:600; }
+  td.rc-value{ color:#1c3552; font-weight:600; text-align:right; }
+  .rc-shot-head{ margin:26px 0 10px; font-weight:700; color:#1c3552; font-size:14px; }
+  img.rc-shot{ width:100%; border-radius:10px; border:1px solid #eee2cf; }
+  .rc-foot{ padding:16px 28px 24px; font-size:11.5px; color:#9a9284; text-align:center; }
+</style></head>
+<body>
+  <div class="rc-card">
+    <div class="rc-head">
+      <h1>Bhargavi DairyLoop — Payment Receipt</h1>
+      <p>${subtitle}</p>
+      <div class="rc-status">${status}</div>
+    </div>
+    <div class="rc-body">
+      <table class="rc-table">${rowsHtml}</table>
+      ${shotHtml}
+    </div>
+    <div class="rc-foot">Generated from the Owner Section · Bhargavi DairyLoop</div>
+  </div>
+</body></html>`;
+  }
+
+  function opDownloadHtmlDoc(html, filename){
+    const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     opDownloadDataUrl(url, filename);
     URL.revokeObjectURL(url);
   }
 
-  // Downloads the uploaded payment screenshot for a procurement/processing
-  // member's current-month payment if one was uploaded in Studio; otherwise
-  // falls back to a generated text receipt so the button always does something.
+  // Downloads a full, formatted receipt document for a procurement/processing
+  // member's current-month payment — member details, amount, UPI ID, the date
+  // it was paid, and (if uploaded in Studio) the payment screenshot itself.
   function opDownloadMemberPayment(kind, memberId){
     const list = kind === 'members' ? ownerData.procurement : ownerData.processing;
     const m = list.find(x => x.memberId === memberId);
     if(!m) return;
     const year = m.currentYear || 2026;
     const mo = opCurrentMonth();
-    const shot = (m.screenshots || {})[year + '-' + mo];
+    const key = year + '-' + mo;
+    const shot = (m.screenshots || {})[key];
     const safeName = (m.name || 'member').replace(/\s+/g,'_');
-    if(shot && shot.dataUrl){
-      const ext = (shot.fileName && shot.fileName.match(/\.\w+$/)) ? shot.fileName.match(/\.\w+$/)[0] : '.png';
-      opDownloadDataUrl(shot.dataUrl, `Screenshot_${safeName}_${mo}${year}${ext}`);
-    } else {
-      const txnId = (m.txnIds || {})[year + '-' + mo] || '—';
-      opDownloadTextReceipt([
-        'PAYMENT RECEIPT', '',
-        `Member: ${m.name}`, `Member ID: ${m.memberId}`,
-        `${kind === 'members' ? 'Place' : 'Role'}: ${kind === 'members' ? (m.place || '—') : (m.post || '—')}`,
-        `Month: ${mo} ${year}`, `Amount: ${m.payment || '—'}`,
-        `Transaction ID: ${txnId}`, `Status: Paid`, '',
-        'Issued by Bhargavi DairyLoop — Owner Section.'
-      ], `Receipt_${safeName}_${mo}${year}.txt`);
-    }
+    const html = opBuildReceiptHTML({
+      title: `Receipt — ${m.name}`,
+      subtitle: `${kind === 'members' ? 'Procurement (Farmer)' : 'Processing (Creator)'} · ${mo} ${year}`,
+      status: 'Paid',
+      shotDataUrl: shot && shot.dataUrl,
+      rows: [
+        ['Name', m.name || '—'],
+        ['Member ID', m.memberId || '—'],
+        [kind === 'members' ? 'Place' : 'Role', kind === 'members' ? (m.place || '—') : (m.post || '—')],
+        ['Phone', m.phone || '—'],
+        ['UPI ID', m.upiId || '—'],
+        ['Period', `${mo} ${year}`],
+        ['Amount', m.payment || '—'],
+        ['Transaction ID', (m.txnIds || {})[key] || '—'],
+        ['Payment Completed On', opFmtDate((m.paidDates || {})[key])]
+      ]
+    });
+    opDownloadHtmlDoc(html, `Receipt_${safeName}_${mo}${year}.html`);
   }
 
-  // Downloads the most recent paid week's screenshot for a distributor, or a
-  // text receipt if no screenshot was uploaded for that week.
+  // Downloads a full, formatted receipt document for a distributor — store
+  // details, UPI ID, the date the (most recent) paid week was settled, and
+  // the uploaded payment screenshot for that week, if any.
   function opDownloadDistPayment(memberId){
     const o = ownerData.distribution.find(x => x.memberId === memberId);
     if(!o) return;
@@ -1150,18 +1209,26 @@
     for(let i = weekly.length - 1; i >= 0; i--){ if(weekly[i].paid){ idx = i; break; } }
     const safeName = (o.storeName || 'distributor').replace(/\s+/g,'_');
     const shot = idx >= 0 ? (o.weeklyShots || {})[idx] : null;
-    if(shot && shot.dataUrl){
-      const ext = (shot.fileName && shot.fileName.match(/\.\w+$/)) ? shot.fileName.match(/\.\w+$/)[0] : '.png';
-      opDownloadDataUrl(shot.dataUrl, `Screenshot_${safeName}_${weekly[idx].week || ('Week'+(idx+1))}${ext}`);
-    } else {
-      opDownloadTextReceipt([
-        'PAYMENT RECEIPT', '',
-        `Store: ${o.storeName}`, `Member ID: ${o.memberId}`, `Contact: ${o.contactPerson || '—'}`,
-        `Place: ${o.place || '—'}`, `Rate: ₹${o.rate || '—'} / ${o.unit || 'L'}`,
-        `Status: ${o.monthlyPaid ? 'Fully Paid (this month)' : 'Partially Paid'}`, '',
-        'Issued by Bhargavi DairyLoop — Owner Section.'
-      ], `Receipt_${safeName}.txt`);
-    }
+    const week = idx >= 0 ? weekly[idx] : null;
+    const html = opBuildReceiptHTML({
+      title: `Receipt — ${o.storeName}`,
+      subtitle: `Distribution · ${week ? week.week : 'This month'}`,
+      status: o.monthlyPaid ? 'Paid in full' : 'Partially paid',
+      shotDataUrl: shot && shot.dataUrl,
+      rows: [
+        ['Store', o.storeName || '—'],
+        ['Member ID', o.memberId || '—'],
+        ['Contact Person', o.contactPerson || '—'],
+        ['Place', o.place || '—'],
+        ['Phone', o.phone || '—'],
+        ['UPI ID', o.upiId || '—'],
+        ['Rate', o.rate ? `₹${o.rate} / ${o.unit || 'L'}` : '—'],
+        ['Amount (this week)', week ? `₹${(week.amount||0).toLocaleString('en-IN')}` : '—'],
+        ['Transaction ID', week && week.txnId ? week.txnId : '—'],
+        ['Payment Completed On', opFmtDate(week && week.paidDate)]
+      ]
+    });
+    opDownloadHtmlDoc(html, `Receipt_${safeName}.html`);
   }
 
   function opPayRow(cells, extra){ return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`; }
@@ -1201,7 +1268,7 @@
         <div class="op-pay-stat"><div class="ops-label">Distributors Paid</div><div class="ops-value">${distPaid.length}/${ownerData.distribution.length}</div></div>
         <div class="op-pay-stat ops-warn"><div class="ops-label">Distributor Dues</div><div class="ops-value">₹${totalOutstanding.toLocaleString('en-IN')}</div></div>
       </div>
-      <div style="font-size:12px;color:var(--ink-soft);margin:-10px 0 20px;">Paid / Pending status shown is for <b>${mo}</b> (the current month). Every "Paid" row has a download button for its receipt or uploaded payment screenshot.</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin:-10px 0 20px;">Paid / Pending status shown is for <b>${mo}</b> (the current month). Every "Paid" row has a Download button that opens as a formatted receipt (name, UPI ID, amount, payment date — plus the uploaded screenshot if there is one), not a plain text file.</div>
     `;
 
     // --- Procurement block --------------------------------------------------
@@ -1209,14 +1276,14 @@
       <div class="op-pay-block">
         <div class="op-pay-block-head">🚜 Procurement — Farmer Payments (${mo})</div>
         <div class="op-pay-subhead">✅ Paid<span class="op-count-pill">${procPaid.length}</span></div>
-        ${opTable(['ID','Name','Place','Phone','Amount','Status','Receipt'], procPaid.map(r => [
-          r.m.memberId, r.m.name, r.m.place || '—', r.m.phone || '—', r.m.payment || '—',
+        ${opTable(['ID','Name','Place','Phone','UPI ID','Amount','Status','Receipt'], procPaid.map(r => [
+          r.m.memberId, r.m.name, r.m.place || '—', r.m.phone || '—', r.m.upiId || '—', r.m.payment || '—',
           '<span class="op-pay-status paid">Paid</span>',
           `<button class="op-dl-btn" onclick="opDownloadMemberPayment('members','${r.m.memberId}')">${opDlIconSVG()} Download</button>`
         ]))}
         <div class="op-pay-subhead" style="color:var(--brick);">⚠️ Raw material taken — payment still pending<span class="op-count-pill">${procUnpaid.length}</span></div>
-        ${opTable(['ID','Name','Place','Phone','Daily Liter','Amount Due','Status'], procUnpaid.map(r => [
-          r.m.memberId, r.m.name, r.m.place || '—', r.m.phone || '—', r.m.liter || '—', r.m.payment || '—',
+        ${opTable(['ID','Name','Place','Phone','UPI ID','Daily Liter','Amount Due','Status'], procUnpaid.map(r => [
+          r.m.memberId, r.m.name, r.m.place || '—', r.m.phone || '—', r.m.upiId || '—', r.m.liter || '—', r.m.payment || '—',
           '<span class="op-pay-status pending">Pending</span>'
         ]))}
       </div>
@@ -1227,14 +1294,14 @@
       <div class="op-pay-block">
         <div class="op-pay-block-head">🧑‍🍳 Processing — Creator Payments (${mo})</div>
         <div class="op-pay-subhead">✅ Paid<span class="op-count-pill">${proc2Paid.length}</span></div>
-        ${opTable(['ID','Name','Role','Phone','Amount','Status','Receipt'], proc2Paid.map(r => [
-          r.m.memberId, r.m.name, r.m.post || '—', r.m.phone || '—', r.m.payment || '—',
+        ${opTable(['ID','Name','Role','Phone','UPI ID','Amount','Status','Receipt'], proc2Paid.map(r => [
+          r.m.memberId, r.m.name, r.m.post || '—', r.m.phone || '—', r.m.upiId || '—', r.m.payment || '—',
           '<span class="op-pay-status paid">Paid</span>',
           `<button class="op-dl-btn" onclick="opDownloadMemberPayment('processingMembers','${r.m.memberId}')">${opDlIconSVG()} Download</button>`
         ]))}
         <div class="op-pay-subhead" style="color:var(--brick);">⏳ Payment pending<span class="op-count-pill">${proc2Unpaid.length}</span></div>
-        ${opTable(['ID','Name','Role','Phone','Amount Due','Status'], proc2Unpaid.map(r => [
-          r.m.memberId, r.m.name, r.m.post || '—', r.m.phone || '—', r.m.payment || '—',
+        ${opTable(['ID','Name','Role','Phone','UPI ID','Amount Due','Status'], proc2Unpaid.map(r => [
+          r.m.memberId, r.m.name, r.m.post || '—', r.m.phone || '—', r.m.upiId || '—', r.m.payment || '—',
           '<span class="op-pay-status pending">Pending</span>'
         ]))}
       </div>
@@ -1245,14 +1312,14 @@
       <div class="op-pay-block">
         <div class="op-pay-block-head">🏬 Distribution — Outlet Payments (this month)</div>
         <div class="op-pay-subhead">✅ Paid in full<span class="op-count-pill">${distPaid.length}</span></div>
-        ${opTable(['ID','Store','Contact','Place','Rate','Status','Receipt'], distPaid.map(o => [
-          o.memberId, o.storeName, o.contactPerson || '—', o.place || '—', o.rate ? '₹'+o.rate+'/'+o.unit : '—',
+        ${opTable(['ID','Store','Contact','Place','UPI ID','Rate','Status','Receipt'], distPaid.map(o => [
+          o.memberId, o.storeName, o.contactPerson || '—', o.place || '—', o.upiId || '—', o.rate ? '₹'+o.rate+'/'+o.unit : '—',
           '<span class="op-pay-status paid">Paid</span>',
           `<button class="op-dl-btn" onclick="opDownloadDistPayment('${o.memberId}')">${opDlIconSVG()} Download</button>`
         ]))}
         <div class="op-pay-subhead" style="color:var(--brick);">⏳ Payment delayed to Bhargavi DairyLoop<span class="op-count-pill">${distUnpaid.length}</span></div>
-        ${opTable(['ID','Store','Contact','Place','Phone','Outstanding Due','Status'], distUnpaid.map(o => [
-          o.memberId, o.storeName, o.contactPerson || '—', o.place || '—', o.phone || '—',
+        ${opTable(['ID','Store','Contact','Place','Phone','UPI ID','Outstanding Due','Status'], distUnpaid.map(o => [
+          o.memberId, o.storeName, o.contactPerson || '—', o.place || '—', o.phone || '—', o.upiId || '—',
           o.outstandingDue ? '₹'+o.outstandingDue.toLocaleString('en-IN') : '₹0',
           '<span class="op-pay-status pending">Delayed</span>'
         ]))}

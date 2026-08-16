@@ -1198,6 +1198,23 @@
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const YEARS = [2024, 2025, 2026];
 
+  // ---- UPI ID + payment-date helpers (shared by procurement, processing --
+  // ---- and distribution so every payable record can show/settle via UPI) --
+  const UPI_BANKS = ['okaxis','okhdfcbank','oksbi','okicici','ybl','paytm'];
+  function makeUpiId(name, seedIndex){
+    const handle = String(name || 'member').toLowerCase().replace(/[^a-z\s]/g,'').trim().split(/\s+/).join('.');
+    const bank = UPI_BANKS[Math.abs(seedIndex || 0) % UPI_BANKS.length];
+    const digits = String(1000 + (Math.abs(seedIndex || 0) * 37) % 8999);
+    return `${handle}${digits}@${bank}`;
+  }
+  function makePaidDateInMonth(mo, year, seedIndex){
+    const mi = MONTHS.indexOf(mo);
+    if(mi < 0) return null;
+    const day = 3 + Math.floor(seededRand(seedIndex * 97 + mi + 5) * 24); // day 3-26
+    const d = new Date(year, mi, day, 10 + Math.floor(seededRand(seedIndex*101+mi)*8), Math.floor(seededRand(seedIndex*103+mi)*60));
+    return d.toISOString();
+  }
+
   function seededRand(seed){
     let x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
@@ -1231,17 +1248,20 @@
       });
     });
     const paymentYears = {};
+    const paidDates = {};
     YEARS.forEach((y, yi) => {
       const status = {};
       MONTHS.forEach((mo, mi) => {
         const r = seededRand(i*100 + yi*13 + mi + 3);
         status[mo] = (y < 2026 || mi < 8) ? (r > 0.22) : false;
+        if(status[mo]) paidDates[y + '-' + mo] = makePaidDateInMonth(mo, y, i);
       });
       paymentYears[y] = status;
     });
-    return { ...m, weeklyByYear, paymentYears, currentYear: 2026, literYear: 2026,
+    return { ...m, weeklyByYear, paymentYears, paidDates, currentYear: 2026, literYear: 2026,
       place: m.place || PLACES[i % PLACES.length],
-      memberId: m.memberId || ('MEM' + String(i+1).padStart(3,'0')) };
+      memberId: m.memberId || ('MEM' + String(i+1).padStart(3,'0')),
+      upiId: m.upiId || makeUpiId(m.name, i) };
   }
 
   const members = baseMembers.map((m, i) => buildMemberRecord(m, i));
@@ -1977,16 +1997,19 @@ Issued by Procurement Side.`;
 
   function buildProcessingMember(m, seedIndex, category){
     const paymentYears = {};
+    const paidDates = {};
     YEARS.forEach((y, yi) => {
       const status = {};
       MONTHS.forEach((mo, mi) => {
         const r = seededRand(seedIndex * 97 + yi * 13 + mi + 51);
         status[mo] = (y < 2026 || mi < 8) ? (r > 0.22) : false;
+        if(status[mo]) paidDates[y + '-' + mo] = makePaidDateInMonth(mo, y, seedIndex + 500);
       });
       paymentYears[y] = status;
     });
-    return { ...m, category, paymentYears, currentYear: 2026,
-      memberId: m.memberId || ('PRC' + String(seedIndex + 1).padStart(3, '0')) };
+    return { ...m, category, paymentYears, paidDates, currentYear: 2026,
+      memberId: m.memberId || ('PRC' + String(seedIndex + 1).padStart(3, '0')),
+      upiId: m.upiId || makeUpiId(m.name, seedIndex + 500) };
   }
 
   const processingMembers = {};
@@ -2645,7 +2668,8 @@ Issued by Processing Team.`;
       const qty = Math.round(raw.weeklyQty * (0.85 + qr * 0.3));
       const pr = seededRand(seedIndex * 29 + w * 13 + 17);
       const paid = pr > 0.25;
-      weekly.push({ week: `Week ${w + 1}`, qty, paid, amount: qty * raw.rate });
+      const paidDate = paid ? makePaidDateInMonth(MONTHS[7], 2026, seedIndex * 3 + w + 900) : null; // Aug 2026 demo month
+      weekly.push({ week: `Week ${w + 1}`, qty, paid, amount: qty * raw.rate, paidDate });
       totalQty += qty;
     }
     const monthlyPaid = weekly.every(w => w.paid);
@@ -2684,7 +2708,8 @@ Issued by Processing Team.`;
       memberId: 'DST' + category.slice(0,1).toUpperCase() + String(seedIndex + 1).padStart(3, '0'),
       gstNumber, deliveryDay, deliverySlot, packagingType, coldStorage, vehicleType, creditLimit, specialInstructions,
       fssaiLicense, orderFrequency, preferredPaymentMode, outstandingDue, memberSince, productsPurchased,
-      deliveryPersonId, deliveryDurationMinutes
+      deliveryPersonId, deliveryDurationMinutes,
+      upiId: raw.upiId || makeUpiId(raw.contactPerson || raw.storeName, seedIndex + 1300)
     };
   }
 
@@ -3388,13 +3413,17 @@ Issued by Distribution Side.`;
       m.paymentYears[m.currentYear][itemId] = true;
       if(!m.txnIds) m.txnIds = {};
       m.txnIds[m.currentYear + '-' + itemId] = txnId;
+      if(!m.paidDates) m.paidDates = {};
+      m.paidDates[m.currentYear + '-' + itemId] = new Date().toISOString();
+      if(!m.upiId) m.upiId = makeUpiId(m.name, entity.ref.i);
       dbPut(entity.stage === 'procurement' ? 'members' : 'processingMembers', m.memberId, m);
     } else if(entity.stage === 'distribution'){
       const o = DISTRIBUTION_OUTLETS[entity.ref.cat][entity.ref.i];
       const idx = Number(itemId);
-      if(o.weekly[idx]){ o.weekly[idx].paid = true; o.weekly[idx].txnId = txnId; }
+      if(o.weekly[idx]){ o.weekly[idx].paid = true; o.weekly[idx].txnId = txnId; o.weekly[idx].paidDate = new Date().toISOString(); }
       o.monthlyPaid = o.weekly.every(w => w.paid);
       if(o.monthlyPaid) o.outstandingDue = 0;
+      if(!o.upiId) o.upiId = makeUpiId(o.contactPerson || o.storeName, entity.ref.i);
       dbPut('distributionOutlets', o.memberId, o);
       refreshOpenMemberTable(entity.ref.cat);
     }
@@ -3665,18 +3694,23 @@ Issued by Distribution Side.`;
     } else if(entity.stage === 'procurement'){
       const m = members[entity.ref.i];
       if(!m.paymentYears[m.currentYear]) m.paymentYears[m.currentYear] = {};
-      MONTHS.forEach(mo => { m.paymentYears[m.currentYear][mo] = true; });
+      if(!m.paidDates) m.paidDates = {};
+      MONTHS.forEach(mo => { m.paymentYears[m.currentYear][mo] = true; m.paidDates[m.currentYear + '-' + mo] = m.paidDates[m.currentYear + '-' + mo] || new Date().toISOString(); });
+      if(!m.upiId) m.upiId = makeUpiId(m.name, entity.ref.i);
       dbPut('members', m.memberId, m);
     } else if(entity.stage === 'processing'){
       const m = processingMembers[entity.ref.cat][entity.ref.i];
       if(!m.paymentYears[m.currentYear]) m.paymentYears[m.currentYear] = {};
-      MONTHS.forEach(mo => { m.paymentYears[m.currentYear][mo] = true; });
+      if(!m.paidDates) m.paidDates = {};
+      MONTHS.forEach(mo => { m.paymentYears[m.currentYear][mo] = true; m.paidDates[m.currentYear + '-' + mo] = m.paidDates[m.currentYear + '-' + mo] || new Date().toISOString(); });
+      if(!m.upiId) m.upiId = makeUpiId(m.name, entity.ref.i);
       dbPut('processingMembers', m.memberId, m);
     } else if(entity.stage === 'distribution'){
       const o = DISTRIBUTION_OUTLETS[entity.ref.cat][entity.ref.i];
       o.monthlyPaid = true;
       o.outstandingDue = 0;
-      if(o.weekly) o.weekly.forEach(w => { w.paid = true; });
+      if(o.weekly) o.weekly.forEach(w => { w.paid = true; w.paidDate = w.paidDate || new Date().toISOString(); });
+      if(!o.upiId) o.upiId = makeUpiId(o.contactPerson || o.storeName, entity.ref.i);
       dbPut('distributionOutlets', o.memberId, o);
       refreshOpenMemberTable(entity.ref.cat);
     }
