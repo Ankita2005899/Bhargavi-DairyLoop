@@ -447,6 +447,8 @@
   /* ---------- Owner Section: Add Emergency Member ---------- */
   .op-emergency-btn{ background:var(--gold); color:var(--navy-3); font-size:13px; font-weight:700; padding:9px 16px; border-radius:999px; white-space:nowrap; }
   .op-emergency-btn:hover{ filter:brightness(1.08); }
+  .op-owner-selflogout{ background:rgba(224,79,50,0.85); color:#fff; font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:999px; white-space:nowrap; }
+  .op-owner-selflogout:hover{ background:var(--brick); }
   .em-overlay{ position:fixed; inset:0; background:rgba(13,27,43,0.62); z-index:650; display:none; align-items:center; justify-content:center; padding:20px; }
   .em-overlay.show{ display:flex; }
   .em-box{ width:100%; max-width:620px; max-height:88vh; overflow-y:auto; background:var(--cream); border-radius:var(--radius); padding:26px 26px 22px; position:relative; box-shadow:0 30px 70px rgba(0,0,0,0.45); }
@@ -569,6 +571,22 @@
     <button onclick="switchOwnerTab('payments', this)">💰 Payments</button>
   </div>
   <div class="owner-panel-body" id="ownerPanelBody"></div>
+</div>
+
+<div class="owner-panel-overlay" id="ownerDetailOverlay">
+  <div class="owner-panel-bar">
+    <div class="op-bar-title" id="ownerDetailBarTitle">👑 Owner — User Detail</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="op-owner-selflogout" onclick="ownerSelfLogout()" title="Log out of your own owner session">⎋ Log Out (Owner)</button>
+      <button class="op-close" onclick="closeOwnerDetailOverlay()">✕ Close</button>
+    </div>
+  </div>
+  <div class="owner-panel-tabs" id="ownerDetailTabs">
+    <button class="active" onclick="switchOwnerDetailTab('accounts', this)">👤 All Accounts</button>
+    <button onclick="switchOwnerDetailTab('logins', this)">🔑 Login Counts</button>
+    <button onclick="switchOwnerDetailTab('logouts', this)">🚪 Logout Log</button>
+  </div>
+  <div class="owner-panel-body" id="ownerDetailBody"></div>
 </div>
 
 <div class="em-overlay" id="emOverlay">
@@ -741,7 +759,7 @@
     <div class="studio-bar-actions">
       <button onclick="openAccountDetail()">👤 Account Detail</button>
       <button onclick="openLoginDetail()">🔑 Login Detail</button>
-      <button onclick="doLogout()">🚪 Log Out</button>
+      <button onclick="handleLogoutClick()">🚪 Log Out</button>
       <button onclick="openOwnerSection()">👑 Owner Section</button>
       <button class="close-studio-btn" onclick="closeStudio()">✕ Close Studio</button>
     </div>
@@ -822,11 +840,16 @@
   // site — nothing under #siteRoot is shown until a session is active.
   const AUTH_COLLECTION = 'studioAccounts';
   const OWNER_PASSWORD = 'Bhargavi@Owner1';
+  const OWNER_EMAIL = 'bhargavi1@gmail.com';
   const OWNER_MAX_ATTEMPTS = 3;
   let authMode = 'login';
   let currentAccount = null;
   let ownerAttemptsLeft = OWNER_MAX_ATTEMPTS;
   let ownerData = { accounts:[], procurement:[], processing:[], distribution:[] };
+
+  function isOwnerAccount(a){
+    return !!(a && (a.isOwner || normalizeEmailKey(a.email) === OWNER_EMAIL));
+  }
 
   async function sha256Hex(text){
     if(window.crypto && window.crypto.subtle){
@@ -892,6 +915,7 @@
       const record = {
         email: emailKey, name: name || emailKey, phone: phone || '',
         passwordHash, createdAt: new Date().toISOString(),
+        isOwner: emailKey === OWNER_EMAIL && password === OWNER_PASSWORD,
         loginHistory: [{ type: 'signup', at: new Date().toISOString() }]
       };
       await dbPut(AUTH_COLLECTION, emailKey, record);
@@ -907,6 +931,7 @@
       document.getElementById('authSignupHint').classList.add('show');
       return;
     }
+    if(emailKey === OWNER_EMAIL && password === OWNER_PASSWORD) account.isOwner = true;
     account.loginHistory = account.loginHistory || [];
     account.loginHistory.push({ type: 'login', at: new Date().toISOString() });
     await dbPut(AUTH_COLLECTION, emailKey, account);
@@ -953,6 +978,7 @@
 
   function openAccountDetail(){
     if(!currentAccount){ openInfoModal('Account Detail', '<div class="info-empty">Please log in first.</div>'); return; }
+    if(isOwnerAccount(currentAccount)){ openOwnerDetailOverlay('accounts'); return; }
     const a = currentAccount;
     openInfoModal('Account Detail', `
       <div class="info-row"><span class="ir-label">Name</span><span class="ir-value">${a.name || '—'}</span></div>
@@ -965,6 +991,7 @@
 
   function openLoginDetail(){
     if(!currentAccount){ openInfoModal('Login Detail', '<div class="info-empty">Please log in first.</div>'); return; }
+    if(isOwnerAccount(currentAccount)){ openOwnerDetailOverlay('logins'); return; }
     const hist = (currentAccount.loginHistory || []).slice().reverse();
     const rows = hist.length
       ? hist.map(h => `<div class="info-list-item"><b>${h.type === 'signup' ? 'Account Created' : h.type === 'logout' ? 'Logged Out' : 'Logged In'}</b> — ${new Date(h.at).toLocaleString('en-IN')}</div>`).join('')
@@ -972,17 +999,107 @@
     openInfoModal('Login Detail', `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">History for ${currentAccount.email}</div>${rows}`);
   }
 
-  async function doLogout(){
+  // The "🚪 Log Out" button: for an owner, this now opens the full-screen
+  // Logout Log instead of signing them out immediately — the small
+  // top-right button inside that screen is the owner's real, personal
+  // sign-out. Everyone else still logs out straight away, as before.
+  function handleLogoutClick(){
+    if(isOwnerAccount(currentAccount)){ openOwnerDetailOverlay('logouts'); return; }
+    doLogout('Manual logout');
+  }
+
+  async function doLogout(reason){
     if(!currentAccount) return;
     const a = currentAccount;
     a.loginHistory = a.loginHistory || [];
-    a.loginHistory.push({ type: 'logout', at: new Date().toISOString() });
+    a.loginHistory.push({ type: 'logout', at: new Date().toISOString(), reason: reason || 'Manual logout' });
     await dbPut(AUTH_COLLECTION, a.email, a);
     closeInfoModal();
     closeOwnerPanel();
+    closeOwnerDetailOverlay();
     if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio();
     showToast('You have been logged out', true);
     showLoginForm();
+  }
+
+  // ---- Owner: full-screen Account / Login / Logout detail ---------------
+  // Unlike the popups shown to everyone else, the owner sees this as a
+  // dedicated full-screen panel (styled like the Owner Section) covering
+  // every registered account — not just their own.
+  let ownerDetailAccounts = [];
+
+  async function openOwnerDetailOverlay(tab){
+    const all = await dbGetAll(AUTH_COLLECTION);
+    ownerDetailAccounts = Array.isArray(all) ? all : [];
+    document.getElementById('ownerDetailOverlay').classList.add('show');
+    document.querySelectorAll('#ownerDetailTabs button').forEach(b => b.classList.remove('active'));
+    const targetBtn = Array.from(document.querySelectorAll('#ownerDetailTabs button')).find(b => b.getAttribute('onclick').includes(`'${tab}'`));
+    if(targetBtn) targetBtn.classList.add('active');
+    renderOwnerDetailTab(tab);
+  }
+
+  function closeOwnerDetailOverlay(){
+    document.getElementById('ownerDetailOverlay').classList.remove('show');
+  }
+
+  function switchOwnerDetailTab(tab, btn){
+    document.querySelectorAll('#ownerDetailTabs button').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    renderOwnerDetailTab(tab);
+  }
+
+  function renderOwnerDetailTab(tab){
+    const body = document.getElementById('ownerDetailBody');
+    const accounts = ownerDetailAccounts;
+
+    if(tab === 'accounts'){
+      const rows = accounts.map(a => [
+        a.name || '—', a.email, a.phone || '—',
+        a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-IN') : '—',
+        (a.loginHistory || []).filter(h => h.type === 'login' || h.type === 'signup').length,
+        isOwnerAccount(a) ? 'Owner' : 'User'
+      ]);
+      body.innerHTML = `
+        <div class="op-section-head">All Registered Accounts<span class="op-count-pill">${accounts.length}</span></div>
+        ${opTable(['Name','Email','Phone','Joined','Total Sign-ins','Role'], rows)}
+      `;
+    } else if(tab === 'logins'){
+      const rows = accounts.map(a => {
+        const hist = a.loginHistory || [];
+        const loginCount = hist.filter(h => h.type === 'login').length;
+        const signupCount = hist.filter(h => h.type === 'signup').length;
+        const lastLogin = hist.filter(h => h.type === 'login' || h.type === 'signup').slice(-1)[0];
+        return [
+          a.email, loginCount, signupCount, loginCount + signupCount,
+          lastLogin ? new Date(lastLogin.at).toLocaleString('en-IN') : '—'
+        ];
+      });
+      body.innerHTML = `
+        <div class="op-section-head">Login Count — Times Each Email Has Signed In<span class="op-count-pill">${accounts.length}</span></div>
+        ${opTable(['Email','Times Logged In','Times Signed Up','Total Entries','Last Login'], rows)}
+      `;
+    } else if(tab === 'logouts'){
+      const events = [];
+      accounts.forEach(a => {
+        (a.loginHistory || []).filter(h => h.type === 'logout').forEach(h => {
+          events.push({ email: a.email, at: h.at, reason: h.reason || 'Not recorded (before logout reasons were tracked)' });
+        });
+      });
+      events.sort((x, y) => new Date(y.at) - new Date(x.at));
+      const rows = events.map(e => [e.email, e.reason, new Date(e.at).toLocaleString('en-IN')]);
+      body.innerHTML = `
+        <div class="op-section-head">Logout Log — Every User, Every Sign-out<span class="op-count-pill">${events.length}</span></div>
+        ${opTable(['Email','Reason','When'], rows)}
+      `;
+    }
+  }
+
+  // The owner's own personal sign-out — separate from the "Log Out" tab
+  // above, which for the owner only ever shows the log and never signs
+  // them out by itself. This is the real thing: it logs the owner out and
+  // sends them straight back to the login screen.
+  function ownerSelfLogout(){
+    doLogout('Manual owner logout');
   }
 
   // ---- Owner Section: password-gated, 3 attempts -------------------------
@@ -1037,7 +1154,7 @@
       msgEl.textContent = 'Incorrect password 3 times. Logging you out…';
       setTimeout(async () => {
         closeOwnerPasswordModal();
-        await doLogout();
+        await doLogout('Owner verification failed 3 times');
         showToast('Owner verification failed 3 times — logged out', false);
       }, 900);
     }
