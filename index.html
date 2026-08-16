@@ -312,9 +312,164 @@
     .deliveries-pill span.txt{ display:none; }
     .modal-grid{ grid-template-columns:1fr; }
   }
+
+  /* ---------- auth gate (login / create account) ---------- */
+  .auth-gate{
+    position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(217,164,65,0.28), transparent 45%),
+      radial-gradient(circle at 82% 78%, rgba(178,58,46,0.22), transparent 45%),
+      linear-gradient(150deg, var(--navy-3) 0%, var(--navy) 62%, var(--navy-2) 100%);
+  }
+  .auth-gate.hidden{ display:none; }
+  .auth-card{
+    width:100%; max-width:400px; background:var(--cream); border-radius:var(--radius);
+    padding:36px 32px 28px; box-shadow:0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(217,164,65,0.35);
+    position:relative; overflow:hidden; animation:authPop 0.45s ease;
+  }
+  @keyframes authPop{ from{ opacity:0; transform:translateY(18px) scale(0.97); } to{ opacity:1; transform:none; } }
+  .auth-card::before{
+    content:''; position:absolute; top:-60px; right:-60px; width:170px; height:170px; border-radius:50%;
+    background:radial-gradient(circle, rgba(217,164,65,0.35), transparent 70%); pointer-events:none;
+  }
+  .auth-brand{ text-align:center; margin-bottom:22px; position:relative; }
+  .auth-brand .ab-icon{ width:48px; height:48px; margin:0 auto; }
+  .auth-brand .ab-title{ font-family:'Fraunces', serif; font-weight:700; font-size:19px; color:var(--navy); margin-top:8px; }
+  .auth-brand .ab-sub{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
+  .auth-name-row{ display:flex; gap:10px; }
+  .auth-name-row .auth-field{ flex:1; }
+  .auth-field{ margin-bottom:15px; position:relative; }
+  .auth-field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:700; margin-bottom:6px; }
+  .auth-field input{
+    width:100%; padding:11px 13px; border-radius:8px; border:1px solid rgba(28,53,82,0.22); font-family:inherit; font-size:14px;
+    background:#fff; color:var(--ink); transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  .auth-field input:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(217,164,65,0.25); }
+  .auth-error{ font-size:12.5px; color:var(--brick); margin-bottom:12px; min-height:1px; }
+  .auth-submit-btn{
+    width:100%; padding:12px; border:none; border-radius:999px; background:var(--brick); color:#fff; font-weight:700;
+    font-size:14.5px; cursor:pointer; letter-spacing:0.02em; transition:background 0.15s, transform 0.08s; font-family:inherit;
+  }
+  .auth-submit-btn:hover{ background:var(--brick-2); }
+  .auth-submit-btn:active{ transform:scale(0.98); }
+  .auth-switch{ text-align:center; margin-top:16px; font-size:12.5px; color:var(--ink-soft); }
+  .auth-switch button, .auth-signup-hint button{ background:none; border:none; color:var(--navy); font-weight:700; cursor:pointer; text-decoration:underline; font-size:inherit; font-family:inherit; padding:0; }
+  .auth-signup-hint{ display:none; text-align:center; margin-top:12px; font-size:12.5px; color:var(--ink-soft); background:var(--cream-2); border:1px solid rgba(217,164,65,0.4); border-radius:6px; padding:10px 12px; }
+  .auth-signup-hint.show{ display:block; }
+
+  /* ---------- generic info modal (account / login / owner panels) ---------- */
+  .info-modal-overlay{ position:fixed; inset:0; background:rgba(13,27,43,0.62); z-index:600; display:none; align-items:center; justify-content:center; padding:20px; }
+  .info-modal-overlay.show{ display:flex; }
+  .info-modal-box{
+    width:100%; max-width:480px; max-height:82vh; overflow-y:auto; background:var(--cream); border-radius:var(--radius);
+    padding:26px 26px 22px; position:relative; box-shadow:0 30px 70px rgba(0,0,0,0.45);
+  }
+  .info-modal-close{ position:absolute; top:14px; right:16px; background:none; border:none; font-size:16px; color:var(--ink-soft); cursor:pointer; }
+  .info-modal-title{ font-family:'Fraunces', serif; font-size:18px; font-weight:700; color:var(--navy); margin-bottom:14px; padding-right:24px; }
+  .info-row{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid rgba(28,53,82,0.1); font-size:13.5px; }
+  .info-row:last-child{ border-bottom:none; }
+  .info-row .ir-label{ color:var(--ink-soft); font-weight:700; }
+  .info-row .ir-value{ color:var(--ink); text-align:right; }
+  .info-list-item{ padding:10px 0; border-bottom:1px solid rgba(28,53,82,0.1); font-size:13px; color:var(--ink); line-height:1.5; }
+  .info-list-item:last-child{ border-bottom:none; }
+  .info-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:20px 0; }
+
+  /* ---------- owner password modal ---------- */
+  .owner-pass-overlay{ position:fixed; inset:0; background:rgba(13,27,43,0.62); z-index:610; display:none; align-items:center; justify-content:center; padding:20px; }
+  .owner-pass-overlay.show{ display:flex; }
+  .owner-pass-box{
+    width:100%; max-width:360px; background:var(--cream); border-radius:var(--radius);
+    padding:30px 28px 26px; position:relative; box-shadow:0 30px 70px rgba(0,0,0,0.45); text-align:center;
+  }
+  .owner-pass-box .op-icon{ font-size:30px; }
+  .owner-pass-box .op-title{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--navy); margin-top:8px; }
+  .owner-pass-box .op-sub{ font-size:12px; color:var(--ink-soft); margin-top:4px; margin-bottom:18px; }
+  .owner-pass-box input{
+    width:100%; padding:11px 13px; border-radius:8px; border:1px solid rgba(28,53,82,0.22); font-family:inherit; font-size:14px;
+    background:#fff; color:var(--ink); text-align:center; letter-spacing:0.1em;
+  }
+  .owner-pass-box input:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(217,164,65,0.25); }
+  .owner-pass-msg{ font-size:12.5px; margin-top:12px; min-height:16px; color:var(--brick); font-weight:600; }
+  .owner-pass-msg.ok{ color:#3E8E5A; }
+  .owner-pass-actions{ display:flex; gap:10px; margin-top:16px; }
+  .owner-pass-actions button{ flex:1; padding:11px; border-radius:999px; font-weight:700; font-size:13.5px; }
+  .owner-pass-actions .op-submit{ background:var(--brick); color:#fff; }
+  .owner-pass-actions .op-submit:hover{ background:var(--brick-2); }
+  .owner-pass-actions .op-cancel{ background:var(--cream-2); color:var(--navy); }
+  .owner-pass-actions .op-cancel:hover{ background:rgba(28,53,82,0.12); }
 </style>
 </head>
 <body>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <img class="ab-icon" src="logo.png" alt="Bhargavi Dairy Loop">
+      <div class="ab-title">Bhargavi Dairy Loop</div>
+      <div class="ab-sub">Sign in to continue</div>
+    </div>
+
+    <div class="auth-name-row" id="authSignupNameRow" style="display:none;">
+      <div class="auth-field">
+        <label>Full Name</label>
+        <input type="text" id="authName" placeholder="Your name" autocomplete="name">
+      </div>
+      <div class="auth-field">
+        <label>Phone</label>
+        <input type="tel" id="authPhone" placeholder="Phone number" autocomplete="tel">
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="username">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
+    </div>
+    <div class="auth-field" id="authConfirmField" style="display:none;">
+      <label>Confirm Password</label>
+      <input type="password" id="authConfirmPassword" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <button class="auth-submit-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Log In</button>
+
+    <div class="auth-switch" id="authSwitchLine">
+      New here? <button onclick="switchAuthMode('signup')">Create an account</button>
+    </div>
+    <div class="auth-signup-hint" id="authSignupHint">
+      Couldn't find that account. <button onclick="switchAuthMode('signup')">Sign up instead</button>
+    </div>
+  </div>
+</div>
+
+<div class="info-modal-overlay" id="infoModalOverlay">
+  <div class="info-modal-box">
+    <button class="info-modal-close" onclick="closeInfoModal()">✕</button>
+    <div class="info-modal-title" id="infoModalTitle"></div>
+    <div id="infoModalBody"></div>
+  </div>
+</div>
+
+<div class="owner-pass-overlay" id="ownerPassOverlay">
+  <div class="owner-pass-box">
+    <div class="op-icon">👑</div>
+    <div class="op-title">Owner Section</div>
+    <div class="op-sub" id="ownerPassSub">Enter the owner password to continue</div>
+    <input type="password" id="ownerPassInput" placeholder="Owner password" autocomplete="off" onkeydown="if(event.key==='Enter') submitOwnerPassword()">
+    <div class="owner-pass-msg" id="ownerPassMsg"></div>
+    <div class="owner-pass-actions">
+      <button class="op-cancel" onclick="closeOwnerPasswordModal()">Cancel</button>
+      <button class="op-submit" onclick="submitOwnerPassword()">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div id="siteRoot" style="display:none;">
 
 <header class="site-header">
   <div class="wrap">
@@ -478,10 +633,10 @@
   <div class="studio-bar">
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
     <div class="studio-bar-actions">
-      <button onclick="callStudio('openAccountDetail')">👤 Account Detail</button>
-      <button onclick="callStudio('openLoginDetail')">🔑 Login Detail</button>
-      <button onclick="callStudio('doLogout')">🚪 Log Out</button>
-      <button onclick="callStudio('openOwnerSection')">👑 Owner Section</button>
+      <button onclick="openAccountDetail()">👤 Account Detail</button>
+      <button onclick="openLoginDetail()">🔑 Login Detail</button>
+      <button onclick="doLogout()">🚪 Log Out</button>
+      <button onclick="openOwnerSection()">👑 Owner Section</button>
       <button class="close-studio-btn" onclick="closeStudio()">✕ Close Studio</button>
     </div>
   </div>
@@ -489,6 +644,8 @@
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
+
+</div><!-- /#siteRoot -->
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
@@ -543,6 +700,240 @@
         method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(record)
       });
     }catch(e){ /* offline — local cache still has it, will retry not implemented for v1 */ }
+  }
+  async function dbGetOne(collection, id){
+    try{
+      const res = await fetch(`/api/store/${collection}/${encodeURIComponent(id)}`);
+      if(!res.ok) return null;
+      return await res.json();
+    }catch(e){ return null; }
+  }
+
+  // ---- Site auth gate (email + password) --------------------------------
+  // One record per account in the 'studioAccounts' collection, keyed by
+  // lower-cased email. loginHistory records every signup/login/logout so
+  // the Login Detail panel has something real to show. Gates the entire
+  // site — nothing under #siteRoot is shown until a session is active.
+  const AUTH_COLLECTION = 'studioAccounts';
+  const OWNER_PASSWORD = 'Bhargavi@Owner1';
+  const OWNER_MAX_ATTEMPTS = 3;
+  let authMode = 'login';
+  let currentAccount = null;
+  let ownerAttemptsLeft = OWNER_MAX_ATTEMPTS;
+
+  async function sha256Hex(text){
+    if(window.crypto && window.crypto.subtle){
+      try{
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }catch(e){ /* fall through to the fallback below */ }
+    }
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(let i = 0; i < text.length; i++){
+      const ch = text.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+  }
+
+  function normalizeEmailKey(email){ return email.trim().toLowerCase(); }
+
+  function switchAuthMode(mode){
+    authMode = mode;
+    document.getElementById('authError').textContent = '';
+    document.getElementById('authSignupHint').classList.remove('show');
+    const nameRow = document.getElementById('authSignupNameRow');
+    const confirmField = document.getElementById('authConfirmField');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const switchLine = document.getElementById('authSwitchLine');
+    if(mode === 'signup'){
+      nameRow.style.display = 'flex';
+      confirmField.style.display = 'block';
+      submitBtn.textContent = 'Create Account';
+      switchLine.innerHTML = `Already have an account? <button onclick="switchAuthMode('login')">Log in</button>`;
+    } else {
+      nameRow.style.display = 'none';
+      confirmField.style.display = 'none';
+      submitBtn.textContent = 'Log In';
+      switchLine.innerHTML = `New here? <button onclick="switchAuthMode('signup')">Create an account</button>`;
+    }
+  }
+
+  async function handleAuthSubmit(){
+    const errEl = document.getElementById('authError');
+    errEl.textContent = '';
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    if(!email || !password){ errEl.textContent = 'Email and password are required.'; return; }
+    const emailKey = normalizeEmailKey(email);
+
+    if(authMode === 'signup'){
+      const name = document.getElementById('authName').value.trim();
+      const phone = document.getElementById('authPhone').value.trim();
+      const confirmPassword = document.getElementById('authConfirmPassword').value;
+      if(password !== confirmPassword){ errEl.textContent = 'Passwords do not match.'; return; }
+      const existing = await dbGetOne(AUTH_COLLECTION, emailKey);
+      if(existing && existing.email){
+        errEl.textContent = 'An account with this email already exists — please log in.';
+        switchAuthMode('login');
+        return;
+      }
+      const passwordHash = await sha256Hex(password);
+      const record = {
+        email: emailKey, name: name || emailKey, phone: phone || '',
+        passwordHash, createdAt: new Date().toISOString(),
+        loginHistory: [{ type: 'signup', at: new Date().toISOString() }]
+      };
+      await dbPut(AUTH_COLLECTION, emailKey, record);
+      enterSiteSession(record);
+      return;
+    }
+
+    // login mode
+    const account = await dbGetOne(AUTH_COLLECTION, emailKey);
+    const passwordHash = await sha256Hex(password);
+    if(!account || account.email === undefined || account.passwordHash !== passwordHash){
+      errEl.textContent = 'Email or password is incorrect.';
+      document.getElementById('authSignupHint').classList.add('show');
+      return;
+    }
+    account.loginHistory = account.loginHistory || [];
+    account.loginHistory.push({ type: 'login', at: new Date().toISOString() });
+    await dbPut(AUTH_COLLECTION, emailKey, account);
+    enterSiteSession(account);
+  }
+
+  function enterSiteSession(account){
+    currentAccount = account;
+    localStorage.setItem('siteSessionEmail', account.email);
+    document.getElementById('authGate').classList.add('hidden');
+    document.getElementById('siteRoot').style.display = '';
+  }
+
+  async function tryRestoreSession(){
+    const savedEmail = localStorage.getItem('siteSessionEmail');
+    if(!savedEmail) return;
+    const account = await dbGetOne(AUTH_COLLECTION, savedEmail);
+    if(account && account.email){
+      currentAccount = account;
+      document.getElementById('authGate').classList.add('hidden');
+      document.getElementById('siteRoot').style.display = '';
+    } else {
+      localStorage.removeItem('siteSessionEmail');
+    }
+  }
+
+  function showLoginForm(){
+    currentAccount = null;
+    localStorage.removeItem('siteSessionEmail');
+    document.getElementById('siteRoot').style.display = 'none';
+    document.getElementById('authEmail').value = '';
+    document.getElementById('authPassword').value = '';
+    switchAuthMode('login');
+    document.getElementById('authGate').classList.remove('hidden');
+  }
+
+  // ---- Account Detail / Login Detail / Log Out panels --------------------
+  function openInfoModal(title, bodyHtml){
+    document.getElementById('infoModalTitle').textContent = title;
+    document.getElementById('infoModalBody').innerHTML = bodyHtml;
+    document.getElementById('infoModalOverlay').classList.add('show');
+  }
+  function closeInfoModal(){ document.getElementById('infoModalOverlay').classList.remove('show'); }
+
+  function openAccountDetail(){
+    if(!currentAccount){ openInfoModal('Account Detail', '<div class="info-empty">Please log in first.</div>'); return; }
+    const a = currentAccount;
+    openInfoModal('Account Detail', `
+      <div class="info-row"><span class="ir-label">Name</span><span class="ir-value">${a.name || '—'}</span></div>
+      <div class="info-row"><span class="ir-label">Email</span><span class="ir-value">${a.email}</span></div>
+      <div class="info-row"><span class="ir-label">Phone</span><span class="ir-value">${a.phone || '—'}</span></div>
+      <div class="info-row"><span class="ir-label">Account Created</span><span class="ir-value">${a.createdAt ? new Date(a.createdAt).toLocaleString('en-IN') : '—'}</span></div>
+      <div class="info-row"><span class="ir-label">Total Sign-ins</span><span class="ir-value">${(a.loginHistory || []).filter(h => h.type === 'login' || h.type === 'signup').length}</span></div>
+    `);
+  }
+
+  function openLoginDetail(){
+    if(!currentAccount){ openInfoModal('Login Detail', '<div class="info-empty">Please log in first.</div>'); return; }
+    const hist = (currentAccount.loginHistory || []).slice().reverse();
+    const rows = hist.length
+      ? hist.map(h => `<div class="info-list-item"><b>${h.type === 'signup' ? 'Account Created' : h.type === 'logout' ? 'Logged Out' : 'Logged In'}</b> — ${new Date(h.at).toLocaleString('en-IN')}</div>`).join('')
+      : '<div class="info-empty">No login history yet.</div>';
+    openInfoModal('Login Detail', `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">History for ${currentAccount.email}</div>${rows}`);
+  }
+
+  async function doLogout(){
+    if(!currentAccount) return;
+    const a = currentAccount;
+    a.loginHistory = a.loginHistory || [];
+    a.loginHistory.push({ type: 'logout', at: new Date().toISOString() });
+    await dbPut(AUTH_COLLECTION, a.email, a);
+    closeInfoModal();
+    if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio();
+    showToast('You have been logged out', true);
+    showLoginForm();
+  }
+
+  // ---- Owner Section: password-gated, 3 attempts -------------------------
+  function openOwnerSection(){
+    if(!currentAccount){ openInfoModal('Owner Section', '<div class="info-empty">Please log in first.</div>'); return; }
+    ownerAttemptsLeft = OWNER_MAX_ATTEMPTS;
+    document.getElementById('ownerPassInput').value = '';
+    document.getElementById('ownerPassMsg').textContent = '';
+    document.getElementById('ownerPassMsg').classList.remove('ok');
+    document.getElementById('ownerPassSub').textContent = 'Enter the owner password to continue';
+    document.getElementById('ownerPassOverlay').classList.add('show');
+    setTimeout(() => document.getElementById('ownerPassInput').focus(), 50);
+  }
+  function closeOwnerPasswordModal(){
+    document.getElementById('ownerPassOverlay').classList.remove('show');
+  }
+  async function submitOwnerPassword(){
+    const input = document.getElementById('ownerPassInput');
+    const msgEl = document.getElementById('ownerPassMsg');
+    const entered = input.value;
+
+    if(entered === OWNER_PASSWORD){
+      msgEl.classList.add('ok');
+      msgEl.textContent = 'Password correct — welcome, Owner.';
+      setTimeout(async () => {
+        closeOwnerPasswordModal();
+        await showOwnerPanel();
+      }, 500);
+      return;
+    }
+
+    ownerAttemptsLeft -= 1;
+    input.value = '';
+    msgEl.classList.remove('ok');
+    if(ownerAttemptsLeft > 0){
+      msgEl.textContent = `Incorrect password. ${ownerAttemptsLeft} attempt${ownerAttemptsLeft === 1 ? '' : 's'} remaining.`;
+      input.focus();
+    } else {
+      msgEl.textContent = 'Incorrect password 3 times. Logging you out…';
+      setTimeout(async () => {
+        closeOwnerPasswordModal();
+        await doLogout();
+        showToast('Owner verification failed 3 times — logged out', false);
+      }, 900);
+    }
+  }
+  async function showOwnerPanel(){
+    const all = await dbGetAll(AUTH_COLLECTION);
+    const accounts = Array.isArray(all) ? all : [];
+    const rows = accounts.length
+      ? accounts.map(a => {
+          const lastActive = (a.loginHistory || []).slice().reverse().find(h => h.type === 'login' || h.type === 'signup');
+          return `<div class="info-list-item">
+            <b>${a.name || a.email}</b> — ${a.email}${a.phone ? ' · ' + a.phone : ''}<br>
+            <span style="color:var(--ink-soft);">Joined ${a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-IN') : '—'}${lastActive ? ' · Last active ' + new Date(lastActive.at).toLocaleString('en-IN') : ''}</span>
+          </div>`;
+        }).join('')
+      : '<div class="info-empty">No registered accounts yet.</div>';
+    openInfoModal('Owner Section — Registered Accounts', rows);
   }
 
   function getOrders(){ return ORDERS_CACHE; }
@@ -784,13 +1175,6 @@
   function closeStudio(){
     document.getElementById('studioOverlay').classList.remove('open');
   }
-  function callStudio(fnName){
-    const frame = document.getElementById('studioFrame');
-    try{
-      const win = frame && frame.contentWindow;
-      if(win && typeof win[fnName] === 'function') win[fnName]();
-    }catch(e){ /* iframe not ready yet */ }
-  }
   window.addEventListener('message', e => { if(e.data === 'closeStudio') closeStudio(); });
 
   function setupReveal(){
@@ -807,7 +1191,8 @@
   updateOrderCount();
   hydrateOrdersFromServer();
   setupReveal();
-  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
+  tryRestoreSession();
+  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); closeInfoModal(); closeOwnerPasswordModal(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
 </script>
 
 </body>
