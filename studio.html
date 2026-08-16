@@ -1013,6 +1013,13 @@
   let authMode = 'login';
   let currentAccount = null;
 
+  // A single hard-coded owner login: this exact email + password logs in as
+  // the owner, and (further down, in applyStudioAccessControl) skips the
+  // per-account pruning entirely so every procurement, processing and
+  // distribution record is visible in Manage Studio — not just one match.
+  const STUDIO_OWNER_EMAIL = 'bhargavi1@gmail.com';
+  const STUDIO_OWNER_PASSWORD = 'Bhargavi@Owner1';
+
   async function sha256Hex(text){
     if(window.crypto && window.crypto.subtle){
       try{
@@ -1062,6 +1069,26 @@
     const password = document.getElementById('authPassword').value;
     if(!email || !password){ errEl.textContent = 'Email and password are required.'; return; }
     const emailKey = normalizeEmailKey(email);
+
+    // Owner login — exact email + password match, checked before anything
+    // else. Works whether or not this email has signed up before: the
+    // owner record is created on first use and just logged into after that.
+    if(authMode === 'login' && emailKey === STUDIO_OWNER_EMAIL && password === STUDIO_OWNER_PASSWORD){
+      let ownerAccount = await dbGetOne(AUTH_COLLECTION, emailKey);
+      if(!ownerAccount || !ownerAccount.email){
+        ownerAccount = {
+          email: emailKey, name: 'Owner', phone: '',
+          passwordHash: await sha256Hex(password), isOwner: true,
+          createdAt: new Date().toISOString(), loginHistory: []
+        };
+      }
+      ownerAccount.isOwner = true;
+      ownerAccount.loginHistory = ownerAccount.loginHistory || [];
+      ownerAccount.loginHistory.push({ type: 'login', at: new Date().toISOString() });
+      await dbPut(AUTH_COLLECTION, emailKey, ownerAccount);
+      await enterStudioSession(ownerAccount);
+      return;
+    }
 
     if(authMode === 'signup'){
       const name = document.getElementById('authName').value.trim();
@@ -1116,6 +1143,16 @@
     await studioDataReady;
     const email = currentAccount ? normalizeEmailKey(currentAccount.email) : '';
     studioAccessRecord = null;
+
+    // Owner bypass — every procurement, processing and distribution record
+    // stays in the arrays untouched, so Manage Studio shows everyone's
+    // detail instead of pruning down to a single matching record.
+    if(currentAccount && (currentAccount.isOwner || email === STUDIO_OWNER_EMAIL)){
+      studioAccessRecord = { type: 'owner' };
+      document.getElementById('studioAccessDenied').classList.add('hidden');
+      document.getElementById('pageRoot').style.display = '';
+      return true;
+    }
 
     const procMatch = members.find(m => (m.email || '').trim().toLowerCase() === email);
     members.length = 0;
