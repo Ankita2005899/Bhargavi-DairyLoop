@@ -804,6 +804,22 @@
   </div>
 </div>
 
+<div class="auth-gate hidden" id="studioAccessDenied" style="z-index:520;">
+  <div class="auth-card" style="text-align:center;">
+    <div class="auth-brand">
+      <div class="ab-icon">🔒</div>
+      <div class="ab-title">No Studio Access</div>
+      <div class="ab-sub">This account isn't linked to any member record</div>
+    </div>
+    <p style="font-size:13px;color:#6b5d3f;line-height:1.6;margin-bottom:22px;">
+      Manage Studio only shows a person's own procurement, processing, or distribution record —
+      not anyone else's. The account <b id="sadEmail"></b> isn't linked to a member record, so
+      there's nothing to show here. Please contact the admin to get access.
+    </p>
+    <button class="auth-submit-btn" onclick="doLogout()">Log Out</button>
+  </div>
+</div>
+
 <div class="info-modal-overlay" id="infoModalOverlay">
   <div class="info-modal-box">
     <button class="info-modal-close" onclick="closeInfoModal()">✕</button>
@@ -1065,7 +1081,7 @@
         loginHistory: [{ type: 'signup', at: new Date().toISOString() }]
       };
       await dbPut(AUTH_COLLECTION, emailKey, record);
-      enterStudioSession(record);
+      await enterStudioSession(record);
       return;
     }
 
@@ -1080,14 +1096,70 @@
     account.loginHistory = account.loginHistory || [];
     account.loginHistory.push({ type: 'login', at: new Date().toISOString() });
     await dbPut(AUTH_COLLECTION, emailKey, account);
-    enterStudioSession(account);
+    await enterStudioSession(account);
   }
 
-  function enterStudioSession(account){
+  // ---- Per-account data isolation ----------------------------------------
+  // Manage Studio must only ever show a logged-in account its OWN member
+  // record (procurement / processing / distribution) — never anyone else's.
+  // applyStudioAccessControl() waits for all three collections to finish
+  // loading, finds the single record (if any) whose email matches the
+  // logged-in account, and then PRUNES the in-memory members /
+  // processingMembers / DISTRIBUTION_OUTLETS arrays down to just that one
+  // record. Every render function in this file reads from those same
+  // arrays, so this one step is enough to hide everyone else's data
+  // everywhere in the studio, without touching each render function.
+  // If no record matches, the account is refused entry entirely.
+  let studioAccessRecord = null;
+
+  async function applyStudioAccessControl(){
+    await studioDataReady;
+    const email = currentAccount ? normalizeEmailKey(currentAccount.email) : '';
+    studioAccessRecord = null;
+
+    const procMatch = members.find(m => (m.email || '').trim().toLowerCase() === email);
+    members.length = 0;
+    if(procMatch){ members.push(procMatch); studioAccessRecord = { type: 'procurement' }; }
+
+    let procStaffMatch = null, procStaffCat = null;
+    Object.keys(processingMembers).forEach(cat => {
+      if(procStaffMatch) return;
+      const found = processingMembers[cat].find(m => (m.email || '').trim().toLowerCase() === email);
+      if(found){ procStaffMatch = found; procStaffCat = cat; }
+    });
+    Object.keys(processingMembers).forEach(cat => {
+      processingMembers[cat] = (procStaffMatch && cat === procStaffCat) ? [procStaffMatch] : [];
+    });
+    if(procStaffMatch && !studioAccessRecord) studioAccessRecord = { type: 'processing' };
+
+    let distMatch = null, distCat = null;
+    Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
+      if(distMatch) return;
+      const found = DISTRIBUTION_OUTLETS[cat].find(o => (o.email || '').trim().toLowerCase() === email);
+      if(found){ distMatch = found; distCat = cat; }
+    });
+    Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
+      DISTRIBUTION_OUTLETS[cat] = (distMatch && cat === distCat) ? [distMatch] : [];
+    });
+    if(distMatch && !studioAccessRecord) studioAccessRecord = { type: 'distribution' };
+
+    const deniedEl = document.getElementById('studioAccessDenied');
+    if(!studioAccessRecord){
+      document.getElementById('sadEmail').textContent = currentAccount ? currentAccount.email : '';
+      document.getElementById('pageRoot').style.display = 'none';
+      deniedEl.classList.remove('hidden');
+      return false;
+    }
+    deniedEl.classList.add('hidden');
+    document.getElementById('pageRoot').style.display = '';
+    return true;
+  }
+
+  async function enterStudioSession(account){
     currentAccount = account;
     localStorage.setItem('studioSessionEmail', account.email);
     document.getElementById('authGate').classList.add('hidden');
-    document.getElementById('pageRoot').style.display = '';
+    await applyStudioAccessControl();
   }
 
   async function tryRestoreSession(){
@@ -1097,7 +1169,7 @@
     if(account && account.email){
       currentAccount = account;
       document.getElementById('authGate').classList.add('hidden');
-      document.getElementById('pageRoot').style.display = '';
+      await applyStudioAccessControl();
     } else {
       localStorage.removeItem('studioSessionEmail');
     }
@@ -1142,8 +1214,10 @@
     a.loginHistory.push({ type: 'logout', at: new Date().toISOString() });
     await dbPut(AUTH_COLLECTION, a.email, a);
     currentAccount = null;
+    studioAccessRecord = null;
     localStorage.removeItem('studioSessionEmail');
     document.getElementById('pageRoot').style.display = 'none';
+    document.getElementById('studioAccessDenied').classList.add('hidden');
     document.getElementById('authEmail').value = '';
     document.getElementById('authPassword').value = '';
     switchAuthMode('login');
@@ -4299,10 +4373,12 @@ Issued by Distribution Side.`;
     ['oh-month','oh-store','oh-product','oh-qty','oh-amount'].forEach(id => document.getElementById(id).value = '');
   }
 
-  hydrateMembersFromServer();
-  hydrateProcessingMembersFromServer();
-  hydrateDistributionOutletsFromServer();
-  hydratePaymentHistoryFromServer();
+  const studioDataReady = Promise.all([
+    hydrateMembersFromServer(),
+    hydrateProcessingMembersFromServer(),
+    hydrateDistributionOutletsFromServer(),
+    hydratePaymentHistoryFromServer()
+  ]);
 </script>
 
 </body>
