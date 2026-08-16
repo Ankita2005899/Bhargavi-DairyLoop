@@ -3,7 +3,10 @@ import json
 import uuid
 import hmac
 import hashlib
-from xml.etree import ElementTree as ET
+
+import psycopg2
+import psycopg2.extras
+from psycopg2.pool import SimpleConnectionPool
 
 from flask import Flask, send_from_directory, request, jsonify
 
@@ -11,77 +14,67 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB — screenshots come in as base64
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-os.makedirs(DATA_DIR, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
-# XML data store
+# Postgres data store (replaces the old local-XML-file store)
 #
-# Every "collection" (orders, members, paymentHistory, ...) lives in its own
-# file: data/<collection>.xml
+# Render's free filesystem is ephemeral — anything written to disk (like the
+# old data/*.xml files) is wiped on every redeploy, restart, or free-tier
+# spin-down. A Render PostgreSQL database is persistent, so accounts and
+# every other collection now live there instead, and survive indefinitely.
 #
-#   <collection name="orders">
-#     <item id="ORD-12345678"><![CDATA[{"id": "ORD-12345678", ...}]]></item>
-#     ...
-#   </collection>
-#
-# Each <item> holds one record as JSON text inside CDATA. Storing the record
-# as JSON-inside-XML (rather than mapping every nested field to its own XML
-# tag) keeps the store correct for the app's real data shapes — which
-# include arbitrarily nested objects (weekly liter logs, per-year payment
-# status, screenshot data-URLs) that would be brittle to hand-map to XML
-# element-by-element. Nothing is ever written to disk except through this
-# module, and nothing is removed except by an explicit DELETE call.
+# Every "collection" (orders, members, studioAccounts, ...) is just a set of
+# rows in one table, keyed by (collection, item_id) — the same shape the app
+# already used with the XML store, so nothing in index.html / studio.html
+# has to change: they still call GET/PUT/POST/DELETE /api/store/<collection>.
 # ---------------------------------------------------------------------------
 
-def _safe_name(collection):
-    name = "".join(c for c in collection if c.isalnum() or c in ("-", "_"))
-    if not name:
-        raise ValueError("invalid collection name")
-    return name
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+# Render (and some other providers) hand out "postgres://..." — psycopg2
+# wants "postgresql://...". Normalize so either form works.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
+
+_pool = None
+if DATABASE_URL:
+    _pool = SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
 
 
-def _path(collection):
-    return os.path.join(DATA_DIR, f"{_safe_name(collection)}.xml")
+def _get_conn():
+    if not _pool:
+        raise RuntimeError(
+            "DATABASE_URL is not set. Add a Render PostgreSQL database and "
+            "link it to this service (Render sets DATABASE_URL for you)."
+        )
+    return _pool.getconn()
 
 
-def _load(collection):
-    """Returns an ordered dict {item_id: record_dict}."""
-    path = _path(collection)
-    if not os.path.exists(path):
-        return {}
-    items = {}
+def _put_conn(conn):
+    if _pool:
+        _pool.putconn(conn)
+
+
+def init_db():
+    if not _pool:
+        return
+    conn = _get_conn()
     try:
-        tree = ET.parse(path)
-    except ET.ParseError:
-        return {}
-    for item in tree.getroot().findall("item"):
-        item_id = item.get("id")
-        if item_id is None:
-            continue
-        raw = item.text or "{}"
-        try:
-            items[item_id] = json.loads(raw)
-        except (json.JSONDecodeError, TypeError):
-            items[item_id] = {}
-    return items
+        with conn, conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS store (
+                    collection TEXT NOT NULL,
+                    item_id    TEXT NOT NULL,
+                    data       JSONB NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (collection, item_id)
+                )
+            """)
+    finally:
+        _put_conn(conn)
 
 
-def _save(collection, items):
-    """items: dict {item_id: record_dict}. Rewrites the whole XML file."""
-    root = ET.Element("collection", {"name": _safe_name(collection)})
-    for item_id, record in items.items():
-        el = ET.SubElement(root, "item", {"id": str(item_id)})
-        el.text = json.dumps(record, ensure_ascii=False)
-    tree = ET.ElementTree(root)
-    try:
-        ET.indent(tree, space="  ")
-    except AttributeError:
-        pass  # ET.indent needs Python 3.9+; file still writes fine without it
-    tmp_path = _path(collection) + ".tmp"
-    tree.write(tmp_path, encoding="utf-8", xml_declaration=True)
-    os.replace(tmp_path, _path(collection))  # atomic — no half-written file
+init_db()
 
 
 def _record_key(record):
@@ -94,21 +87,39 @@ def _record_key(record):
 
 
 # ---------------------------------------------------------------------------
-# Store API
+# Store API — same routes and JSON shapes as before
 # ---------------------------------------------------------------------------
 
 @app.route("/api/store/<collection>", methods=["GET"])
 def get_collection(collection):
-    items = _load(collection)
-    return jsonify(list(items.values()))
+    conn = _get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT data FROM store WHERE collection = %s ORDER BY updated_at",
+                (collection,),
+            )
+            rows = cur.fetchall()
+        return jsonify([row[0] for row in rows])
+    finally:
+        _put_conn(conn)
 
 
 @app.route("/api/store/<collection>/<item_id>", methods=["GET"])
 def get_item(collection, item_id):
-    items = _load(collection)
-    if item_id not in items:
-        return jsonify({"error": "not found"}), 404
-    return jsonify(items[item_id])
+    conn = _get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT data FROM store WHERE collection = %s AND item_id = %s",
+                (collection, item_id),
+            )
+            row = cur.fetchone()
+        if row is None:
+            return jsonify({"error": "not found"}), 404
+        return jsonify(row[0])
+    finally:
+        _put_conn(conn)
 
 
 @app.route("/api/store/<collection>/<item_id>", methods=["PUT"])
@@ -116,56 +127,68 @@ def upsert_item(collection, item_id):
     body = request.get_json(force=True, silent=True)
     if not isinstance(body, dict):
         return jsonify({"error": "expected a JSON object"}), 400
-    items = _load(collection)
-    items[item_id] = body
-    _save(collection, items)
-    return jsonify({"ok": True, "id": item_id})
+    conn = _get_conn()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO store (collection, item_id, data, updated_at)
+                VALUES (%s, %s, %s, now())
+                ON CONFLICT (collection, item_id)
+                DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+                """,
+                (collection, item_id, psycopg2.extras.Json(body)),
+            )
+        return jsonify({"ok": True, "id": item_id})
+    finally:
+        _put_conn(conn)
 
 
 @app.route("/api/store/<collection>", methods=["POST"])
 def bulk_save(collection):
-    """Seed / replace an entire collection. Body: a JSON array of records."""
+    """Seed / merge records into a collection. Body: a JSON array of records."""
     body = request.get_json(force=True, silent=True)
     if not isinstance(body, list):
         return jsonify({"error": "expected a JSON array"}), 400
-    items = _load(collection)
-    for record in body:
-        if isinstance(record, dict):
-            items[_record_key(record)] = record
-    _save(collection, items)
-    return jsonify({"ok": True, "count": len(items)})
+    conn = _get_conn()
+    try:
+        with conn, conn.cursor() as cur:
+            for record in body:
+                if isinstance(record, dict):
+                    cur.execute(
+                        """
+                        INSERT INTO store (collection, item_id, data, updated_at)
+                        VALUES (%s, %s, %s, now())
+                        ON CONFLICT (collection, item_id)
+                        DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+                        """,
+                        (collection, _record_key(record), psycopg2.extras.Json(record)),
+                    )
+            cur.execute("SELECT COUNT(*) FROM store WHERE collection = %s", (collection,))
+            count = cur.fetchone()[0]
+        return jsonify({"ok": True, "count": count})
+    finally:
+        _put_conn(conn)
 
 
 @app.route("/api/store/<collection>/<item_id>", methods=["DELETE"])
 def delete_item(collection, item_id):
     """The ONLY way a record is ever removed — called from the delete button."""
-    items = _load(collection)
-    existed = item_id in items
-    if existed:
-        del items[item_id]
-        _save(collection, items)
-    return jsonify({"ok": True, "deleted": existed})
+    conn = _get_conn()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM store WHERE collection = %s AND item_id = %s",
+                (collection, item_id),
+            )
+            existed = cur.rowcount > 0
+        return jsonify({"ok": True, "deleted": existed})
+    finally:
+        _put_conn(conn)
 
 
 # ---------------------------------------------------------------------------
-# Razorpay payment-signature verification
-#
-# The checkout itself runs client-side with your test Key ID (already wired
-# into index.html and studio.html). This endpoint is what confirms a
-# payment was genuinely completed with Razorpay rather than trusting the
-# browser alone — it re-computes the signature using your Key SECRET, which
-# must be set as an environment variable on the server (never put the
-# secret in any HTML/JS file). If no secret is configured, it reports back
-# "unverified" instead of failing, so the test flow still works end to end.
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# Public config for the frontend
-#
-# Only the Key ID (never the secret) is exposed here — it's what Razorpay's
-# checkout.js needs in the browser to open the payment widget. Reading it
-# from an environment variable at request time means it never has to be
-# typed into index.html or studio.html.
+# Razorpay payment-signature verification (unchanged)
 # ---------------------------------------------------------------------------
 
 @app.route("/api/config", methods=["GET"])
@@ -187,10 +210,6 @@ def razorpay_verify():
         return jsonify({"verified": False, "reason": "missing payment id"}), 400
 
     if not (order_id and signature and key_secret):
-        # No server-side order was created for this payment (or no secret is
-        # configured yet) — this is expected for the basic test-key checkout
-        # flow. The payment still succeeded at Razorpay; we just can't
-        # cryptographically verify it from here yet.
         return jsonify({"verified": False, "reason": "no order/signature/secret to verify against"})
 
     payload = f"{order_id}|{payment_id}".encode("utf-8")
