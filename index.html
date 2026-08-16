@@ -1,1892 +1,748 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bhargavi DairyLoop — farm to store, fully traceable</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css" />
-  <style>
-    :root {
-      --bg: #FAF6EE;
-      --surface-0: #FFFFFF;
-      --surface-1: #F1EAD8;
-      --surface-2: #FFFFFF;
-      --border: #E4D9C2;
-      --border-strong: #CBBB98;
-      --radius: 8px;
-      --text-primary: #201A12;
-      --text-secondary: #5B5142;
-      --text-muted: #8C806A;
-      --fill-accent: #B23A2E;
-      --on-accent: #FFF6EE;
-      --fill-ghost-selected: #EFE1C6;
-      --text-accent: #B23A2E;
-      --text-success: #2F6B3E;
-      --bg-success: #E3EFDD;
-      --text-danger: #A6321F;
-      --bg-danger: #F6E0DA;
-      --navy: #1C3552;
-      --green: #3F6B3E;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text-primary);
-      font-family: "Times New Roman", Times, serif;
-    }
-
-    h1,
-    h2,
-    h3,
-    .brand-name,
-    .studio-brand span {
-      font-family: "Times New Roman", Times, serif;
-      font-weight: 700;
-    }
-
-    a {
-      color: inherit;
-    }
-
-    button {
-      font-family: inherit;
-      cursor: pointer;
-    }
-
-    img {
-      max-width: 100%;
-      display: block;
-    }
-
-    /* ---------- header ---------- */
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px clamp(20px, 5vw, 64px);
-      background: rgba(250, 246, 238, 0.94);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand svg {
-      width: 44px;
-      height: 44px;
-    }
-
-    .brand-name {
-      font-size: 20px;
-      letter-spacing: 0.2px;
-      line-height: 1.15;
-    }
-
-    .brand-name .small {
-      display: block;
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      font-weight: 400;
-      color: var(--text-muted);
-    }
-
-    .menu-wrap {
-      position: relative;
-    }
-
-    #hamburger-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 1px solid var(--border-strong);
-      background: var(--surface-0);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
-
-    #hamburger-btn span {
-      width: 18px;
-      height: 2px;
-      background: var(--text-primary);
-      border-radius: 2px;
-    }
-
-    #hamburger-btn:hover {
-      background: var(--fill-ghost-selected);
-    }
-
-    #nav-dropdown {
-      position: absolute;
-      top: 54px;
-      right: 0;
-      min-width: 230px;
-      background: var(--surface-0);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 16px 34px -14px rgba(28, 53, 82, 0.28);
-      padding: 8px;
-      display: none;
-      z-index: 50;
-    }
-
-    #nav-dropdown.open {
-      display: block;
-    }
-
-    #nav-dropdown button {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-align: left;
-      background: transparent;
-      border: none;
-      padding: 12px 12px;
-      border-radius: 8px;
-      font-size: 14.5px;
-      color: var(--text-primary);
-    }
-
-    #nav-dropdown button:hover {
-      background: var(--fill-ghost-selected);
-    }
-
-    #nav-dropdown button i {
-      font-size: 17px;
-      color: var(--text-accent);
-    }
-
-    /* ---------- hero ---------- */
-    .hero {
-      display: flex;
-      align-items: center;
-      gap: 48px;
-      padding: 72px clamp(20px, 5vw, 64px) 40px;
-      max-width: 1180px;
-      margin: 0 auto;
-      flex-wrap: wrap;
-    }
-
-    .hero-text {
-      flex: 1 1 420px;
-      min-width: 280px;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-style: italic;
-      color: var(--text-accent);
-      letter-spacing: 0.02em;
-      margin: 0 0 18px;
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--fill-accent);
-      display: inline-block;
-    }
-
-    .hero h1 {
-      font-size: clamp(36px, 5vw, 54px);
-      line-height: 1.15;
-      margin: 0 0 20px;
-      letter-spacing: 0.2px;
-    }
-
-    .hero-sub {
-      font-size: 17px;
-      color: var(--text-secondary);
-      max-width: 440px;
-      margin: 0 0 32px;
-      line-height: 1.65;
-    }
-
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--fill-accent);
-      color: var(--on-accent);
-      border: none;
-      padding: 14px 26px;
-      border-radius: 4px;
-      font-weight: 700;
-      font-size: 15px;
-      text-decoration: none;
-      box-shadow: 0 10px 24px -10px rgba(178, 58, 46, 0.55);
-    }
-
-    .hero-graphic {
-      flex: 1 1 320px;
-      min-width: 260px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .hero-graphic svg {
-      width: 100%;
-      max-width: 300px;
-    }
-
-    .wave-divider {
-      display: block;
-      width: 100%;
-      line-height: 0;
-      margin-top: -2px;
-    }
-
-    .wave-divider svg {
-      width: 100%;
-      height: 60px;
-      display: block;
-    }
-
-    /* ---------- stats ---------- */
-    .stats-strip {
-      background: var(--surface-0);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .stats-strip .stat {
-      flex: 1 1 160px;
-      text-align: center;
-      padding: 28px 16px;
-      border-right: 1px solid var(--border);
-    }
-
-    .stats-strip .stat:last-child {
-      border-right: none;
-    }
-
-    .stat .num {
-      display: block;
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--navy);
-    }
-
-    .stat .label {
-      display: block;
-      font-size: 12.5px;
-      color: var(--text-muted);
-      margin-top: 4px;
-      font-style: italic;
-    }
-
-    /* ---------- section shell ---------- */
-    section {
-      padding: 64px clamp(20px, 5vw, 64px);
-      max-width: 1180px;
-      margin: 0 auto;
-    }
-
-    .section-label {
-      font-size: 14px;
-      font-style: italic;
-      color: var(--text-muted);
-      margin: 0 0 28px;
-      letter-spacing: 0.02em;
-    }
-
-    /* ---------- auto-sliding product showcase ---------- */
-    .showcase {
-      padding-bottom: 0;
-    }
-
-    .slider {
-      position: relative;
-      overflow: hidden;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface-0);
-      box-shadow: 0 20px 40px -26px rgba(28, 53, 82, 0.25);
-    }
-
-    .slider-track {
-      display: flex;
-      transition: transform .6s cubic-bezier(.4, 0, .2, 1);
-    }
-
-    .slide {
-      min-width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 36px;
-      padding: 36px clamp(20px, 5vw, 64px);
-      flex-wrap: wrap;
-    }
-
-    .slide-img {
-      flex: 0 0 auto;
-      width: 200px;
-    }
-
-    .slide-img svg {
-      width: 100%;
-      height: auto;
-    }
-
-    .slide-caption {
-      flex: 1 1 240px;
-      min-width: 220px;
-    }
-
-    .slide-caption .tag {
-      font-size: 12.5px;
-      font-style: italic;
-      color: var(--text-accent);
-      margin: 0 0 8px;
-    }
-
-    .slide-caption h3 {
-      font-size: 24px;
-      margin: 0 0 10px;
-    }
-
-    .slide-caption p {
-      font-size: 14.5px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      margin: 0 0 14px;
-      max-width: 380px;
-    }
-
-    .slide-caption .price {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--navy);
-    }
-
-    .slider-dots {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      padding: 16px 0 4px;
-    }
-
-    .slider-dots button {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      border: 1px solid var(--border-strong);
-      background: var(--surface-1);
-      padding: 0;
-    }
-
-    .slider-dots button.active {
-      background: var(--fill-accent);
-      border-color: var(--fill-accent);
-    }
-
-    .slider-arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: 1px solid var(--border-strong);
-      background: rgba(255, 255, 255, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 5;
-    }
-
-    .slider-arrow.prev {
-      left: 14px;
-    }
-
-    .slider-arrow.next {
-      right: 14px;
-    }
-
-    @media (max-width:560px) {
-      .slide {
-        padding: 28px 20px;
-      }
-
-      .slide-img {
-        width: 150px;
-      }
-    }
-
-    /* ---------- products ---------- */
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 20px;
-    }
-
-    .p-card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .p-thumb {
-      height: 150px;
-      background: linear-gradient(135deg, var(--surface-1), #EADFC6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .p-thumb i {
-      font-size: 36px;
-      color: var(--border-strong);
-    }
-
-    .p-body {
-      padding: 18px;
-    }
-
-    .p-body .name {
-      font-weight: 700;
-      font-size: 16px;
-      margin: 0 0 4px;
-    }
-
-    .p-body .dates {
-      font-size: 12.5px;
-      color: var(--text-muted);
-      margin: 0 0 10px;
-      font-style: italic;
-    }
-
-    .p-body .price {
-      font-size: 18px;
-      font-weight: 700;
-      margin: 0 0 14px;
-      color: var(--navy);
-    }
-
-    .p-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .p-actions button {
-      flex: 1;
-      font-size: 13px;
-      padding: 9px;
-      border-radius: 4px;
-      border: 1px solid var(--border-strong);
-      background: transparent;
-    }
-
-    .p-actions button.add {
-      background: var(--fill-accent);
-      color: var(--on-accent);
-      border: none;
-    }
-
-    /* ---------- journey ---------- */
-    .journey-steps {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 28px;
-    }
-
-    .journey-steps li {
-      position: relative;
-      padding-left: 52px;
-    }
-
-    .journey-steps .idx {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--navy);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .journey-steps h3 {
-      font-size: 17px;
-      margin: 2px 0 6px;
-    }
-
-    .journey-steps p {
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 28px clamp(20px, 5vw, 64px);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 13px;
-      color: var(--text-muted);
-      font-style: italic;
-    }
-
-    /* ================= BACKSTAGE (Studio + Data Entry) — full page ================= */
-    .backstage-page {
-      display: none;
-      --bg: #12233A;
-      --surface-0: #17304D;
-      --surface-1: #1E3A5C;
-      --surface-2: #1E3A5C;
-      --border: #2C4A6E;
-      --border-strong: #3E6089;
-      --text-primary: #F5F1E6;
-      --text-secondary: #B9C6D6;
-      --text-muted: #7F93AC;
-      --fill-accent: #E0A63A;
-      --on-accent: #12233A;
-      --fill-ghost-selected: #2C4A6E;
-      --text-accent: #E0A63A;
-      --text-success: #8FCC9A;
-      --bg-success: rgba(143, 204, 154, 0.16);
-      --text-danger: #EF9E90;
-      --bg-danger: rgba(239, 158, 144, 0.16);
-      background: var(--bg);
-      color: var(--text-primary);
-      min-height: 100vh;
-    }
-
-    .studio-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 18px clamp(20px, 5vw, 64px);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      z-index: 10;
-    }
-
-    .studio-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 18px;
-    }
-
-    .studio-brand i {
-      font-size: 22px;
-      color: var(--text-accent);
-    }
-
-    .back-to-store-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid var(--border-strong);
-      background: transparent;
-      color: var(--text-primary);
-      padding: 9px 16px;
-      border-radius: 4px;
-      font-size: 13.5px;
-    }
-
-    .studio-inner {
-      padding: 32px clamp(20px, 5vw, 64px) 60px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    /* ---------- data entry page: process panels ---------- */
-    .process-grid {
-      position: relative;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-      margin-bottom: 2.6rem;
-      min-height: 380px;
-    }
-
-    .process-panel {
-      border-radius: 10px;
-      padding: 18px;
-      border: 1px solid var(--border-strong);
-      display: flex;
-      flex-direction: column;
-      min-height: 380px;
-      transition: filter .25s ease, opacity .25s ease, box-shadow .25s ease;
-    }
-
-    .process-grid.hovering .process-panel {
-      filter: blur(3px);
-      opacity: .35;
-    }
-
-    .process-panel.active {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 5;
-      filter: none !important;
-      opacity: 1 !important;
-      box-shadow: 0 14px 44px rgba(0,0,0,.35);
-    }
-
-    .process-panel.active .process-member-list {
-      max-height: 260px;
-    }
-
-    .proc-procurement { background: #EAF3EC; border-color: #8FC1A0; }
-    .proc-processing  { background: #FDEDE7; border-color: var(--border-strong); }
-    .proc-distribution { background: #E9EEF7; border-color: #9AB3D9; }
-
-    .process-panel-head {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .process-panel-head i { font-size: 22px; }
-    .proc-procurement .process-panel-head i, .proc-procurement .process-panel-title { color: #2F6B3E; }
-    .proc-processing .process-panel-head i, .proc-processing .process-panel-title { color: var(--fill-accent); }
-    .proc-distribution .process-panel-head i, .proc-distribution .process-panel-title { color: #2E4E8C; }
-
-    .process-panel-title { font-weight: 700; font-size: 14.5px; margin: 0; }
-    .process-panel-sub { font-size: 11.5px; color: var(--text-muted); margin: 2px 0 0; font-style: italic; }
-
-    .process-member-list {
-      list-style: none;
-      margin: 0 0 12px;
-      padding: 0;
-      overflow-y: auto;
-      max-height: 220px;
-      flex: 1;
-    }
-
-    .process-member-list li {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 7px 0;
-      border-bottom: 1px dashed var(--border);
-      font-size: 12.5px;
-    }
-
-    .process-member-list li:last-child { border-bottom: none; }
-    .process-member-list .pm-name { font-weight: 600; color: var(--text-primary); }
-    .process-member-list .pm-role { color: var(--text-muted); font-size: 11.5px; }
-
-    .process-add-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: auto;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
-
-    .process-add-row input {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 4px;
-      border: 1px solid var(--border-strong);
-      background: var(--surface-0);
-      color: var(--text-primary);
-      font-size: 12.5px;
-      font-family: inherit;
-    }
-
-    .process-add-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 8px;
-      border-radius: 4px;
-      border: none;
-      font-size: 12.5px;
-      cursor: pointer;
-      background: var(--text-primary);
-      color: var(--surface-0);
-    }
-
-    @media (max-width: 860px) {
-      .process-grid { grid-template-columns: 1fr; }
-    }
-
-    /* ---------- data entry page ---------- */
-    .de-block {
-      margin-bottom: 2.2rem;
-    }
-
-    .de-block-title {
-      font-size: 15px;
-      font-style: italic;
-      color: var(--text-muted);
-      margin: 0 0 1rem;
-    }
-
-    .chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 1rem;
-    }
-
-    .chip {
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border-strong);
-      background: var(--surface-2);
-      font-size: 13.5px;
-    }
-
-    .de-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 18px;
-      border-radius: 4px;
-      font-size: 13.5px;
-      border: 1px solid var(--border-strong);
-      background: var(--surface-1);
-      color: var(--text-primary);
-      margin-right: 10px;
-    }
-
-    .de-btn.primary {
-      background: var(--fill-accent);
-      color: var(--on-accent);
-      border: none;
-    }
-
-    #place-select {
-      margin-top: 4px;
-    }
-
-    #member-table-wrap {
-      margin-top: 1.4rem;
-      display: none;
-    }
-
-    #member-table-wrap table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    #member-table-wrap th {
-      text-align: left;
-      font-size: 11.5px;
-      font-weight: 400;
-      font-style: italic;
-      color: var(--text-muted);
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    #member-table-wrap td {
-      padding: 10px 0;
-      font-size: 13.5px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .work-update-btn {
-      border: 1px solid var(--border-strong);
-      background: transparent;
-      color: var(--text-accent);
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 12.5px;
-    }
-
-    .last-update-note {
-      display: block;
-      font-size: 11.5px;
-      color: var(--text-muted);
-      font-style: italic;
-      margin-top: 2px;
-    }
-
-    #tabbar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 1rem;
-    }
-
-    .tabbtn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 11px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--surface-2);
-      font-size: 13.5px;
-      color: var(--text-secondary);
-    }
-
-    #hint {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin: 0 0 1.5rem;
-      font-style: italic;
-    }
-
-    #console {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.2rem;
-      margin-bottom: 1.5rem;
-    }
-
-    #toolbar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-
-    #toolbar button {
-      background: var(--surface-1);
-      border: 1px solid var(--border-strong);
-      color: var(--text-primary);
-      padding: 8px 12px;
-      border-radius: 4px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    #console input,
-    #console select,
-    #modal-content input,
-    #modal-content select {
-      background: var(--surface-1);
-      border: 1px solid var(--border-strong);
-      color: var(--text-primary);
-      padding: 9px 10px;
-      border-radius: 4px;
-      font-size: 13.5px;
-      font-family: inherit;
-    }
-
-    #modal-wrap {
-      display: none;
-      background: rgba(0, 0, 0, 0.5);
-      align-items: center;
-      justify-content: center;
-      position: fixed;
-      inset: 0;
-      z-index: 120;
-    }
-
-    #modal-content {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.2rem;
-      width: 100%;
-      max-width: 340px;
-    }
-
-    #modal-content button {
-      padding: 10px;
-      border-radius: 4px;
-      border: 1px solid var(--border-strong);
-      background: transparent;
-      color: var(--text-primary);
-    }
-
-    .studio-shop-label {
-      font-size: 14px;
-      font-style: italic;
-      color: var(--text-muted);
-      margin: 0 0 0.8rem;
-    }
-
-    .studio-products {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 12px;
-      margin-bottom: 1.5rem;
-    }
-
-    .studio-products .mini {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .studio-products .mini .th {
-      height: 80px;
-      background: var(--surface-1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .studio-products .mini .th i {
-      font-size: 22px;
-      color: var(--text-muted);
-    }
-
-    .studio-products .mini .b {
-      padding: 0.7rem;
-    }
-
-    .studio-products .mini .b p {
-      margin: 0 0 4px;
-      font-size: 13px;
-    }
-
-    .studio-products .mini .b .pr {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-accent);
-    }
-
-    .studio-footer {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 12.5px;
-      color: var(--text-muted);
-      font-style: italic;
-    }
-
-    @media (max-width:640px) {
-      .hero {
-        padding-top: 44px;
-      }
-
-      .stats-strip .stat {
-        flex: 1 1 45%;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bhargavi Dairy Loop | Farm-Fresh Dairy, Delivered Daily</title>
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF6EA;
+    --cream-2:#F3ECDA;
+    --navy:#1C3552;
+    --navy-2:#122438;
+    --navy-3:#0D1B2B;
+    --brick:#B23A2E;
+    --brick-2:#8F2C22;
+    --gold:#D9A441;
+    --gold-2:#C08B2E;
+    --ink:#1F2430;
+    --ink-soft:rgba(31,36,48,0.66);
+    --white:#FFFFFF;
+    --radius:16px;
+    --shadow:0 18px 40px rgba(18,36,56,0.14);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    font-family:'Inter', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; }
+  img,svg{ display:block; max-width:100%; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:'Inter', sans-serif; cursor:pointer; border:none; background:none; }
+  ul{ list-style:none; }
+  .wrap{ max-width:1200px; margin:0 auto; padding:0 32px; }
+  .eyebrow{ font-size:13px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; color:var(--brick); }
+  ::selection{ background:var(--gold); color:var(--navy-3); }
+
+  /* ---------- reveal-on-scroll ---------- */
+  .reveal{ opacity:0; transform:translateY(26px); transition:opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* ---------- header ---------- */
+  .site-header{
+    position:sticky; top:0; z-index:80;
+    background:rgba(251,246,234,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(28,53,82,0.1);
+  }
+  .site-header .wrap{ display:flex; align-items:center; justify-content:space-between; height:82px; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand img{ width:46px; height:46px; }
+  .brand-text{ line-height:1.1; }
+  .brand-text .name{ font-family:'Fraunces', serif; font-weight:700; font-size:21px; color:var(--navy); letter-spacing:0.01em; }
+  .brand-text .tag{ font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--brick); font-weight:600; }
+  .desk-nav{ display:flex; align-items:center; gap:34px; font-size:14.5px; font-weight:500; color:var(--navy); }
+  .desk-nav a{ position:relative; padding:4px 0; }
+  .desk-nav a::after{ content:''; position:absolute; left:0; right:100%; bottom:-2px; height:2px; background:var(--brick); transition:right 0.28s ease; }
+  .desk-nav a:hover::after{ right:0; }
+  .header-actions{ display:flex; align-items:center; gap:18px; }
+  .deliveries-pill{
+    display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--navy);
+    background:var(--cream-2); border:1px solid rgba(28,53,82,0.14); padding:9px 14px; border-radius:999px;
+  }
+  .deliveries-pill .count{ background:var(--brick); color:#fff; min-width:19px; height:19px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; }
+  .hamburger{
+    width:46px; height:46px; border-radius:50%; background:var(--navy); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:5px; flex-shrink:0; transition:transform 0.25s ease, background 0.25s ease;
+  }
+  .hamburger:hover{ background:var(--brick); transform:scale(1.05); }
+  .hamburger span{ width:19px; height:2px; background:#fff; border-radius:2px; }
+
+  /* ---------- hero ---------- */
+  .hero{ position:relative; overflow:hidden; background:linear-gradient(150deg, var(--navy-3) 0%, var(--navy) 62%, var(--navy-2) 100%); }
+  .hero::before{
+    content:''; position:absolute; inset:0; opacity:0.07; pointer-events:none;
+    background-image:radial-gradient(circle, #fff 1.4px, transparent 1.4px); background-size:26px 26px;
+  }
+  .hero .wrap{ position:relative; display:grid; grid-template-columns:1.05fr 0.75fr; gap:56px; align-items:center; padding-top:78px; padding-bottom:78px; }
+  .hero-eyebrow{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--gold); margin-bottom:22px; }
+  .hero-eyebrow::before{ content:''; width:26px; height:2px; background:var(--gold); display:inline-block; }
+  .hero h1{ color:var(--cream); font-size:clamp(36px,4.6vw,58px); line-height:1.05; font-weight:700; letter-spacing:-0.01em; }
+  .hero h1 em{ font-style:italic; color:var(--gold); font-weight:500; }
+  .hero p.sub{ margin-top:22px; color:rgba(251,246,234,0.72); font-size:17px; line-height:1.7; max-width:46ch; }
+  .hero-cta{ display:flex; gap:16px; margin-top:34px; flex-wrap:wrap; }
+  .btn{ display:inline-flex; align-items:center; gap:9px; font-size:14.5px; font-weight:600; padding:15px 26px; border-radius:999px; transition:transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease; }
+  .btn-primary{ background:var(--brick); color:#fff; box-shadow:0 12px 26px rgba(178,58,46,0.35); }
+  .btn-primary:hover{ transform:translateY(-2px); background:var(--brick-2); box-shadow:0 16px 32px rgba(178,58,46,0.45); }
+  .btn-ghost{ background:transparent; color:var(--cream); border:1px solid rgba(251,246,234,0.35); }
+  .btn-ghost:hover{ border-color:var(--gold); color:var(--gold); }
+  .hero-stats{ display:flex; gap:34px; margin-top:46px; }
+  .hero-stats div{ border-left:2px solid rgba(217,164,65,0.5); padding-left:14px; }
+  .hero-stats .num{ font-family:'Fraunces', serif; font-size:26px; font-weight:700; color:var(--cream); }
+  .hero-stats .lbl{ font-size:12px; color:rgba(251,246,234,0.6); margin-top:2px; letter-spacing:0.03em; }
+
+  /* signature: pouring milk glass */
+  .glass-wrap{ position:relative; display:flex; align-items:center; justify-content:center; }
+  .glass-svg{ width:100%; max-width:280px; }
+  .milk-fill{ animation:fillGlass 3.2s ease-in-out infinite alternate; }
+  @keyframes fillGlass{ 0%{ transform:translateY(6px); } 100%{ transform:translateY(0); } }
+  .pour-drop{ animation:drop 1.6s linear infinite; }
+  @keyframes drop{ 0%{ opacity:0; transform:translateY(-6px); } 30%{ opacity:1; } 90%{ opacity:1; } 100%{ opacity:0; transform:translateY(52px); } }
+  .ripple{ animation:ripple 3.2s ease-in-out infinite; transform-origin:center; }
+  @keyframes ripple{ 0%,100%{ transform:scaleX(1); opacity:0.9; } 50%{ transform:scaleX(1.08); opacity:0.5; } }
+  .float-badge{
+    position:absolute; bottom:6%; left:-6%; background:var(--cream); color:var(--navy); border-radius:14px;
+    padding:14px 18px; box-shadow:var(--shadow); font-size:13px; font-weight:600; display:flex; align-items:center; gap:10px;
+    animation:floaty 4.5s ease-in-out infinite;
+  }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+  .float-badge .dot{ width:9px; height:9px; border-radius:50%; background:#4CAF6D; box-shadow:0 0 0 4px rgba(76,175,109,0.2); }
+
+  /* ---------- category marquee ---------- */
+  .cat-section{ padding:64px 0 10px; }
+  .cat-head{ text-align:center; margin-bottom:34px; }
+  .cat-head h2{ font-size:clamp(26px,3vw,36px); color:var(--navy); margin-top:10px; }
+  .cat-head p{ color:var(--ink-soft); margin-top:10px; max-width:52ch; margin-inline:auto; }
+  .marquee-mask{ overflow:hidden; -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+  .marquee-track{ display:flex; gap:22px; width:max-content; animation:scrollCats 26s linear infinite; padding:6px 0 30px; }
+  .marquee-track:hover{ animation-play-state:paused; }
+  @keyframes scrollCats{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  .cat-chip{
+    flex:0 0 auto; width:220px; background:var(--white); border:1px solid rgba(28,53,82,0.08); border-radius:var(--radius);
+    padding:24px 22px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 20px rgba(28,53,82,0.05);
+    transition:transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .cat-chip:hover{ transform:translateY(-6px); box-shadow:var(--shadow); }
+  .cat-chip .icon{ font-size:30px; }
+  .cat-chip .cname{ font-family:'Fraunces', serif; font-weight:600; font-size:16.5px; color:var(--navy); }
+  .cat-chip .cdesc{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+
+  /* ---------- products ---------- */
+  .products{ padding:60px 0 90px; }
+  .prod-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:38px; flex-wrap:wrap; }
+  .prod-head h2{ font-size:clamp(28px,3.2vw,40px); color:var(--navy); margin-top:10px; }
+  .prod-head p{ color:var(--ink-soft); margin-top:10px; max-width:48ch; }
+  .filter-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .filter-chip{
+    font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; border:1px solid rgba(28,53,82,0.18);
+    color:var(--navy); background:var(--white); transition:all 0.2s ease;
+  }
+  .filter-chip.active,.filter-chip:hover{ background:var(--navy); color:var(--cream); border-color:var(--navy); }
+
+  .prod-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(258px,1fr)); gap:26px; margin-top:36px; }
+  .card{
+    background:var(--white); border-radius:var(--radius); overflow:hidden; border:1px solid rgba(28,53,82,0.08);
+    display:flex; flex-direction:column; transition:transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card:hover{ transform:translateY(-7px); box-shadow:var(--shadow); }
+  .card-media{ position:relative; height:168px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .card-media .jar{ position:absolute; inset:0; }
+  .card-media .emoji{ position:relative; font-size:52px; transition:transform 0.35s ease; filter:drop-shadow(0 8px 14px rgba(0,0,0,0.18)); }
+  .card:hover .card-media .emoji{ transform:scale(1.1) rotate(-4deg); }
+  .card-media .cat-tag{ position:absolute; top:12px; left:12px; background:rgba(255,255,255,0.92); color:var(--navy); font-size:10.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:5px 10px; border-radius:999px; }
+  .card-body{ padding:20px 20px 22px; display:flex; flex-direction:column; gap:12px; flex:1; }
+  .card-body h3{ font-size:18px; color:var(--navy); font-weight:700; }
+  .card-unit{ font-size:12.5px; color:var(--ink-soft); margin-top:-6px; }
+  .card-short{ font-size:13px; color:var(--ink-soft); line-height:1.55; }
+  .card-dates{ display:flex; gap:10px; margin-top:2px; }
+  .date-box{ flex:1; background:var(--cream-2); border-radius:10px; padding:8px 10px; }
+  .date-box .dlabel{ font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--brick); font-weight:700; }
+  .date-box .dval{ font-size:11.5px; color:var(--navy); font-weight:600; margin-top:3px; }
+  .card-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:6px; }
+  .price{ font-family:'Fraunces', serif; font-weight:700; font-size:20px; color:var(--navy); }
+  .price sup{ font-size:12px; }
+  .card-btns{ display:flex; gap:8px; margin-top:6px; }
+  .btn-detail{ flex:1; font-size:12.5px; font-weight:600; padding:11px 10px; border-radius:10px; border:1px solid var(--navy); color:var(--navy); background:transparent; transition:all 0.2s ease; text-align:center; }
+  .btn-detail:hover{ background:var(--navy); color:var(--cream); }
+  .btn-buy{ flex:1; font-size:12.5px; font-weight:700; padding:11px 10px; border-radius:10px; background:var(--brick); color:#fff; transition:all 0.2s ease; text-align:center; }
+  .btn-buy:hover{ background:var(--brick-2); transform:translateY(-1px); }
+
+  /* ---------- journey ---------- */
+  .journey{ background:var(--cream-2); padding:74px 0; }
+  .journey-head{ text-align:center; margin-bottom:44px; }
+  .journey-head h2{ font-size:clamp(26px,3vw,36px); color:var(--navy); margin-top:10px; }
+  .journey-steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:26px; }
+  .jstep{ background:var(--white); border-radius:var(--radius); padding:30px 26px; position:relative; box-shadow:0 8px 20px rgba(28,53,82,0.05); }
+  .jstep .jnum{ font-family:'Fraunces', serif; font-size:13px; font-weight:700; color:var(--gold-2); letter-spacing:0.08em; }
+  .jstep h3{ font-size:19px; color:var(--navy); margin-top:10px; }
+  .jstep p{ font-size:13.5px; color:var(--ink-soft); margin-top:10px; line-height:1.6; }
+  .jstep .jicon{ font-size:28px; margin-bottom:6px; }
+  .jconnect{ position:absolute; top:50%; right:-24px; font-size:20px; color:var(--gold-2); display:none; }
+  @media(min-width:860px){ .jconnect{ display:block; } }
+
+  /* ---------- footer ---------- */
+  footer{ background:var(--navy-3); color:rgba(251,246,234,0.78); padding:66px 0 0; }
+  .foot-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.1fr; gap:40px; padding-bottom:50px; border-bottom:1px solid rgba(251,246,234,0.1); }
+  .foot-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .foot-brand img{ width:38px; height:38px; }
+  .foot-brand span{ font-family:'Fraunces', serif; font-weight:700; font-size:18px; color:var(--cream); }
+  footer .fp{ font-size:13.5px; line-height:1.7; max-width:34ch; color:rgba(251,246,234,0.6); }
+  .foot-social{ display:flex; gap:10px; margin-top:18px; }
+  .foot-social a{ width:36px; height:36px; border-radius:50%; border:1px solid rgba(251,246,234,0.22); display:flex; align-items:center; justify-content:center; font-size:14px; transition:all 0.2s ease; }
+  .foot-social a:hover{ background:var(--gold); border-color:var(--gold); color:var(--navy-3); }
+  footer h4{ font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); margin-bottom:18px; font-weight:700; }
+  footer ul li{ margin-bottom:11px; font-size:13.8px; }
+  footer ul li a:hover{ color:var(--gold); }
+  .foot-newsletter input{ width:100%; padding:12px 14px; border-radius:8px; border:1px solid rgba(251,246,234,0.2); background:rgba(251,246,234,0.06); color:var(--cream); font-size:13px; margin-bottom:10px; }
+  .foot-newsletter input::placeholder{ color:rgba(251,246,234,0.4); }
+  .foot-newsletter button{ width:100%; background:var(--brick); color:#fff; padding:12px; border-radius:8px; font-size:13px; font-weight:600; }
+  .foot-newsletter button:hover{ background:var(--brick-2); }
+  .foot-bottom{ display:flex; justify-content:space-between; align-items:center; padding:22px 0; font-size:12.5px; color:rgba(251,246,234,0.45); flex-wrap:wrap; gap:10px; }
+
+  /* ---------- drawer ---------- */
+  .backdrop{ position:fixed; inset:0; background:rgba(13,27,43,0.55); opacity:0; pointer-events:none; transition:opacity 0.3s ease; z-index:90; }
+  .backdrop.show{ opacity:1; pointer-events:auto; }
+  .drawer{
+    position:fixed; top:0; right:0; bottom:0; width:min(400px,90vw); background:var(--cream); z-index:95;
+    transform:translateX(100%); transition:transform 0.4s cubic-bezier(.4,0,.2,1); box-shadow:-14px 0 40px rgba(0,0,0,0.25);
+    display:flex; flex-direction:column;
+  }
+  .drawer.open{ transform:translateX(0); }
+  .drawer-head{ display:flex; align-items:center; justify-content:space-between; padding:24px 24px 18px; border-bottom:1px solid rgba(28,53,82,0.1); }
+  .drawer-head .dtitle{ font-family:'Fraunces', serif; font-weight:700; font-size:19px; color:var(--navy); display:flex; align-items:center; gap:10px; }
+  .drawer-close{ width:36px; height:36px; border-radius:50%; background:var(--cream-2); font-size:16px; color:var(--navy); }
+  .drawer-close:hover{ background:var(--brick); color:#fff; }
+  .drawer-body{ flex:1; overflow-y:auto; padding:20px 24px 30px; }
+  .menu-item{
+    display:flex; align-items:center; gap:14px; width:100%; padding:15px 14px; border-radius:12px; font-size:15px; font-weight:600;
+    color:var(--navy); transition:background 0.2s ease; text-align:left;
+  }
+  .menu-item:hover{ background:var(--cream-2); }
+  .menu-item .mi-icon{ font-size:19px; width:26px; text-align:center; }
+  .menu-divider{ height:1px; background:rgba(28,53,82,0.1); margin:14px 4px; }
+  .menu-sub{ font-size:11px; color:var(--ink-soft); padding:2px 14px 6px; letter-spacing:0.06em; text-transform:uppercase; }
+  .back-row{ display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:600; color:var(--brick); margin-bottom:16px; }
+  .back-row:hover{ text-decoration:underline; }
+
+  .order-empty{ text-align:center; padding:50px 14px; color:var(--ink-soft); }
+  .order-empty .oe-icon{ font-size:40px; margin-bottom:14px; }
+  .order-empty h4{ font-family:'Fraunces', serif; color:var(--navy); font-size:16px; margin-bottom:6px; }
+  .order-empty p{ font-size:13px; line-height:1.6; }
+  .order-card{ background:var(--white); border:1px solid rgba(28,53,82,0.08); border-radius:12px; padding:15px; margin-bottom:14px; }
+  .order-top{ display:flex; gap:12px; align-items:center; }
+  .order-emoji{ width:44px; height:44px; border-radius:10px; background:var(--cream-2); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .order-name{ font-weight:700; font-size:14px; color:var(--navy); }
+  .order-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .order-status{ margin-left:auto; font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:5px 10px; border-radius:999px; background:rgba(76,175,109,0.14); color:#2E7D4F; white-space:nowrap; }
+  .order-bottom{ display:flex; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(28,53,82,0.14); font-size:11.5px; color:var(--ink-soft); }
+  .order-bottom b{ color:var(--navy); }
+
+  /* ---------- product modal ---------- */
+  .modal-back{ position:fixed; inset:0; background:rgba(13,27,43,0.6); z-index:110; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
+  .modal-back.show{ opacity:1; pointer-events:auto; }
+  .modal-card{ background:var(--white); border-radius:20px; max-width:760px; width:100%; max-height:88vh; overflow-y:auto; transform:scale(0.94) translateY(14px); transition:transform 0.3s ease; }
+  .modal-back.show .modal-card{ transform:scale(1) translateY(0); }
+  .modal-grid{ display:grid; grid-template-columns:1fr 1.15fr; }
+  @media(max-width:680px){ .modal-grid{ grid-template-columns:1fr; } }
+  .modal-media{ background:var(--cream-2); display:flex; align-items:center; justify-content:center; padding:40px; min-height:220px; position:relative; }
+  .modal-media .emoji{ font-size:88px; filter:drop-shadow(0 12px 20px rgba(0,0,0,0.18)); }
+  .modal-content{ padding:30px 32px; }
+  .modal-close{ position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%; background:var(--white); color:var(--navy); font-size:15px; box-shadow:0 4px 10px rgba(0,0,0,0.15); }
+  .modal-content .cat-tag{ display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--brick); margin-bottom:8px; }
+  .modal-content h2{ font-size:25px; color:var(--navy); }
+  .modal-content .munit{ font-size:13px; color:var(--ink-soft); margin-top:4px; }
+  .modal-content .mdesc{ font-size:14px; line-height:1.7; color:var(--ink-soft); margin-top:16px; }
+  .nutri-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:18px; }
+  .nutri-box{ background:var(--cream-2); border-radius:10px; padding:10px 8px; text-align:center; }
+  .nutri-box .nval{ font-family:'Fraunces', serif; font-weight:700; font-size:14px; color:var(--navy); }
+  .nutri-box .nlbl{ font-size:9.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.03em; margin-top:3px; }
+  .modal-dates{ display:flex; gap:10px; margin-top:18px; }
+  .modal-price-row{ display:flex; align-items:center; justify-content:space-between; margin-top:24px; padding-top:20px; border-top:1px solid rgba(28,53,82,0.1); }
+  .qty-stepper{ display:flex; align-items:center; gap:14px; border:1px solid rgba(28,53,82,0.18); border-radius:999px; padding:6px 8px; }
+  .qty-stepper button{ width:26px; height:26px; border-radius:50%; background:var(--cream-2); color:var(--navy); font-size:15px; font-weight:700; }
+  .qty-stepper button:hover{ background:var(--navy); color:#fff; }
+  .qty-stepper span{ font-weight:700; min-width:16px; text-align:center; }
+  .modal-buy{ margin-top:16px; width:100%; padding:15px; border-radius:12px; background:var(--brick); color:#fff; font-weight:700; font-size:14.5px; transition:background 0.2s ease; }
+  .modal-buy:hover{ background:var(--brick-2); }
+
+  /* ---------- toast ---------- */
+  .toast-wrap{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:10px; align-items:center; }
+  .toast{
+    background:var(--navy-3); color:var(--cream); padding:14px 22px; border-radius:12px; font-size:13.5px; font-weight:500;
+    display:flex; align-items:center; gap:10px; box-shadow:0 12px 30px rgba(0,0,0,0.3); opacity:0; transform:translateY(16px);
+    transition:opacity 0.3s ease, transform 0.3s ease; white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast .tick{ color:#5FD98A; font-size:16px; }
+
+  /* ---------- studio overlay ---------- */
+  .studio-overlay{ position:fixed; inset:0; background:#0B0B0C; z-index:150; display:none; flex-direction:column; }
+  .studio-overlay.open{ display:flex; }
+  .studio-bar{ display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:var(--navy-3); color:var(--cream); flex-shrink:0; }
+  .studio-bar .st-title{ font-family:'Fraunces', serif; font-weight:700; font-size:15px; display:flex; align-items:center; gap:10px; }
+  .studio-bar button{ background:var(--brick); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; }
+  .studio-bar button:hover{ background:var(--brick-2); }
+  .studio-overlay iframe{ flex:1; border:none; width:100%; }
+
+  /* ---------- mobile ---------- */
+  .mobile-nav-hint{ display:none; }
+  @media(max-width:900px){
+    .desk-nav{ display:none; }
+    .hero .wrap{ grid-template-columns:1fr; text-align:left; padding-top:56px; padding-bottom:56px; }
+    .glass-wrap{ margin-top:36px; max-width:220px; }
+    .journey-steps{ grid-template-columns:1fr; }
+    .foot-grid{ grid-template-columns:1fr 1fr; }
+    .hero-stats{ flex-wrap:wrap; row-gap:18px; }
+  }
+  @media(max-width:560px){
+    .wrap{ padding:0 20px; }
+    .foot-grid{ grid-template-columns:1fr; }
+    .deliveries-pill span.txt{ display:none; }
+    .modal-grid{ grid-template-columns:1fr; }
+  }
+</style>
 </head>
-
 <body>
 
-  <!-- shared logo, reused in both views -->
-  <template id="logo-svg">
-    <svg viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="47" stroke="#1C3552" stroke-width="2" fill="#FAF6EE" />
-      <circle cx="50" cy="50" r="41" stroke="#B23A2E" stroke-width="1" />
-      <path d="M43 24h14l3 10-5 5v24a7 7 0 0 1-7 7h0a7 7 0 0 1-7-7V39l-5-5 7-10Z" fill="#1C3552" />
-      <path d="M43 46c4.5 3.2 9.5 3.2 14 0v10a7 7 0 0 1-14 0V46Z" fill="#B23A2E" />
-      <path id="arcTop" d="M14,50 A36,36 0 0 1 86,50" fill="none" />
-      <path id="arcBottom" d="M18,64 A32,32 0 0 0 82,64" fill="none" />
-      <text font-family="Times New Roman, Times, serif" font-size="9" letter-spacing="2" fill="#1C3552">
-        <textPath href="#arcTop" startOffset="50%" text-anchor="middle">BHARGAVI</textPath>
-      </text>
-      <text font-family="Times New Roman, Times, serif" font-size="8.5" letter-spacing="1.5" fill="#B23A2E">
-        <textPath href="#arcBottom" startOffset="50%" text-anchor="middle">DAIRYLOOP</textPath>
-      </text>
-    </svg>
-  </template>
-
-  <!-- ================= PUBLIC VIEW ================= -->
-  <div id="public-view">
-    <header class="site-header">
-      <div class="brand">
-        <span class="logo-slot"></span>
-        <span class="brand-name">Bhargavi DairyLoop<span class="small">est. dairy co-operative</span></span>
-      </div>
-      <div class="menu-wrap">
-        <button id="hamburger-btn" aria-label="Open menu" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
-        <div id="nav-dropdown" role="menu">
-          <button id="open-studio-item" role="menuitem"><i class="ti ti-building-store" aria-hidden="true"></i>DairyLoop
-            Studio</button>
-          <button id="open-dataentry-item" role="menuitem"><i class="ti ti-database" aria-hidden="true"></i>Data
-            Entry</button>
-        </div>
-      </div>
-    </header>
-
-    <main>
-      <section class="hero">
-        <div class="hero-text">
-          <p class="eyebrow">Farm to store · fully traceable</p>
-          <h1>Milk that tells you<br>where it's been.</h1>
-          <p class="hero-sub">Every carton of ghee, block of paneer and slab of milk cake carries the trail of the farm
-            it came from, the day it was made, and the store it passed through — before it reaches you.</p>
-          <a href="#shop" class="btn-primary"><i class="ti ti-shopping-bag" aria-hidden="true"></i>Shop today's
-            batch</a>
-        </div>
-        <div class="hero-graphic">
-          <svg viewBox="0 0 320 320" fill="none">
-            <path d="M160 30c0 60-70 90-70 160a70 70 0 0 0 140 0c0-70-70-100-70-160Z" fill="#EFE1C6" stroke="#CBBB98" />
-            <path d="M100 190c30 24 90 24 120 0v40a60 60 0 0 1-120 0v-40Z" fill="#B23A2E" opacity="0.85" />
-            <circle cx="160" cy="120" r="10" fill="#fff" opacity="0.6" />
-          </svg>
-        </div>
-      </section>
-
-      <div class="wave-divider">
-        <svg viewBox="0 0 1440 60" preserveAspectRatio="none">
-          <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z" fill="#FFFFFF" />
-        </svg>
-      </div>
-
-      <div class="stats-strip">
-        <div class="stat"><span class="num">42</span><span class="label">partner farms</span></div>
-        <div class="stat"><span class="num">6 hrs</span><span class="label">farm to shelf</span></div>
-        <div class="stat"><span class="num">100%</span><span class="label">batch-tested</span></div>
-        <div class="stat"><span class="num">180+</span><span class="label">stores served</span></div>
-      </div>
-
-      <section class="showcase">
-        <p class="section-label">Our packaging</p>
-        <div class="slider" id="product-slider">
-          <button class="slider-arrow prev" id="slider-prev" aria-label="Previous"><i class="ti ti-chevron-left"
-              aria-hidden="true"></i></button>
-          <button class="slider-arrow next" id="slider-next" aria-label="Next"><i class="ti ti-chevron-right"
-              aria-hidden="true"></i></button>
-          <div class="slider-track" id="slider-track">
-
-            <div class="slide">
-              <div class="slide-img">
-                <svg viewBox="0 0 200 260" fill="none">
-                  <path d="M30 40 L100 15 L170 40 L170 240 Q100 255 30 240 Z" fill="#1C3552" />
-                  <path d="M30 40 L100 15 L170 40 L170 90 Q100 105 30 90 Z" fill="#274a72" />
-                  <rect x="46" y="105" width="108" height="108" rx="6" fill="#FAF6EE" />
-                  <path d="M78 128h44l6 14-8 8v30a10 10 0 0 1-10 10h0a10 10 0 0 1-10-10v-30l-8-8Z" fill="#1C3552" />
-                  <path d="M78 152c8 5.5 16 5.5 24 0v14a12 12 0 0 1-24 0v-14Z" fill="#B23A2E" />
-                  <text x="100" y="196" text-anchor="middle" font-family="Times New Roman, Times, serif"
-                    font-size="10.5" letter-spacing="0.5" fill="#1C3552">BHARGAVI</text>
-                  <text x="100" y="208" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="9"
-                    letter-spacing="0.5" fill="#B23A2E">DAIRYLOOP</text>
-                  <text x="100" y="66" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="12"
-                    fill="#FAF6EE">TONED MILK</text>
-                  <text x="100" y="80" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="9"
-                    fill="#EFE1C6">500 ml</text>
-                </svg>
-              </div>
-              <div class="slide-caption">
-                <p class="tag">Farm-fresh · pasteurised daily</p>
-                <h3>Toned Milk Pouch, 500 ml</h3>
-                <p>Collected before sunrise from our partner farms and packed the same morning — nothing added, nothing
-                  held back.</p>
-                <p class="price">₹32</p>
-              </div>
-            </div>
-
-            <div class="slide">
-              <div class="slide-img">
-                <svg viewBox="0 0 200 260" fill="none">
-                  <ellipse cx="100" cy="225" rx="58" ry="14" fill="#E0A63A" opacity="0.35" />
-                  <path d="M52 90 Q100 75 148 90 L142 220 Q100 235 58 220 Z" fill="#E0A63A" />
-                  <path d="M52 90 Q100 75 148 90 L146 112 Q100 125 54 112 Z" fill="#eec36e" />
-                  <rect x="82" y="55" width="36" height="30" rx="4" fill="#1C3552" />
-                  <rect x="76" y="46" width="48" height="14" rx="4" fill="#1C3552" />
-                  <rect x="58" y="140" width="84" height="52" rx="4" fill="#B23A2E" />
-                  <text x="100" y="160" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="11"
-                    fill="#FAF6EE">PURE COW</text>
-                  <text x="100" y="174" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="13"
-                    font-weight="bold" fill="#FAF6EE">GHEE</text>
-                  <text x="100" y="187" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="8.5"
-                    fill="#EFE1C6">500 g</text>
-                </svg>
-              </div>
-              <div class="slide-caption">
-                <p class="tag">Slow-simmered · bilona method</p>
-                <h3>Pure Cow Ghee, 500 g</h3>
-                <p>Made in small batches the traditional way, so every jar carries that deep aroma home-made ghee is
-                  meant to have.</p>
-                <p class="price">₹480</p>
-              </div>
-            </div>
-
-            <div class="slide">
-              <div class="slide-img">
-                <svg viewBox="0 0 200 260" fill="none">
-                  <rect x="34" y="70" width="132" height="150" rx="8" fill="#FAF6EE" stroke="#CBBB98"
-                    stroke-width="2" />
-                  <path d="M34 78 L100 100 L166 78" stroke="#CBBB98" stroke-width="2" fill="none" />
-                  <rect x="34" y="70" width="132" height="18" fill="#B23A2E" />
-                  <text x="100" y="83" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="10"
-                    fill="#FAF6EE">FRESH PANEER</text>
-                  <rect x="60" y="120" width="80" height="70" rx="3" fill="#ffffff" stroke="#E4D9C2" />
-                  <line x1="60" y1="143" x2="140" y2="143" stroke="#E4D9C2" />
-                  <line x1="60" y1="166" x2="140" y2="166" stroke="#E4D9C2" />
-                  <line x1="86" y1="120" x2="86" y2="190" stroke="#E4D9C2" />
-                  <line x1="113" y1="120" x2="113" y2="190" stroke="#E4D9C2" />
-                  <text x="100" y="206" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="9"
-                    fill="#1C3552">250 g</text>
-                </svg>
-              </div>
-              <div class="slide-caption">
-                <p class="tag">Made fresh every morning</p>
-                <h3>Soft Paneer Block, 250 g</h3>
-                <p>Pressed just firm enough to slice clean, packed within hours of setting so it reaches you at its
-                  softest.</p>
-                <p class="price">₹90</p>
-              </div>
-            </div>
-
-            <div class="slide">
-              <div class="slide-img">
-                <svg viewBox="0 0 200 260" fill="none">
-                  <rect x="38" y="86" width="124" height="128" rx="6" fill="#EFE1C6" stroke="#CBBB98"
-                    stroke-width="2" />
-                  <rect x="38" y="86" width="124" height="34" fill="#1C3552" />
-                  <text x="100" y="103" text-anchor="middle" font-family="Times New Roman, Times, serif"
-                    font-size="10.5" fill="#FAF6EE">BHARGAVI</text>
-                  <text x="100" y="115" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="9"
-                    fill="#EFE1C6">DAIRYLOOP</text>
-                  <circle cx="100" cy="165" r="34" fill="#f6ecd8" stroke="#CBBB98" />
-                  <text x="100" y="162" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="10"
-                    fill="#B23A2E">MILK</text>
-                  <text x="100" y="175" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="10"
-                    fill="#B23A2E">CAKE</text>
-                  <text x="100" y="204" text-anchor="middle" font-family="Times New Roman, Times, serif" font-size="8.5"
-                    fill="#5B5142">400 g</text>
-                </svg>
-              </div>
-              <div class="slide-caption">
-                <p class="tag">A festive favourite</p>
-                <h3>Milk Cake, 400 g</h3>
-                <p>Slow-reduced milk, lightly caramelised and set by hand — the same recipe our founder's mother once
-                  sold from home.</p>
-                <p class="price">₹220</p>
-              </div>
-            </div>
-
-          </div>
-          <div class="slider-dots" id="slider-dots"></div>
-        </div>
-      </section>
-
-      <section id="shop">
-        <p class="section-label">Shop our products</p>
-        <div class="product-grid">
-          <div class="p-card">
-            <div class="p-thumb"><i class="ti ti-jar" aria-hidden="true"></i></div>
-            <div class="p-body">
-              <p class="name">Pure cow ghee 500g</p>
-              <p class="dates">made 2 Aug · exp 2 Feb</p>
-              <p class="price">₹480</p>
-              <div class="p-actions"><button>Details</button><button class="add">Add to cart</button></div>
-            </div>
-          </div>
-          <div class="p-card">
-            <div class="p-thumb"><i class="ti ti-cheese" aria-hidden="true"></i></div>
-            <div class="p-body">
-              <p class="name">Fresh paneer 250g</p>
-              <p class="dates">made 14 Aug · exp 20 Aug</p>
-              <p class="price">₹90</p>
-              <div class="p-actions"><button>Details</button><button class="add">Add to cart</button></div>
-            </div>
-          </div>
-          <div class="p-card">
-            <div class="p-thumb"><i class="ti ti-cake" aria-hidden="true"></i></div>
-            <div class="p-body">
-              <p class="name">Milk cake 400g</p>
-              <p class="dates">made 10 Aug · exp 24 Aug</p>
-              <p class="price">₹220</p>
-              <div class="p-actions"><button>Details</button><button class="add">Add to cart</button></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="journey">
-        <p class="section-label">How it gets to you</p>
-        <ol class="journey-steps">
-          <li><span class="idx">01</span>
-            <h3>Collected</h3>
-            <p>Farmers deliver fresh milk to the nearest collection point every morning, logged the moment it arrives.
-            </p>
-          </li>
-          <li><span class="idx">02</span>
-            <h3>Processed</h3>
-            <p>Milk is turned into ghee, paneer and milk cake in small batches, each one dated and quality-checked.</p>
-          </li>
-          <li><span class="idx">03</span>
-            <h3>Delivered</h3>
-            <p>Finished batches move straight to partner stores — no warehousing, no long waits.</p>
-          </li>
-        </ol>
-      </section>
-    </main>
-
-    <footer>
-      <span>Bhargavi DairyLoop · farm to store, fully traceable</span>
-      <span>Suppliers · Careers · Contact · FSSAI license no.</span>
-    </footer>
-  </div>
-
-  <!-- ================= STUDIO VIEW — full page ================= -->
-  <div id="studio-page" class="backstage-page">
-    <div class="studio-topbar">
-      <div class="studio-brand"><i class="ti ti-milk" aria-hidden="true"></i><span>Bhargavi DairyLoop Studio</span>
-      </div>
-      <button class="back-to-store-btn" data-back><i class="ti ti-arrow-left" aria-hidden="true"></i>Back to
-        store</button>
-    </div>
-
-    <div class="studio-inner">
-      <div id="tabbar">
-        <button class="tabbtn" data-tab="proc"><i class="ti ti-truck-delivery"
-            aria-hidden="true"></i>Procurement</button>
-        <button class="tabbtn" data-tab="prod"><i class="ti ti-flask" aria-hidden="true"></i>Processing</button>
-        <button class="tabbtn" data-tab="dist"><i class="ti ti-building-store"
-            aria-hidden="true"></i>Distribution</button>
-      </div>
-
-      <p id="hint">Select a tab above to open its workspace.</p>
-
-      <div id="console" style="display:none;">
-        <div id="toolbar"></div>
-        <table>
-          <thead id="thead"></thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-
-      <p class="studio-shop-label">Shop our products</p>
-      <div class="studio-products">
-        <div class="mini">
-          <div class="th"><i class="ti ti-jar" aria-hidden="true"></i></div>
-          <div class="b">
-            <p>Pure cow ghee 500g</p>
-            <p class="pr">₹480</p>
-          </div>
-        </div>
-        <div class="mini">
-          <div class="th"><i class="ti ti-cheese" aria-hidden="true"></i></div>
-          <div class="b">
-            <p>Fresh paneer 250g</p>
-            <p class="pr">₹90</p>
-          </div>
-        </div>
-        <div class="mini">
-          <div class="th"><i class="ti ti-cake" aria-hidden="true"></i></div>
-          <div class="b">
-            <p>Milk cake 400g</p>
-            <p class="pr">₹220</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="studio-footer">
-        <span>Bhargavi DairyLoop Studio · internal operations</span>
-        <span>Suppliers · Careers · Contact · FSSAI license no.</span>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">
+      <img src="logo.png" alt="Bhargavi Dairy Loop logo">
+      <div class="brand-text">
+        <div class="name">Bhargavi Dairy Loop</div>
+        <div class="tag">Farm to doorstep, daily</div>
       </div>
     </div>
-  </div>
-
-  <!-- ================= DATA ENTRY VIEW — full page ================= -->
-  <div id="dataentry-page" class="backstage-page">
-    <div class="studio-topbar">
-      <div class="studio-brand"><i class="ti ti-database" aria-hidden="true"></i><span>Bhargavi DairyLoop — Data
-          Entry</span></div>
-      <button class="back-to-store-btn" data-back><i class="ti ti-arrow-left" aria-hidden="true"></i>Back to
-        store</button>
-    </div>
-
-    <div class="studio-inner">
-      <div class="process-grid" id="process-grid">
-        <div class="process-panel proc-procurement" data-panel="procurement">
-          <div class="process-panel-head">
-            <i class="ti ti-truck-delivery" aria-hidden="true"></i>
-            <div>
-              <p class="process-panel-title">Procurement</p>
-              <p class="process-panel-sub">Raw material providers</p>
-            </div>
-          </div>
-          <ul class="process-member-list" id="procurement-list"></ul>
-          <div class="process-add-row">
-            <input type="text" class="process-add-name" placeholder="Member name" />
-            <input type="text" class="process-add-role" placeholder="Role" />
-            <button class="process-add-btn" data-add="procurement"><i class="ti ti-plus" aria-hidden="true"></i>Add member</button>
-          </div>
-        </div>
-
-        <div class="process-panel proc-processing" data-panel="processing">
-          <div class="process-panel-head">
-            <i class="ti ti-settings" aria-hidden="true"></i>
-            <div>
-              <p class="process-panel-title">Processing</p>
-              <p class="process-panel-sub">Raw to product creators</p>
-            </div>
-          </div>
-          <ul class="process-member-list" id="processing-list"></ul>
-          <div class="process-add-row">
-            <input type="text" class="process-add-name" placeholder="Member name" />
-            <input type="text" class="process-add-role" placeholder="Role" />
-            <button class="process-add-btn" data-add="processing"><i class="ti ti-plus" aria-hidden="true"></i>Add member</button>
-          </div>
-        </div>
-
-        <div class="process-panel proc-distribution" data-panel="distribution">
-          <div class="process-panel-head">
-            <i class="ti ti-truck" aria-hidden="true"></i>
-            <div>
-              <p class="process-panel-title">Distribution</p>
-              <p class="process-panel-sub">Product suppliers</p>
-            </div>
-          </div>
-          <ul class="process-member-list" id="distribution-list"></ul>
-          <div class="process-add-row">
-            <input type="text" class="process-add-name" placeholder="Member name" />
-            <input type="text" class="process-add-role" placeholder="Role" />
-            <button class="process-add-btn" data-add="distribution"><i class="ti ti-plus" aria-hidden="true"></i>Add member</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="de-block">
-        <p class="de-block-title">Categories</p>
-        <div class="chip-row" id="category-chips"></div>
-        <button class="de-btn primary" id="btn-add-category"><i class="ti ti-plus" aria-hidden="true"></i>Add
-          new</button>
-        <button class="de-btn" id="btn-select-place"><i class="ti ti-map-pin" aria-hidden="true"></i>Select member
-          place</button>
-      </div>
-
-      <div class="de-block" id="place-picker" style="display:none;">
-        <p class="de-block-title">Choose a place</p>
-        <select id="place-select">
-          <option value="">Select a place…</option>
-        </select>
-      </div>
-
-      <div id="member-table-wrap">
-        <p class="de-block-title" id="member-table-title">Members</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th style="text-align:right;">Work update</th>
-            </tr>
-          </thead>
-          <tbody id="member-tbody"></tbody>
-        </table>
-      </div>
+    <nav class="desk-nav">
+      <a href="#home">Home</a>
+      <a href="#products">Products</a>
+      <a href="#journey">Our Journey</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <div class="header-actions">
+      <button class="deliveries-pill" onclick="openDrawer('delivery')">
+        <span>🚚</span><span class="txt">My Deliveries</span><span class="count" id="orderCountPill">0</span>
+      </button>
+      <button class="hamburger" aria-label="Open menu" onclick="openDrawer('menu')">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
+</header>
 
-  <div id="modal-wrap">
-    <div id="modal-content"></div>
+<section class="hero" id="home">
+  <div class="wrap">
+    <div>
+      <div class="hero-eyebrow">Pure &amp; unadulterated, since sunrise</div>
+      <h1>Farm-fresh dairy, <em>poured</em><br>straight to your door.</h1>
+      <p class="sub">Bhargavi Dairy Loop collects milk from verified farms every dawn, chills and packs it within hours, and delivers it — along with curd, paneer, ghee and more — before your morning chai is ready.</p>
+      <div class="hero-cta">
+        <a href="#products" class="btn btn-primary">🛒 Shop Fresh Dairy</a>
+        <button class="btn btn-ghost" onclick="openDrawer('delivery')">Track My Order</button>
+      </div>
+      <div class="hero-stats">
+        <div><div class="num">6 hrs</div><div class="lbl">Farm to pack</div></div>
+        <div><div class="num">120+</div><div class="lbl">Partner farms</div></div>
+        <div><div class="num">4.9★</div><div class="lbl">Customer rating</div></div>
+      </div>
+    </div>
+    <div class="glass-wrap">
+      <svg class="glass-svg" viewBox="0 0 220 300" xmlns="http://www.w3.org/2000/svg">
+        <ellipse class="ripple" cx="110" cy="52" rx="34" ry="7" fill="#F3ECDA" opacity="0.9"/>
+        <rect class="pour-drop" x="104" y="20" width="10" height="18" rx="5" fill="#F3ECDA"/>
+        <path d="M60 70 L74 268 Q76 284 92 284 L128 284 Q144 284 146 268 L160 70 Z" fill="none" stroke="#F3ECDA" stroke-width="4" opacity="0.55"/>
+        <clipPath id="glassClip"><path d="M62 72 L75.5 267 Q77.3 281 92 281 L128 281 Q142.7 281 144.5 267 L158 72 Z"/></clipPath>
+        <g clip-path="url(#glassClip)">
+          <rect class="milk-fill" x="55" y="118" width="112" height="180" fill="#F3ECDA"/>
+          <ellipse class="milk-fill" cx="111" cy="118" rx="53" ry="8" fill="#FFFFFF" opacity="0.6"/>
+        </g>
+        <path d="M60 70 L74 268 Q76 284 92 284 L128 284 Q144 284 146 268 L160 70 Z" fill="none" stroke="#D9A441" stroke-width="3"/>
+      </svg>
+      <div class="float-badge"><span class="dot"></span>Batch chilled 30 mins ago</div>
+    </div>
   </div>
+</section>
 
-  <script>
-    /* ---------- inject shared logo into slots ---------- */
-    document.querySelectorAll(".logo-slot").forEach(slot => {
-      slot.innerHTML = document.getElementById("logo-svg").innerHTML;
-    });
+<section class="cat-section">
+  <div class="wrap cat-head reveal">
+    <div class="eyebrow">What we deliver</div>
+    <h2>One loop, every dairy essential</h2>
+    <p>Swipe through our categories — every one of them sourced, tested and packed the same day.</p>
+  </div>
+  <div class="marquee-mask">
+    <div class="marquee-track" id="catTrack"></div>
+  </div>
+</section>
 
-    /* ---------- auto-sliding product showcase ---------- */
-    const sliderTrack = document.getElementById("slider-track");
-    const slides = sliderTrack.querySelectorAll(".slide");
-    const dotsWrap = document.getElementById("slider-dots");
-    let slideIndex = 0, autoTimer = null;
-    slides.forEach((_, i) => {
-      const dot = document.createElement("button");
-      if (i === 0) dot.classList.add("active");
-      dot.addEventListener("click", () => goToSlide(i));
-      dotsWrap.appendChild(dot);
-    });
-    function goToSlide(i) {
-      slideIndex = (i + slides.length) % slides.length;
-      sliderTrack.style.transform = `translateX(-${slideIndex * 100}%)`;
-      dotsWrap.querySelectorAll("button").forEach((d, di) => d.classList.toggle("active", di === slideIndex));
+<section class="products" id="products">
+  <div class="wrap">
+    <div class="prod-head reveal">
+      <div>
+        <div class="eyebrow">Today's fresh stock</div>
+        <h2>Pick what your kitchen needs</h2>
+        <p>Every card shows exactly when it was packed and how long it stays fresh — no guessing at the fridge.</p>
+      </div>
+      <div class="filter-row" id="filterRow"></div>
+    </div>
+    <div class="prod-grid" id="prodGrid"></div>
+  </div>
+</section>
+
+<section class="journey" id="journey">
+  <div class="wrap">
+    <div class="journey-head reveal">
+      <div class="eyebrow">How the loop works</div>
+      <h2>From the pasture to your porch</h2>
+    </div>
+    <div class="journey-steps">
+      <div class="jstep reveal"><div class="jicon">🐄</div><div class="jnum">Stage 01</div><h3>Procured at dawn</h3><p>Milk is collected from 120+ verified farms before sunrise and quality-tested for fat and adulteration on the spot.</p><div class="jconnect">→</div></div>
+      <div class="jstep reveal"><div class="jicon">❄️</div><div class="jnum">Stage 02</div><h3>Chilled &amp; processed</h3><p>Within hours it's chilled, pasteurised and turned into curd, paneer, butter and ghee in our processing units.</p><div class="jconnect">→</div></div>
+      <div class="jstep reveal"><div class="jicon">🚚</div><div class="jnum">Stage 03</div><h3>Delivered fresh</h3><p>Packed batches move straight to distribution and reach your door the same day — tracked end to end.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><img src="logo.png" alt="Bhargavi Dairy Loop"><span>Bhargavi Dairy Loop</span></div>
+        <p class="fp">A farm-to-doorstep dairy loop built on trust — every pouch, cup and jar tells you exactly when it was packed and how long it lasts.</p>
+        <div class="foot-social">
+          <a href="#" aria-label="Instagram">📷</a>
+          <a href="#" aria-label="Facebook">📘</a>
+          <a href="#" aria-label="WhatsApp">💬</a>
+        </div>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#products">Products</a></li>
+          <li><a href="#journey">Our Journey</a></li>
+          <li><a href="javascript:void(0)" onclick="openDrawer('delivery')">My Deliveries</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Our Products</h4>
+        <ul>
+          <li><a href="#products">Milk &amp; Beverages</a></li>
+          <li><a href="#products">Curd &amp; Yogurt</a></li>
+          <li><a href="#products">Paneer &amp; Cheese</a></li>
+          <li><a href="#products">Butter &amp; Ghee</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Stay in the loop</h4>
+        <div class="foot-newsletter">
+          <input type="email" placeholder="you@email.com">
+          <button onclick="showToast('Subscribed — fresh updates on the way', true)">Subscribe</button>
+        </div>
+        <p class="fp" style="margin-top:14px;">📍 Bhargavi Dairy Loop, Maharashtra, India<br>📞 +91 98765 43210</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Bhargavi Dairy Loop. All rights reserved.</span>
+      <span>Made with care for every doorstep.</span>
+    </div>
+  </div>
+</footer>
+
+<div class="backdrop" id="backdrop" onclick="closeAllOverlays()"></div>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="dtitle" id="drawerTitle">☰ Menu</div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<div class="modal-back" id="modalBack" onclick="if(event.target===this) closeModal();">
+  <div class="modal-card" id="modalCard"></div>
+</div>
+
+<div class="studio-overlay" id="studioOverlay">
+  <div class="studio-bar">
+    <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
+    <button onclick="closeStudio()">✕ Close Studio</button>
+  </div>
+  <iframe id="studioFrame" title="Manage Studio"></iframe>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const PRODUCTS = [
+    { id:'p1', name:'Full Cream Milk', category:'Milk & Beverages', unit:'500 ml Pouch', price:34, packedOn:'16 Aug 2026, 5:30 AM', bestBefore:'18 Aug 2026', icon:'🥛', short:'Rich, creamy whole milk chilled within hours of collection.', desc:'Our Full Cream Milk retains 6% fat for that classic, rich taste your family remembers. Sourced every dawn from verified farms, it is chilled, tested for adulteration and pouched the same morning — never more than a day between farm and doorstep.', nutrition:{Energy:'67 kcal', Fat:'6.0 g', Protein:'3.2 g', Carbs:'4.7 g'} },
+    { id:'p2', name:'Toned Milk', category:'Milk & Beverages', unit:'500 ml Pouch', price:28, packedOn:'16 Aug 2026, 5:30 AM', bestBefore:'18 Aug 2026', icon:'🥛', short:'A lighter everyday milk, ideal for tea, coffee and cooking.', desc:'Toned Milk blends full cream and skimmed milk to bring fat content down to 3% without losing body or taste, making it a lighter everyday choice for tea, coffee, and cooking.', nutrition:{Energy:'58 kcal', Fat:'3.0 g', Protein:'3.3 g', Carbs:'4.8 g'} },
+    { id:'p3', name:'Fresh Curd (Dahi)', category:'Curd & Yogurt', unit:'400 g Cup', price:40, packedOn:'15 Aug 2026', bestBefore:'20 Aug 2026', icon:'🍶', short:'Thick, set curd cultured overnight the traditional way.', desc:'Set the traditional way in small batches, our curd develops a naturally thick body and a gentle tang. Rich in live cultures, it is a daily staple for digestion and taste alike.', nutrition:{Energy:'61 kcal', Fat:'3.3 g', Protein:'3.5 g', Carbs:'4.9 g'} },
+    { id:'p4', name:'Malai Paneer', category:'Paneer & Cheese', unit:'200 g Block', price:90, packedOn:'15 Aug 2026', bestBefore:'21 Aug 2026', icon:'🧀', short:'Soft, malai-rich cottage cheese pressed the same day.', desc:'Made fresh daily from whole milk, our paneer is hand-pressed to a soft, spongy texture that holds its shape in curries yet melts on the tongue. No preservatives, ever.', nutrition:{Energy:'265 kcal', Fat:'20 g', Protein:'18 g', Carbs:'1.2 g'} },
+    { id:'p5', name:'White Butter', category:'Butter & Ghee', unit:'500 g Tub', price:210, packedOn:'12 Aug 2026', bestBefore:'26 Sep 2026', icon:'🧈', short:'Hand-churned white butter, unsalted and naturally aromatic.', desc:'Churned in small batches from cultured cream, this unsalted white butter (loni) carries a naturally sweet, grassy aroma — perfect for melting over hot rice or rotis.', nutrition:{Energy:'717 kcal', Fat:'81 g', Protein:'0.9 g', Carbs:'0.1 g'} },
+    { id:'p6', name:'Pure Cow Ghee', category:'Butter & Ghee', unit:'500 ml Jar', price:495, packedOn:'2 Jul 2026', bestBefore:'28 Dec 2026', icon:'🫙', short:'Slow-simmered, golden cow ghee with a deep, nutty aroma.', desc:"Made using the traditional bilona method — curd is churned to butter, then slow-simmered over a wood fire until golden — this ghee carries a deep, nutty aroma that instant methods can't replicate.", nutrition:{Energy:'900 kcal', Fat:'100 g', Protein:'0 g', Carbs:'0 g'} },
+    { id:'p7', name:'Buttermilk (Chaas)', category:'Curd & Yogurt', unit:'200 ml Bottle', price:15, packedOn:'16 Aug 2026', bestBefore:'19 Aug 2026', icon:'🥤', short:'Spiced, chilled buttermilk churned fresh every morning.', desc:'Churned fresh every morning from our own curd and lightly spiced with cumin, curry leaf and a pinch of salt — a cooling companion to any meal.', nutrition:{Energy:'40 kcal', Fat:'1.5 g', Protein:'2.1 g', Carbs:'4.0 g'} },
+    { id:'p8', name:'Fresh Cream', category:'Cream & Specialty', unit:'200 ml Tub', price:65, packedOn:'15 Aug 2026', bestBefore:'22 Aug 2026', icon:'🍦', short:'Thick dairy cream for desserts, curries and morning coffee.', desc:'Skimmed off the top of our full cream milk, this thick, pourable cream adds richness to curries, desserts and coffee alike.', nutrition:{Energy:'340 kcal', Fat:'35 g', Protein:'2.0 g', Carbs:'3.0 g'} },
+    { id:'p9', name:'Gulab Flavoured Milk', category:'Milk & Beverages', unit:'200 ml Bottle', price:25, packedOn:'16 Aug 2026', bestBefore:'20 Aug 2026', icon:'🌹', short:'Chilled milk infused with real rose syrup.', desc:'Full cream milk lightly sweetened and infused with real rose syrup for a nostalgic, fragrant treat the whole family enjoys chilled.', nutrition:{Energy:'98 kcal', Fat:'4.0 g', Protein:'3.0 g', Carbs:'13 g'} },
+    { id:'p10', name:'Artisan Cheese Block', category:'Paneer & Cheese', unit:'250 g Block', price:180, packedOn:'20 Jun 2026', bestBefore:'19 Oct 2026', icon:'🧀', short:'Aged, semi-hard cheese crafted in small artisan batches.', desc:'Aged for weeks in our dairy for a firm, semi-hard bite and a savoury depth — ideal for grating, slicing or melting into your favourite dishes.', nutrition:{Energy:'350 kcal', Fat:'27 g', Protein:'23 g', Carbs:'2.5 g'} }
+  ];
+
+  const CATEGORIES = [
+    { name:'Milk & Beverages', icon:'🥛', desc:'Full cream, toned & flavoured milk, chilled daily.' },
+    { name:'Curd & Yogurt', icon:'🍶', desc:'Set curd, chaas & probiotic yogurt, cultured fresh.' },
+    { name:'Paneer & Cheese', icon:'🧀', desc:'Soft paneer & aged artisan cheese, hand-pressed.' },
+    { name:'Butter & Ghee', icon:'🧈', desc:'Hand-churned butter and bilona-method ghee.' },
+    { name:'Cream & Specialty', icon:'🍦', desc:'Thick fresh cream for desserts and coffee.' }
+  ];
+
+  const ORDERS_KEY = 'bhargaviDairyOrders';
+  const RAZORPAY_KEY = 'rzp_test_1DP5mmOlF5G5ag';
+
+  function getOrders(){ try{ return JSON.parse(localStorage.getItem(ORDERS_KEY)) || []; }catch(e){ return []; } }
+  function saveOrders(list){ localStorage.setItem(ORDERS_KEY, JSON.stringify(list)); }
+
+  function renderCategories(){
+    const chips = CATEGORIES.map(c => `
+      <div class="cat-chip">
+        <div class="icon">${c.icon}</div>
+        <div class="cname">${c.name}</div>
+        <div class="cdesc">${c.desc}</div>
+      </div>`).join('');
+    document.getElementById('catTrack').innerHTML = chips + chips;
+  }
+
+  let activeFilter = 'All';
+  function renderFilters(){
+    const cats = ['All', ...new Set(PRODUCTS.map(p => p.category))];
+    document.getElementById('filterRow').innerHTML = cats.map(c =>
+      `<button class="filter-chip ${c===activeFilter?'active':''}" onclick="setFilter('${c}')">${c}</button>`
+    ).join('');
+  }
+  function setFilter(cat){ activeFilter = cat; renderFilters(); renderProducts(); }
+
+  function renderProducts(){
+    const list = activeFilter === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === activeFilter);
+    document.getElementById('prodGrid').innerHTML = list.map(p => `
+      <div class="card reveal in">
+        <div class="card-media">
+          <div class="cat-tag">${p.category}</div>
+          <div class="emoji">${p.icon}</div>
+        </div>
+        <div class="card-body">
+          <h3>${p.name}</h3>
+          <div class="card-unit">${p.unit}</div>
+          <div class="card-short">${p.short}</div>
+          <div class="card-dates">
+            <div class="date-box"><div class="dlabel">Packed On</div><div class="dval">${p.packedOn}</div></div>
+            <div class="date-box"><div class="dlabel">Best Before</div><div class="dval">${p.bestBefore}</div></div>
+          </div>
+          <div class="card-foot">
+            <div class="price">₹${p.price}<sup>.00</sup></div>
+          </div>
+          <div class="card-btns">
+            <button class="btn-detail" onclick="openModal('${p.id}')">See Detail</button>
+            <button class="btn-buy" onclick="buyNow('${p.id}', 1)">Buy Now</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  let modalQty = 1;
+  function openModal(id){
+    const p = PRODUCTS.find(x => x.id === id);
+    modalQty = 1;
+    document.getElementById('modalCard').innerHTML = `
+      <div class="modal-grid">
+        <div class="modal-media">
+          <button class="modal-close" onclick="closeModal()">✕</button>
+          <div class="emoji">${p.icon}</div>
+        </div>
+        <div class="modal-content">
+          <div class="cat-tag">${p.category}</div>
+          <h2>${p.name}</h2>
+          <div class="munit">${p.unit}</div>
+          <p class="mdesc">${p.desc}</p>
+          <div class="nutri-grid">
+            ${Object.entries(p.nutrition).map(([k,v]) => `<div class="nutri-box"><div class="nval">${v}</div><div class="nlbl">${k}</div></div>`).join('')}
+          </div>
+          <div class="modal-dates">
+            <div class="date-box"><div class="dlabel">Packed On</div><div class="dval">${p.packedOn}</div></div>
+            <div class="date-box"><div class="dlabel">Best Before</div><div class="dval">${p.bestBefore}</div></div>
+          </div>
+          <div class="modal-price-row">
+            <div class="price" id="modalPrice">₹${p.price}<sup>.00</sup></div>
+            <div class="qty-stepper">
+              <button onclick="stepQty(-1)">−</button>
+              <span id="qtyVal">1</span>
+              <button onclick="stepQty(1)">+</button>
+            </div>
+          </div>
+          <button class="modal-buy" onclick="buyNow('${p.id}', modalQty)">Buy Now — Pay with Razorpay</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('modalBack').classList.add('show');
+    document.getElementById('backdrop').classList.add('show');
+    window.__currentModalProduct = p;
+  }
+  function stepQty(dir){
+    modalQty = Math.max(1, Math.min(20, modalQty + dir));
+    document.getElementById('qtyVal').textContent = modalQty;
+    const p = window.__currentModalProduct;
+    document.getElementById('modalPrice').innerHTML = `₹${p.price * modalQty}<sup>.00</sup>`;
+  }
+  function closeModal(){
+    document.getElementById('modalBack').classList.remove('show');
+    document.getElementById('backdrop').classList.remove('show');
+  }
+
+  function buyNow(productId, qty){
+    const p = PRODUCTS.find(x => x.id === productId);
+    if(!p) return;
+    if(typeof Razorpay === 'undefined'){
+      showToast('Payment gateway failed to load. Check your connection.', false);
+      return;
     }
-    function startAuto() { autoTimer = setInterval(() => goToSlide(slideIndex + 1), 3500); }
-    function stopAuto() { clearInterval(autoTimer); }
-    document.getElementById("slider-prev").addEventListener("click", () => { goToSlide(slideIndex - 1); stopAuto(); startAuto(); });
-    document.getElementById("slider-next").addEventListener("click", () => { goToSlide(slideIndex + 1); stopAuto(); startAuto(); });
-    document.getElementById("product-slider").addEventListener("mouseenter", stopAuto);
-    document.getElementById("product-slider").addEventListener("mouseleave", startAuto);
-    startAuto();
-
-    /* ---------- hamburger dropdown ---------- */
-    const hamburgerBtn = document.getElementById("hamburger-btn");
-    const navDropdown = document.getElementById("nav-dropdown");
-    hamburgerBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = navDropdown.classList.toggle("open");
-      hamburgerBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-    });
-    document.addEventListener("click", (e) => {
-      if (!navDropdown.contains(e.target) && e.target !== hamburgerBtn) {
-        navDropdown.classList.remove("open");
-        hamburgerBtn.setAttribute("aria-expanded", "false");
-      }
-    });
-
-    /* ---------- page switch: public <-> studio <-> data entry (full pages, no popup/slider) ---------- */
-    const publicView = document.getElementById("public-view");
-    const studioPage = document.getElementById("studio-page");
-    const dataEntryPage = document.getElementById("dataentry-page");
-    function showPage(page) {
-      [publicView, studioPage, dataEntryPage].forEach(p => p.style.display = "none");
-      page.style.display = "block";
-      window.scrollTo(0, 0);
-    }
-    document.getElementById("open-studio-item").addEventListener("click", () => {
-      navDropdown.classList.remove("open");
-      showPage(studioPage);
-    });
-    document.getElementById("open-dataentry-item").addEventListener("click", () => {
-      navDropdown.classList.remove("open");
-      showPage(dataEntryPage);
-    });
-    document.querySelectorAll("[data-back]").forEach(btn => btn.addEventListener("click", () => showPage(publicView)));
-
-    /* ---------- data entry: procurement / processing / distribution panels ---------- */
-    const processData = {
-      procurement: [
-        { name: "Ramesh Yadav", role: "Milk supplier" },
-        { name: "Sunita Devi", role: "Milk supplier" },
-        { name: "Vikram Patil", role: "Fodder supplier" },
-        { name: "Anil Kumar", role: "Milk supplier" },
-        { name: "Geeta Bai", role: "Milk supplier" },
-        { name: "Suresh Chavan", role: "Cattle feed supplier" },
-        { name: "Meena Kale", role: "Milk supplier" },
-        { name: "Prakash Jadhav", role: "Milk supplier" },
-        { name: "Lata Pawar", role: "Fodder supplier" },
-        { name: "Dinesh More", role: "Milk supplier" }
-      ],
-      processing: [
-        { name: "Rita Sharma", role: "Quality check" },
-        { name: "Mohan Lal", role: "Ghee production" },
-        { name: "Priya Deshmukh", role: "Paneer production" },
-        { name: "Arjun Rao", role: "Packaging" },
-        { name: "Kavita Joshi", role: "Quality check" },
-        { name: "Sanjay Pillai", role: "Milk cake production" },
-        { name: "Neha Kulkarni", role: "Packaging" },
-        { name: "Rahul Naik", role: "Quality check" },
-        { name: "Pooja Shinde", role: "Ghee production" },
-        { name: "Vivek Salunkhe", role: "Paneer production" }
-      ],
-      distribution: [
-        { name: "BigBasket Team", role: "Big store dispatch" },
-        { name: "Reliance Fresh Team", role: "Big store dispatch" },
-        { name: "Sharma Kirana Store", role: "Small store dispatch" },
-        { name: "Ajay Transport", role: "Logistics" },
-        { name: "Gupta Distributors", role: "Regional distributor" },
-        { name: "Fresh Mart", role: "Small store dispatch" },
-        { name: "Patel Wholesale", role: "Regional distributor" },
-        { name: "City Dairy Outlet", role: "Small store dispatch" },
-        { name: "Metro Supermart", role: "Big store dispatch" },
-        { name: "Verma Logistics", role: "Logistics" }
-      ]
-    };
-
-    function renderProcessList(key) {
-      const listEl = document.getElementById(`${key}-list`);
-      listEl.innerHTML = processData[key].map(m => `
-        <li><span class="pm-name">${m.name}</span><span class="pm-role">${m.role}</span></li>
-      `).join("");
-    }
-    Object.keys(processData).forEach(renderProcessList);
-
-    document.querySelectorAll("[data-add]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const key = btn.getAttribute("data-add");
-        const panel = btn.closest(".process-panel");
-        const nameInput = panel.querySelector(".process-add-name");
-        const roleInput = panel.querySelector(".process-add-role");
-        const name = nameInput.value.trim();
-        const role = roleInput.value.trim();
-        if (!name || !role) return;
-        processData[key].push({ name, role });
-        renderProcessList(key);
-        nameInput.value = "";
-        roleInput.value = "";
-        nameInput.focus();
-      });
-    });
-
-    document.querySelectorAll(".process-add-role").forEach(input => {
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") input.closest(".process-panel").querySelector("[data-add]").click();
-      });
-    });
-
-    const processGrid = document.getElementById("process-grid");
-    document.querySelectorAll(".process-panel").forEach(panel => {
-      panel.addEventListener("mouseenter", () => {
-        processGrid.classList.add("hovering");
-        panel.classList.add("active");
-      });
-      panel.addEventListener("mouseleave", () => {
-        processGrid.classList.remove("hovering");
-        panel.classList.remove("active");
-      });
-    });
-
-    /* ---------- data entry: categories + member places ---------- */
-    let categories = ["Milk Collection", "Quality Check", "Packaging", "Dispatch"];
-    const places = {
-      "Anand Center": [
-        { name: "Rita Sharma", role: "Data operator", lastUpdate: null },
-        { name: "Mohan Lal", role: "Field supervisor", lastUpdate: null }
-      ],
-      "Nashik Hub": [
-        { name: "Priya Deshmukh", role: "Data operator", lastUpdate: null }
-      ],
-      "Pune Branch": [
-        { name: "Arjun Rao", role: "Field supervisor", lastUpdate: null },
-        { name: "Kavita Joshi", role: "Data operator", lastUpdate: null }
-      ]
-    };
-    let currentPlace = null;
-
-    function renderCategoryChips() {
-      document.getElementById("category-chips").innerHTML =
-        categories.map(c => `<span class="chip">${c}</span>`).join("");
-    }
-    renderCategoryChips();
-
-    function renderPlaceOptions() {
-      const sel = document.getElementById("place-select");
-      sel.innerHTML = `<option value="">Select a place…</option>` +
-        Object.keys(places).map(p => `<option value="${p}">${p}</option>`).join("");
-    }
-    renderPlaceOptions();
-
-    function renderMemberTable() {
-      if (!currentPlace) return;
-      document.getElementById("member-table-title").textContent = `Members — ${currentPlace}`;
-      document.getElementById("member-tbody").innerHTML = places[currentPlace].map((m, i) => `
-      <tr>
-        <td>${m.name}${m.lastUpdate ? `<span class="last-update-note">Last update: ${m.lastUpdate}</span>` : ""}</td>
-        <td style="color:var(--text-secondary);">${m.role}</td>
-        <td style="text-align:right;"><button class="work-update-btn" onclick="openWorkUpdate('${currentPlace.replace(/'/g, "\\'")}', ${i})">Work update</button></td>
-      </tr>`).join("");
-      document.getElementById("member-table-wrap").style.display = "block";
-    }
-
-    function openWorkUpdate(place, i) {
-      const m = places[place][i];
-      document.getElementById("modal-content").innerHTML = `
-      <p style="font-size:14px;font-weight:700;margin:0 0 4px;">${m.name}</p>
-      <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 12px;font-style:italic;">${m.role} · ${place}</p>
-      <textarea id="wu-note" rows="3" placeholder="What did they update today?" style="width:100%;background:var(--surface-1);border:1px solid var(--border-strong);color:var(--text-primary);padding:9px 10px;border-radius:4px;font-size:13.5px;font-family:inherit;margin-bottom:4px;"></textarea>
-      <p id="wu-err" style="display:none;font-size:12.5px;color:var(--text-danger);margin:4px 0 8px;">Enter an update first</p>
-      <div style="display:flex;gap:8px;margin-top:10px;"><button id="wu-cancel" style="flex:1;">Cancel</button><button id="wu-save" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border:none;">Save update</button></div>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      document.getElementById("wu-cancel").addEventListener("click", closeModal);
-      document.getElementById("wu-save").addEventListener("click", () => {
-        const val = document.getElementById("wu-note").value.trim();
-        if (!val) { document.getElementById("wu-err").style.display = "block"; return; }
-        m.lastUpdate = val;
-        closeModal(); renderMemberTable();
-      });
-    }
-
-    document.getElementById("btn-add-category").addEventListener("click", () => {
-      document.getElementById("modal-content").innerHTML = `
-      <p style="font-size:14px;font-weight:700;margin:0 0 12px;">Add category</p>
-      <input id="cat-name" type="text" placeholder="Category name" style="width:100%;margin-bottom:4px;" />
-      <p id="cat-err" style="display:none;font-size:12.5px;color:var(--text-danger);margin:4px 0 8px;">Enter a category name first</p>
-      <div style="display:flex;gap:8px;margin-top:10px;"><button id="cat-cancel" style="flex:1;">Cancel</button><button id="cat-save" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border:none;">Add category</button></div>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      document.getElementById("cat-cancel").addEventListener("click", closeModal);
-      document.getElementById("cat-save").addEventListener("click", () => {
-        const val = document.getElementById("cat-name").value.trim();
-        if (!val) { document.getElementById("cat-err").style.display = "block"; return; }
-        categories.push(val);
-        closeModal(); renderCategoryChips();
-      });
-    });
-
-    document.getElementById("btn-select-place").addEventListener("click", () => {
-      document.getElementById("place-picker").style.display = "block";
-    });
-    document.getElementById("place-select").addEventListener("change", (e) => {
-      currentPlace = e.target.value || null;
-      if (currentPlace) { renderMemberTable(); } else { document.getElementById("member-table-wrap").style.display = "none"; }
-    });
-
-    /* ---------- studio dashboard logic ---------- */
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const data = {
-      proc: {
-        rows: [
-          {
-            name: "Ramesh Yadav", product: "Cow milk", target: 280, log: [42, 40, 38, 45, 40, 35, 0], joined: "Jan 2026", photo: null,
-            payHistory: [{ month: "Jun 2026", status: "paid" }, { month: "Jul 2026", status: "paid" }, { month: "Aug 2026", status: "due" }]
-          },
-          {
-            name: "Sunita Devi", product: "Buffalo milk", target: 210, log: [30, 32, 30, 28, 30, 30, 25], joined: "Mar 2026", photo: null,
-            payHistory: [{ month: "Jul 2026", status: "paid" }, { month: "Aug 2026", status: "paid" }]
-          },
-          {
-            name: "Vikram Patil", product: "Cow milk", target: 250, log: [20, 18, 22, 15, 20, 0, 0], joined: "May 2026", photo: null,
-            payHistory: [{ month: "Jul 2026", status: "due" }, { month: "Aug 2026", status: "due" }]
-          }
-        ]
-      },
-      prod: {
-        rows: [
-          { name: "Ghee", meta: "in progress", target: 100, achieved: 58, note: "needs 40 L more milk", paid: true },
-          { name: "Paneer", meta: "completed", target: 60, achieved: 60, note: "stock ready", paid: true },
-          { name: "Milk cake", meta: "in progress", target: 30, achieved: 12, note: "needs 20 L more milk", paid: false }
-        ]
-      },
-      dist: {
-        rows: [
-          { name: "BigBasket", meta: "big store", target: 200, achieved: 200, note: "cleared", paid: true },
-          { name: "Reliance Fresh", meta: "big store", target: 150, achieved: 150, note: "7 days overdue", paid: false },
-          { name: "Sharma Kirana Store", meta: "small store", target: 10, achieved: 10, note: "cleared", paid: true }
-        ]
-      }
-    };
-    let activeTab = null, expandedIdx = null, uploadedPhoto = null;
-
-    function pct(a, t) { return Math.min(100, Math.round((a / t) * 100)); }
-    function achieved(s) { return s.log.reduce((a, b) => a + b, 0); }
-    function dailyTarget(s) { return Math.round(s.target / 7); }
-    function currentStatus(s) { return s.payHistory[s.payHistory.length - 1].status; }
-    function avatarHtml(row) {
-      if (row.photo) return `<img src="${row.photo}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:-8px;margin-right:8px;" />`;
-      return `<span style="display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--surface-1);align-items:center;justify-content:center;vertical-align:-8px;margin-right:8px;"><i class="ti ti-user" style="font-size:14px;color:var(--text-muted);" aria-hidden="true"></i></span>`;
-    }
-    function closeModal() { document.getElementById("modal-wrap").style.display = "none"; }
-    function supplierOptions() { return data.proc.rows.map((s, i) => `<option value="${i}">${s.name}</option>`).join(""); }
-    function toggleQuota(i) { expandedIdx = expandedIdx === i ? null : i; renderConsole(); }
-
-    function showPayment(i) {
-      const s = data.proc.rows[i];
-      const rows = s.payHistory.map(h => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);"><span>${h.month}</span><span style="color:${h.status === 'paid' ? 'var(--text-success)' : 'var(--text-danger)'};">${h.status}</span></div>`).join("");
-      document.getElementById("modal-content").innerHTML = `<p style="font-size:14px;font-weight:700;margin:0 0 4px;">${s.name}</p><p style="font-size:12.5px;color:var(--text-muted);margin:0 0 12px;font-style:italic;">joined ${s.joined}</p>${rows}<button id="close-modal" style="width:100%;margin-top:14px;">Close</button>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      document.getElementById("close-modal").addEventListener("click", closeModal);
-    }
-
-    function renderConsole() {
-      if (!activeTab) return;
-      const d = data[activeTab];
-      const toolbar = document.getElementById("toolbar");
-
-      if (activeTab === "proc") {
-        toolbar.innerHTML = `
-        <button id="btn-add-supplier" style="font-size:12.5px;display:flex;align-items:center;gap:4px;"><i class="ti ti-plus" style="font-size:14px" aria-hidden="true"></i>Add supplier</button>
-        <button id="btn-log-intake" style="font-size:12.5px;display:flex;align-items:center;gap:4px;"><i class="ti ti-droplet" style="font-size:14px" aria-hidden="true"></i>Log today's intake</button>
-        <button id="btn-record-payment" style="font-size:12.5px;display:flex;align-items:center;gap:4px;"><i class="ti ti-cash" style="font-size:14px" aria-hidden="true"></i>Record payment</button>`;
-        document.getElementById("thead").innerHTML = `<tr style="border-bottom:1px solid var(--border);">
-        <th style="text-align:left;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Supplier</th>
-        <th style="text-align:left;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Product</th>
-        <th style="text-align:left;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Weekly quota</th>
-        <th style="text-align:right;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Payment</th></tr>`;
-        let html = "";
-        d.rows.forEach((s, i) => {
-          const ach = achieved(s), p = pct(ach, s.target), status = currentStatus(s);
-          html += `<tr>
-          <td style="padding:8px 0;font-size:13.5px;">${avatarHtml(s)}${s.name}</td>
-          <td style="padding:8px 0;font-size:13.5px;color:var(--text-secondary);">${s.product}</td>
-          <td style="padding:8px 10px;cursor:pointer;" onclick="toggleQuota(${i})">
-            <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:3px;">${ach}/${s.target} L <i class="ti ti-chevron-down" style="font-size:12px;vertical-align:-1px;" aria-hidden="true"></i></div>
-            <div style="height:5px;background:var(--surface-1);border-radius:3px;"><div style="height:100%;width:${p}%;background:var(--fill-accent);border-radius:3px;"></div></div>
-          </td>
-          <td style="padding:8px 0;text-align:right;cursor:pointer;" onclick="showPayment(${i})">
-            <span style="background:${status === 'paid' ? 'var(--bg-success)' : 'var(--bg-danger)'};color:${status === 'paid' ? 'var(--text-success)' : 'var(--text-danger)'};font-size:11.5px;padding:2px 8px;border-radius:20px;">${status}</span>
-          </td></tr>`;
-          if (expandedIdx === i) {
-            const dt = dailyTarget(s);
-            const cells = days.map((dy, di) => {
-              const val = s.log[di], short = val < dt;
-              return `<div style="text-align:center;padding:6px 4px;border-radius:var(--radius);background:${short ? 'var(--bg-danger)' : 'var(--surface-1)'};"><div style="font-size:10.5px;color:${short ? 'var(--text-danger)' : 'var(--text-muted)'};">${dy}</div><div style="font-size:13px;font-weight:700;color:${short ? 'var(--text-danger)' : 'var(--text-primary)'};">${val}L</div></div>`;
-            }).join("");
-            html += `<tr><td colspan="4" style="padding:6px 0 12px;"><div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-style:italic;">daily target ${dt} L · red means under target</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">${cells}</div></td></tr>`;
-          }
+    const amount = p.price * qty;
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: amount * 100,
+      currency: 'INR',
+      name: 'Bhargavi Dairy Loop',
+      description: `${qty} × ${p.name} (${p.unit})`,
+      image: 'logo.png',
+      theme: { color: '#1C3552' },
+      handler: function(response){
+        const orders = getOrders();
+        orders.unshift({
+          id: 'ORD-' + Date.now().toString().slice(-8),
+          productId: p.id,
+          name: p.name,
+          icon: p.icon,
+          unit: p.unit,
+          qty: qty,
+          amount: amount,
+          paymentId: response.razorpay_payment_id,
+          date: new Date().toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+          status: 'Confirmed'
         });
-        document.getElementById("tbody").innerHTML = html;
-        document.getElementById("btn-add-supplier").addEventListener("click", openAddSupplier);
-        document.getElementById("btn-log-intake").addEventListener("click", openLogIntake);
-        document.getElementById("btn-record-payment").addEventListener("click", openRecordPayment);
-      } else {
-        const label = activeTab === "prod" ? "Add batch" : "Add partner";
-        toolbar.innerHTML = `<button id="btn-add-generic" style="font-size:12.5px;display:flex;align-items:center;gap:4px;"><i class="ti ti-plus" style="font-size:14px" aria-hidden="true"></i>${label}</button>`;
-        document.getElementById("thead").innerHTML = `<tr style="border-bottom:1px solid var(--border);">
-        <th style="text-align:left;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Name</th>
-        <th style="text-align:left;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Type</th>
-        <th style="text-align:left;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">${activeTab === "prod" ? "Weekly output" : "Supplied so far"}</th>
-        <th style="text-align:right;font-size:11.5px;font-weight:400;font-style:italic;color:var(--text-muted);padding-bottom:8px;">Status</th></tr>`;
-        document.getElementById("tbody").innerHTML = d.rows.map(r => {
-          const p = pct(r.achieved, r.target);
-          const mid = activeTab === "prod"
-            ? `<div><div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:3px;">${r.achieved}/${r.target} · ${r.note}</div><div style="height:5px;background:var(--surface-1);border-radius:3px;"><div style="height:100%;width:${p}%;background:var(--fill-accent);border-radius:3px;"></div></div></div>`
-            : `<span style="font-size:13.5px;">${r.achieved} kg</span>`;
-          return `<tr>
-          <td style="padding:8px 0;font-size:13.5px;">${r.name}</td>
-          <td style="padding:8px 0;font-size:13.5px;color:var(--text-secondary);">${r.meta}</td>
-          <td style="padding:8px 10px;">${mid}</td>
-          <td style="padding:8px 0;text-align:right;"><span style="background:${r.paid ? 'var(--bg-success)' : 'var(--bg-danger)'};color:${r.paid ? 'var(--text-success)' : 'var(--text-danger)'};font-size:11.5px;padding:2px 8px;border-radius:20px;">${r.note}</span></td></tr>`;
-        }).join("");
-        document.getElementById("btn-add-generic").addEventListener("click", () => openAddGeneric(activeTab, label));
+        saveOrders(orders);
+        updateOrderCount();
+        closeModal();
+        showToast(`Payment successful — ${p.name} added to My Deliveries`, true);
+        setTimeout(() => openDrawer('delivery'), 700);
+      },
+      modal: {
+        ondismiss: function(){ showToast('Payment cancelled', false); }
       }
-    }
+    };
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(){ showToast('Payment failed — please try again', false); });
+    rzp.open();
+  }
 
-    function openAddSupplier() {
-      document.getElementById("modal-content").innerHTML = `
-      <p style="font-size:14px;font-weight:700;margin:0 0 12px;">Add supplier</p>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div id="photo-preview" style="width:52px;height:52px;border-radius:50%;background:var(--surface-1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"><i class="ti ti-user" style="font-size:22px;color:var(--text-muted);" aria-hidden="true"></i></div>
-        <label style="font-size:12.5px;padding:6px 12px;border:1px solid var(--border-strong);border-radius:4px;cursor:pointer;">Upload photo<input id="photo-input" type="file" accept="image/*" style="display:none;" /></label>
-      </div>
-      <input id="f-name" type="text" placeholder="Supplier name" style="width:100%;margin-bottom:8px;" />
-      <input id="f-phone" type="text" placeholder="Phone number" style="width:100%;margin-bottom:8px;" />
-      <select id="f-product" style="width:100%;margin-bottom:8px;"><option value="Cow milk">Cow milk</option><option value="Buffalo milk">Buffalo milk</option><option value="Cream">Cream</option></select>
-      <input id="f-quota" type="text" placeholder="Weekly quota (liters)" style="width:100%;margin-bottom:4px;" />
-      <p id="form-err" style="display:none;font-size:12.5px;color:var(--text-danger);margin:4px 0 8px;">Enter name, phone and quota first</p>
-      <div style="display:flex;gap:8px;margin-top:10px;"><button id="cancel-btn" style="flex:1;">Cancel</button><button id="save-btn" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border:none;">Save supplier</button></div>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      uploadedPhoto = null;
-      document.getElementById("cancel-btn").addEventListener("click", closeModal);
-      document.getElementById("photo-input").addEventListener("change", (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => { uploadedPhoto = ev.target.result; document.getElementById("photo-preview").innerHTML = `<img src="${uploadedPhoto}" style="width:100%;height:100%;object-fit:cover;" />`; };
-        reader.readAsDataURL(file);
-      });
-      ["f-name", "f-phone", "f-quota"].forEach(id => document.getElementById(id).addEventListener("input", () => { document.getElementById("form-err").style.display = "none"; }));
-      document.getElementById("save-btn").addEventListener("click", () => {
-        const name = document.getElementById("f-name").value.trim();
-        const phone = document.getElementById("f-phone").value.trim();
-        const quota = document.getElementById("f-quota").value.trim();
-        if (!name || !phone || !quota) { document.getElementById("form-err").style.display = "block"; return; }
-        const product = document.getElementById("f-product").value;
-        data.proc.rows.push({ name: name, product: product, target: parseInt(quota), log: [0, 0, 0, 0, 0, 0, 0], joined: "Aug 2026", photo: uploadedPhoto, payHistory: [{ month: "Aug 2026", status: "due" }] });
-        closeModal(); renderConsole();
-      });
-    }
+  function showToast(msg, success){
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<span class="tick">${success ? '✓' : '⚠'}</span><span>${msg}</span>`;
+    wrap.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 350); }, 3200);
+  }
 
-    function openLogIntake() {
-      document.getElementById("modal-content").innerHTML = `
-      <p style="font-size:14px;font-weight:700;margin:0 0 12px;">Log today's intake</p>
-      <select id="li-supplier" style="width:100%;margin-bottom:8px;">${supplierOptions()}</select>
-      <input id="li-liters" type="text" placeholder="Liters delivered today" style="width:100%;margin-bottom:4px;" />
-      <p id="li-err" style="display:none;font-size:12.5px;color:var(--text-danger);margin:4px 0 8px;">Enter liters first</p>
-      <div style="display:flex;gap:8px;margin-top:10px;"><button id="li-cancel" style="flex:1;">Cancel</button><button id="li-save" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border:none;">Save</button></div>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      document.getElementById("li-cancel").addEventListener("click", closeModal);
-      document.getElementById("li-liters").addEventListener("input", () => { document.getElementById("li-err").style.display = "none"; });
-      document.getElementById("li-save").addEventListener("click", () => {
-        const val = document.getElementById("li-liters").value.trim();
-        if (!val || isNaN(val)) { document.getElementById("li-err").style.display = "block"; return; }
-        const idx = parseInt(document.getElementById("li-supplier").value);
-        const todayIdx = new Date().getDay();
-        const mapIdx = todayIdx === 0 ? 6 : todayIdx - 1;
-        data.proc.rows[idx].log[mapIdx] = parseInt(val);
-        closeModal(); renderConsole();
-      });
-    }
+  function updateOrderCount(){
+    document.getElementById('orderCountPill').textContent = getOrders().length;
+  }
 
-    function openRecordPayment() {
-      document.getElementById("modal-content").innerHTML = `
-      <p style="font-size:14px;font-weight:700;margin:0 0 12px;">Record payment</p>
-      <select id="rp-supplier" style="width:100%;margin-bottom:8px;">${supplierOptions()}</select>
-      <input id="rp-month" type="text" placeholder="Month, e.g. Aug 2026" style="width:100%;margin-bottom:8px;" />
-      <select id="rp-status" style="width:100%;margin-bottom:4px;"><option value="paid">Paid</option><option value="due">Due</option></select>
-      <p id="rp-err" style="display:none;font-size:12.5px;color:var(--text-danger);margin:4px 0 8px;">Enter the month first</p>
-      <div style="display:flex;gap:8px;margin-top:10px;"><button id="rp-cancel" style="flex:1;">Cancel</button><button id="rp-save" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border:none;">Save</button></div>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      document.getElementById("rp-cancel").addEventListener("click", closeModal);
-      document.getElementById("rp-month").addEventListener("input", () => { document.getElementById("rp-err").style.display = "none"; });
-      document.getElementById("rp-save").addEventListener("click", () => {
-        const month = document.getElementById("rp-month").value.trim();
-        if (!month) { document.getElementById("rp-err").style.display = "block"; return; }
-        const idx = parseInt(document.getElementById("rp-supplier").value);
-        const status = document.getElementById("rp-status").value;
-        const existing = data.proc.rows[idx].payHistory.find(h => h.month === month);
-        if (existing) { existing.status = status; } else { data.proc.rows[idx].payHistory.push({ month: month, status: status }); }
-        closeModal(); renderConsole();
-      });
-    }
+  function openDrawer(view){
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('backdrop').classList.add('show');
+    if(view === 'delivery') renderDeliveryView(); else renderMenuView();
+  }
+  function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('backdrop').classList.remove('show'); }
+  function closeAllOverlays(){ closeDrawer(); closeModal(); }
 
-    function openAddGeneric(tab, label) {
-      document.getElementById("modal-content").innerHTML = `
-      <p style="font-size:14px;font-weight:700;margin:0 0 12px;">${label}</p>
-      <input id="ag-name" type="text" placeholder="Name" style="width:100%;margin-bottom:8px;" />
-      <input id="ag-meta" type="text" placeholder="${tab === 'prod' ? 'Material or phase' : 'Store type'}" style="width:100%;margin-bottom:8px;" />
-      <input id="ag-target" type="text" placeholder="Weekly target" style="width:100%;margin-bottom:4px;" />
-      <p id="ag-err" style="display:none;font-size:12.5px;color:var(--text-danger);margin:4px 0 8px;">Enter name and target first</p>
-      <div style="display:flex;gap:8px;margin-top:10px;"><button id="ag-cancel" style="flex:1;">Cancel</button><button id="ag-save" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border:none;">Save</button></div>`;
-      document.getElementById("modal-wrap").style.display = "flex";
-      document.getElementById("ag-cancel").addEventListener("click", closeModal);
-      ["ag-name", "ag-target"].forEach(id => document.getElementById(id).addEventListener("input", () => { document.getElementById("ag-err").style.display = "none"; }));
-      document.getElementById("ag-save").addEventListener("click", () => {
-        const name = document.getElementById("ag-name").value.trim();
-        const target = document.getElementById("ag-target").value.trim();
-        if (!name || !target) { document.getElementById("ag-err").style.display = "block"; return; }
-        const meta = document.getElementById("ag-meta").value.trim() || "new";
-        data[tab].rows.push({ name: name, meta: meta, target: parseInt(target), achieved: 0, note: "just added", paid: false });
-        closeModal(); renderConsole();
-      });
-    }
+  function renderMenuView(){
+    document.getElementById('drawerTitle').innerHTML = '☰ Menu';
+    document.getElementById('drawerBody').innerHTML = `
+      <a class="menu-item" href="#home" onclick="closeDrawer()"><span class="mi-icon">🏠</span>Home</a>
+      <a class="menu-item" href="#products" onclick="closeDrawer()"><span class="mi-icon">🥛</span>Products</a>
+      <a class="menu-item" href="#journey" onclick="closeDrawer()"><span class="mi-icon">🚚</span>Our Journey</a>
+      <a class="menu-item" href="#contact" onclick="closeDrawer()"><span class="mi-icon">✉️</span>Contact</a>
+      <div class="menu-divider"></div>
+      <div class="menu-sub">Account</div>
+      <button class="menu-item" onclick="renderDeliveryView()"><span class="mi-icon">📦</span>View Your Delivery</button>
+      <button class="menu-item" onclick="openStudio()"><span class="mi-icon">🛠</span>Manage Studio</button>
+    `;
+  }
 
-    document.querySelectorAll(".tabbtn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        activeTab = btn.dataset.tab;
-        expandedIdx = null;
-        document.querySelectorAll(".tabbtn").forEach(b => {
-          b.style.background = "var(--surface-2)"; b.style.border = "1px solid var(--border)"; b.style.color = "var(--text-secondary)"; b.style.fontWeight = "400";
-        });
-        btn.style.background = "var(--fill-ghost-selected)"; btn.style.border = "1px solid var(--border-strong)"; btn.style.color = "var(--text-primary)"; btn.style.fontWeight = "700";
-        document.getElementById("console").style.display = "block";
-        document.getElementById("hint").style.display = "none";
-        renderConsole();
-      });
-    });
-  </script>
+  function renderDeliveryView(){
+    document.getElementById('drawerTitle').innerHTML = '📦 Your Deliveries';
+    const orders = getOrders();
+    let body = `<div class="back-row" onclick="renderMenuView()">← Back to menu</div>`;
+    if(orders.length === 0){
+      body += `
+        <div class="order-empty">
+          <div class="oe-icon">📭</div>
+          <h4>No deliveries yet</h4>
+          <p>Complete a payment on any product and it will show up here, tracked from packing to your door.</p>
+        </div>`;
+    } else {
+      body += orders.map(o => `
+        <div class="order-card">
+          <div class="order-top">
+            <div class="order-emoji">${o.icon}</div>
+            <div>
+              <div class="order-name">${o.name}</div>
+              <div class="order-meta">${o.qty} × ${o.unit}</div>
+            </div>
+            <div class="order-status">${o.status}</div>
+          </div>
+          <div class="order-bottom">
+            <span>${o.id} · ${o.date}</span>
+            <span><b>₹${o.amount}</b></span>
+          </div>
+        </div>
+      `).join('');
+    }
+    document.getElementById('drawerBody').innerHTML = body;
+  }
+
+  function openStudio(){
+    const frame = document.getElementById('studioFrame');
+    if(!frame.src || frame.src === 'about:blank') frame.src = 'studio.html';
+    document.getElementById('studioOverlay').classList.add('open');
+    closeDrawer();
+  }
+  function closeStudio(){
+    document.getElementById('studioOverlay').classList.remove('open');
+  }
+  window.addEventListener('message', e => { if(e.data === 'closeStudio') closeStudio(); });
+
+  function setupReveal(){
+    const els = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => { if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { threshold:0.15 });
+    els.forEach(el => io.observe(el));
+  }
+
+  renderCategories();
+  renderFilters();
+  renderProducts();
+  updateOrderCount();
+  setupReveal();
+  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
+</script>
+
 </body>
-
 </html>
