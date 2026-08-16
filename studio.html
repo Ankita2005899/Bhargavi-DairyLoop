@@ -630,14 +630,19 @@
     justify-content:center; font-size:19px; z-index:2; box-shadow:0 0 0 5px #e4f5e8; flex-shrink:0;
   }
   .chain-step.pending .chain-node{ background:#cbbf9e; box-shadow:0 0 0 5px #f4efe0; color:#6b5c42; }
+  .chain-step.active .chain-node{ background:#6E9BE0; box-shadow:0 0 0 5px #e6f0ff; color:#fff; animation:chainPulse 1.4s ease-in-out infinite; }
+  @keyframes chainPulse{ 0%,100%{ box-shadow:0 0 0 5px #e6f0ff; } 50%{ box-shadow:0 0 0 9px #e6f0ff; } }
   .chain-line{
     position:absolute; top:23px; left:calc(-50% + 23px); width:calc(100% - 46px); height:3px; background:#1f8a3b; z-index:1;
   }
   .chain-step:first-child .chain-line{ display:none; }
-  .chain-step.pending .chain-line{ background:#cbbf9e; }
+  .chain-step.pending .chain-line, .chain-step.active .chain-line{ background:#cbbf9e; }
   .chain-label{ font-size:13px; font-weight:700; color:#3E3324; text-align:center; margin-top:12px; max-width:130px; line-height:1.35; }
+  .chain-step.pending .chain-label{ color:#8a7a58; font-weight:600; }
   .chain-time{ font-size:11.5px; color:#8a7a58; margin-top:4px; text-align:center; }
   .chain-elapsed{ font-size:11px; color:#1f8a3b; font-weight:700; margin-top:3px; text-align:center; }
+  .chain-step.pending .chain-elapsed{ color:#8a7a58; }
+  .chain-step.active .chain-elapsed{ color:#2A5CA8; }
 
   .dtrack-store-card{
     display:flex; gap:16px; align-items:center; background:#fff; border:1px solid #e2d9c4; border-left:5px solid #6E9BE0;
@@ -2646,17 +2651,56 @@ Issued by Processing Team.`;
   ];
   const DELIVERY_STEP_FRACTIONS = [0, 0.10, 0.35, 0.72, 0.9, 1.0];
 
+  // Turns a slot label like "Early Morning (5–7 AM)" or "Evening (5–7 PM)"
+  // into a 24h start hour, so each outlet's delivery cycle for today can be
+  // anchored to its own preferred slot.
+  function slotStartHour(slot){
+    const m = slot.match(/\((\d+)[–-](\d+)\s*(AM|PM)\)/);
+    if(!m) return 8;
+    let h = parseInt(m[1], 10);
+    const ampm = m[3];
+    if(ampm === 'PM' && h !== 12) h += 12;
+    if(ampm === 'AM' && h === 12) h = 0;
+    return h;
+  }
+
+  // Figures out where in the 6-step journey this outlet's delivery is
+  // *right now*, purely from real elapsed time — no manual state to keep in
+  // sync. Each outlet's cycle "starts" at its preferred slot (staggered a
+  // little per-outlet so a whole slot doesn't move in lockstep), runs for
+  // deliveryDurationMinutes, and then sits at "Delivered". This is what
+  // gives naturally mixed stages across outlets instead of every card
+  // showing the same tick, and it keeps advancing — and eventually
+  // completes — on its own as time passes.
+  function getDistDeliveryStage(o){
+    const now = new Date();
+    const startHour = slotStartHour(o.deliverySlot);
+    const jitterMin = Math.floor(seededRand((o._stageSeed || 0) * 131 + 17) * 45); // 0–44 min stagger
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, jitterMin, 0);
+    const total = o.deliveryDurationMinutes;
+    let elapsedMin = (now - start) / 60000;
+    if(elapsedMin < 0) elapsedMin = 0; // slot hasn't started yet today — sits at the first step
+    if(elapsedMin > total) elapsedMin = total; // already completed — caps at Delivered instead of resetting
+    let stageIdx = 0;
+    for(let i = DELIVERY_STEP_FRACTIONS.length - 1; i >= 0; i--){
+      if(elapsedMin >= total * DELIVERY_STEP_FRACTIONS[i]){ stageIdx = i; break; }
+    }
+    return { stageIdx, elapsedMin, total };
+  }
+
   function buildDeliveryChainSteps(o){
     const total = o.deliveryDurationMinutes;
+    const { stageIdx } = getDistDeliveryStage(o);
     const steps = DELIVERY_STEP_LABELS.map((label, i) => {
       const elapsed = Math.round(total * DELIVERY_STEP_FRACTIONS[i]);
       let elapsedLabel;
       if(i === 0) elapsedLabel = 'Start';
       else if(i === DELIVERY_STEP_LABELS.length - 1) elapsedLabel = `Total: ${formatDuration(elapsed)}`;
       else elapsedLabel = `+ ${formatDuration(elapsed)}`;
-      return { label, elapsedLabel };
+      const status = i < stageIdx ? 'done' : (i === stageIdx ? (stageIdx === DELIVERY_STEP_LABELS.length - 1 ? 'done' : 'active') : 'pending');
+      return { label, elapsedLabel, status };
     });
-    return { steps, totalMinutes: total };
+    return { steps, totalMinutes: total, stageIdx };
   }
 
   // Turns a delivery-day label like "Mon, Wed, Fri" or "Daily (Mon–Sat)" into
@@ -2819,7 +2863,7 @@ Issued by Processing Team.`;
       memberId: 'DST' + category.slice(0,1).toUpperCase() + String(seedIndex + 1).padStart(3, '0'),
       gstNumber, deliveryDay, deliverySlot, packagingType, coldStorage, vehicleType, creditLimit, specialInstructions,
       fssaiLicense, orderFrequency, preferredPaymentMode, outstandingDue, memberSince, productsPurchased,
-      deliveryPersonId, deliveryDurationMinutes,
+      deliveryPersonId, deliveryDurationMinutes, _stageSeed: seedIndex,
       upiId: raw.upiId || makeUpiId(raw.contactPerson || raw.storeName, seedIndex + 1300)
     };
   }
@@ -3160,12 +3204,13 @@ Issued by Processing Team.`;
     const o = getDistOutlet(cat, idx);
     const chain = buildDeliveryChainSteps(o);
 
-    const stepsHtml = chain.steps.map(s => `
-      <div class="chain-step">
+    const stepsHtml = chain.steps.map((s, i) => `
+      <div class="chain-step ${s.status}">
         <div class="chain-line"></div>
-        <div class="chain-node">✓</div>
+        <div class="chain-node">${s.status === 'done' ? '✓' : (i + 1)}</div>
         <div class="chain-label">${s.label}</div>
         <div class="chain-time">${s.elapsedLabel}</div>
+        ${s.status === 'active' ? '<div class="chain-elapsed">In progress…</div>' : ''}
       </div>
     `).join('');
 
@@ -3177,6 +3222,10 @@ Issued by Processing Team.`;
         <div>
           <div class="dsb-name">${p.name}</div>
           <div class="dsb-sub">${p.id} — ${p.vehicle} — ${p.route} — 📞 ${p.phone}</div>
+        </div>
+        <div class="dsb-metric">
+          <div class="dsb-metric-label">Current Status</div>
+          <div class="dsb-metric-value" style="font-size:16px;">${DELIVERY_STEP_LABELS[chain.stageIdx]}</div>
         </div>
         <div class="dsb-metric">
           <div class="dsb-metric-label">Time to Deliver</div>
@@ -3199,6 +3248,20 @@ Issued by Processing Team.`;
     _dtrackCal = { memberId: o.memberId, ticks: (logRecord && logRecord.ticks) || {}, o };
     const calSection = document.getElementById('month-cal-section');
     if(calSection) calSection.innerHTML = renderMonthTickCalendarInner(o, _dtrackCal.ticks);
+
+    startDeliveryChainAutoRefresh(personId, outletKey);
+  }
+
+  // Re-renders the open journey every so often so the active step visibly
+  // moves forward (and the whole chain eventually reaches "Delivered")
+  // without needing to re-select the store.
+  let _chainRefreshInterval = null;
+  function startDeliveryChainAutoRefresh(personId, outletKey){
+    if(_chainRefreshInterval) clearInterval(_chainRefreshInterval);
+    _chainRefreshInterval = setInterval(() => {
+      if(!document.getElementById('dtrack-chain-area')){ clearInterval(_chainRefreshInterval); _chainRefreshInterval = null; return; }
+      renderDeliveryChainInto(personId, outletKey);
+    }, 20000);
   }
 
   function distProductsDetail(cat, i){

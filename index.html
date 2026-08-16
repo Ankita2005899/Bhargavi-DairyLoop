@@ -241,8 +241,17 @@
   .order-name{ font-weight:700; font-size:14px; color:var(--navy); }
   .order-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
   .order-status{ margin-left:auto; font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:5px 10px; border-radius:999px; background:rgba(76,175,109,0.14); color:#2E7D4F; white-space:nowrap; }
+  .order-status.placed{ background:rgba(28,53,82,0.1); color:var(--navy); }
+  .order-status.transit{ background:rgba(110,155,224,0.18); color:#2A5CA8; }
+  .order-status.delivered{ background:rgba(76,175,109,0.14); color:#2E7D4F; }
   .order-bottom{ display:flex; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(28,53,82,0.14); font-size:11.5px; color:var(--ink-soft); }
   .order-bottom b{ color:var(--navy); }
+  .order-progress{ display:flex; align-items:center; gap:4px; margin-top:12px; }
+  .order-progress .op-dot{ flex:1; height:5px; border-radius:3px; background:rgba(28,53,82,0.12); position:relative; }
+  .order-progress .op-dot.done{ background:#4CAF6D; }
+  .order-progress .op-dot.active{ background:#6E9BE0; }
+  .order-progress .op-dot.active::after{ content:''; position:absolute; inset:0; border-radius:3px; background:#6E9BE0; animation:opPulse 1.4s ease-in-out infinite; }
+  @keyframes opPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
 
   /* ---------- product modal ---------- */
   .modal-back{ position:fixed; inset:0; background:rgba(13,27,43,0.6); z-index:110; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
@@ -1760,6 +1769,33 @@
   function getOrders(){ return ORDERS_CACHE; }
   function saveOrders(list){ ORDERS_CACHE = list; localStorage.setItem(ORDERS_KEY, JSON.stringify(list)); }
 
+  // ---- Delivery stage tracking --------------------------------------
+  // Same 6-step journey shown on the Studio (distribution) side, so a
+  // product moves through the exact same stages here as it does there —
+  // driven purely by real elapsed time since the order was placed, so it
+  // walks forward and completes on its own without any manual update.
+  const DELIVERY_STEP_LABELS = [
+    'Order Packed at Plant', 'Picked Up for Delivery', 'In Transit',
+    'Reached Locality', 'Shifted to Store', 'Delivered'
+  ];
+  const DELIVERY_STEP_FRACTIONS = [0, 0.10, 0.35, 0.72, 0.9, 1.0];
+
+  function getOrderStageIndex(o){
+    const total = o.deliveryDurationMinutes || 40;
+    const elapsedMin = (Date.now() - (o.ts || Date.now())) / 60000;
+    if(elapsedMin >= total) return DELIVERY_STEP_LABELS.length - 1;
+    let idx = 0;
+    for(let i = DELIVERY_STEP_FRACTIONS.length - 1; i >= 0; i--){
+      if(elapsedMin >= total * DELIVERY_STEP_FRACTIONS[i]){ idx = i; break; }
+    }
+    return idx;
+  }
+  function orderStatusClass(stageIdx){
+    if(stageIdx >= DELIVERY_STEP_LABELS.length - 1) return 'delivered';
+    if(stageIdx === 0) return 'placed';
+    return 'transit';
+  }
+
   async function hydrateOrdersFromServer(){
     const server = await dbGetAll('orders');
     if(server && server.length){
@@ -1900,7 +1936,8 @@
           amount: amount,
           paymentId: response.razorpay_payment_id,
           date: new Date().toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
-          status: 'Confirmed'
+          status: 'Confirmed',
+          deliveryDurationMinutes: 20 + Math.floor(Math.random() * 35) // 20–55 min, walks through the delivery stages on its own
         };
         orders.unshift(newOrder);
         saveOrders(orders);
@@ -1936,9 +1973,10 @@
   function openDrawer(view){
     document.getElementById('drawer').classList.add('open');
     document.getElementById('backdrop').classList.add('show');
-    if(view === 'delivery') renderDeliveryView(); else renderMenuView();
+    if(view === 'delivery'){ renderDeliveryView(); startDeliveryViewAutoRefresh(); }
+    else { renderMenuView(); stopDeliveryViewAutoRefresh(); }
   }
-  function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('backdrop').classList.remove('show'); }
+  function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('backdrop').classList.remove('show'); stopDeliveryViewAutoRefresh(); }
   function closeAllOverlays(){ closeDrawer(); closeModal(); }
 
   function renderMenuView(){
@@ -1950,7 +1988,7 @@
       <a class="menu-item" href="#contact" onclick="closeDrawer()"><span class="mi-icon">✉️</span>Contact</a>
       <div class="menu-divider"></div>
       <div class="menu-sub">Account</div>
-      <button class="menu-item" onclick="renderDeliveryView()"><span class="mi-icon">📦</span>View Your Delivery</button>
+      <button class="menu-item" onclick="renderDeliveryView(); startDeliveryViewAutoRefresh();"><span class="mi-icon">📦</span>View Your Delivery</button>
       <button class="menu-item" onclick="openStudio()"><span class="mi-icon">🛠</span>Manage Studio</button>
     `;
   }
@@ -1967,7 +2005,15 @@
           <p>Complete a payment on any product and it will show up here, tracked from packing to your door.</p>
         </div>`;
     } else {
-      body += orders.map(o => `
+      body += orders.map(o => {
+        const stageIdx = getOrderStageIndex(o);
+        const stageLabel = DELIVERY_STEP_LABELS[stageIdx];
+        const statusClass = orderStatusClass(stageIdx);
+        const dots = DELIVERY_STEP_LABELS.map((_, i) => {
+          const cls = i < stageIdx ? 'done' : (i === stageIdx && stageIdx < DELIVERY_STEP_LABELS.length - 1 ? 'active' : (i === stageIdx ? 'done' : ''));
+          return `<div class="op-dot ${cls}"></div>`;
+        }).join('');
+        return `
         <div class="order-card">
           <div class="order-top">
             <div class="order-emoji">${o.icon}</div>
@@ -1975,16 +2021,37 @@
               <div class="order-name">${o.name}</div>
               <div class="order-meta">${o.qty} × ${o.unit}</div>
             </div>
-            <div class="order-status">${o.status}</div>
+            <div class="order-status ${statusClass}">${stageLabel}</div>
           </div>
+          <div class="order-progress">${dots}</div>
           <div class="order-bottom">
             <span>${o.id} · ${o.date}</span>
             <span><b>₹${o.amount}</b></span>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
     document.getElementById('drawerBody').innerHTML = body;
+  }
+
+  // Keeps the delivery drawer ticking forward on its own while it's open,
+  // so a step visibly advances (and the order eventually flips to
+  // "Delivered") without the user needing to close/reopen it.
+  let _deliveryViewInterval = null;
+  function startDeliveryViewAutoRefresh(){
+    stopDeliveryViewAutoRefresh();
+    _deliveryViewInterval = setInterval(() => {
+      const drawer = document.getElementById('drawer');
+      if(drawer && drawer.classList.contains('open') && document.getElementById('drawerTitle').textContent.includes('Deliveries')){
+        renderDeliveryView();
+      } else {
+        stopDeliveryViewAutoRefresh();
+      }
+    }, 20000);
+  }
+  function stopDeliveryViewAutoRefresh(){
+    if(_deliveryViewInterval){ clearInterval(_deliveryViewInterval); _deliveryViewInterval = null; }
   }
 
   function openStudio(){
