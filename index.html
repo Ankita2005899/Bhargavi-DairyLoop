@@ -2159,10 +2159,10 @@
     document.getElementById('studioOverlay').classList.remove('open');
   }
 
-  // Bridges the search box in the top Manage Studio bar into the
-  // studio-search-bar that already lives inside studio.html (loaded in
-  // the studioFrame iframe), so the person doesn't need to scroll down
-  // into the iframe to search for a member.
+  // Bridges the search box in the top Manage Studio bar into
+  // studio.html's own member-search logic (loaded in the studioFrame
+  // iframe), passing the typed value straight through so studio.html
+  // no longer needs its own visible search box.
   function runStudioBarSearch(){
     const val = document.getElementById('studioBarSearchInput').value;
     const frame = document.getElementById('studioFrame');
@@ -2170,13 +2170,10 @@
     try{
       const fWin = frame.contentWindow;
       const fDoc = frame.contentDocument || (fWin && fWin.document);
-      if(!fWin || !fDoc) return;
-      const innerInput = fDoc.getElementById('studioSearchInput');
-      if(innerInput){
-        innerInput.value = val;
-        if(typeof fWin.runStudioSearch === 'function') fWin.runStudioSearch();
-        innerInput.scrollIntoView({ behavior:'smooth', block:'center' });
-      }
+      if(!fWin || typeof fWin.runStudioSearch !== 'function') return;
+      fWin.runStudioSearch(val);
+      const resultArea = fDoc && fDoc.getElementById('studioSearchResult');
+      if(resultArea) resultArea.scrollIntoView({ behavior:'smooth', block:'start' });
     }catch(err){
       console.error('Could not reach the studio search box:', err);
     }
