@@ -420,6 +420,32 @@
   .owner-panel-tabs button:hover{ background:rgba(244,239,230,0.2); }
   .owner-panel-tabs button.active{ background:var(--gold); color:var(--navy-3); }
   .owner-panel-body{ flex:1; overflow-y:auto; padding:26px; background:var(--cream); }
+
+  .op-search-row{ display:flex; gap:10px; padding:14px 26px; background:var(--navy-2); flex-wrap:wrap; flex-shrink:0; }
+  .op-search-input{
+    flex:1 1 280px; min-width:200px; padding:10px 14px; border-radius:999px; border:none; font-size:13.5px;
+    background:rgba(244,239,230,0.14); color:var(--cream); font-family:inherit;
+  }
+  .op-search-input::placeholder{ color:rgba(244,239,230,0.55); }
+  .op-search-input:focus{ outline:none; background:rgba(244,239,230,0.22); }
+  .op-search-btn{ background:var(--gold); color:var(--navy-3); font-weight:700; font-size:13px; padding:10px 18px; border-radius:999px; white-space:nowrap; }
+  .op-search-btn:hover{ filter:brightness(1.06); }
+  #ownerSearchResult{ padding:0 26px; background:var(--cream); }
+  #ownerSearchResult:empty{ padding:0; }
+  .op-search-card{
+    display:flex; align-items:center; gap:16px; background:var(--white); border:1px solid rgba(28,53,82,0.1);
+    border-left:5px solid var(--gold); border-radius:10px; padding:16px 20px; margin-top:16px;
+  }
+  .op-search-avatar{ width:50px; height:50px; font-size:16px; flex-shrink:0; }
+  .op-search-name{ font-family:'Fraunces', serif; font-weight:700; font-size:16px; color:var(--navy); }
+  .op-search-sub{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .op-search-view{ margin-left:auto; background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; padding:9px 16px; border-radius:999px; white-space:nowrap; }
+  .op-search-view:hover{ background:var(--navy-2); }
+  .op-search-empty{ font-size:13px; color:var(--ink-soft); padding:16px 0 0; font-style:italic; }
+  @media (max-width: 640px){
+    .op-search-card{ flex-wrap:wrap; }
+    .op-search-view{ margin-left:0; width:100%; text-align:center; }
+  }
   .op-section-head{ font-family:'Fraunces', serif; font-weight:700; font-size:16px; color:var(--navy); margin:22px 0 12px; }
   .op-section-head:first-child{ margin-top:0; }
   .op-count-pill{ display:inline-block; margin-left:8px; font-family:'Inter', sans-serif; font-size:11px; font-weight:700; color:var(--brick); background:var(--cream-2); border-radius:999px; padding:2px 9px; vertical-align:middle; }
@@ -579,6 +605,11 @@
     <button onclick="switchOwnerTab('distribution', this)">🏬 Distributors</button>
     <button onclick="switchOwnerTab('payments', this)">💰 Payments</button>
   </div>
+  <div class="op-search-row">
+    <input type="text" id="ownerSearchInput" class="op-search-input" placeholder="Search by ID (e.g. MEM003, PRC002, DSTS004) or email" onkeydown="if(event.key==='Enter') runOwnerSearch()">
+    <button class="op-search-btn" onclick="runOwnerSearch()">🔍 Search</button>
+  </div>
+  <div id="ownerSearchResult"></div>
   <div class="owner-panel-body" id="ownerPanelBody"></div>
 </div>
 
@@ -1120,6 +1151,10 @@
   }
   function openOwnerSection(){
     if(!currentAccount){ openInfoModal('Owner Section', '<div class="info-empty">Please log in first.</div>'); return; }
+    if(normalizeEmailKey(currentAccount.email) !== OWNER_EMAIL){
+      openInfoModal('Owner Section', '<div class="info-empty">This section is only available to the owner account.</div>');
+      return;
+    }
     ownerAttemptsLeft = OWNER_MAX_ATTEMPTS;
     document.getElementById('ownerPassInput').value = '';
     document.getElementById('ownerPassInput').type = 'password';
@@ -1138,7 +1173,7 @@
     const msgEl = document.getElementById('ownerPassMsg');
     const entered = input.value.trim();
 
-    if(entered === OWNER_PASSWORD){
+    if(currentAccount && normalizeEmailKey(currentAccount.email) === OWNER_EMAIL && entered === OWNER_PASSWORD){
       msgEl.classList.add('ok');
       msgEl.textContent = 'Password correct — welcome, Owner.';
       if(currentAccount){
@@ -1184,6 +1219,60 @@
 
   function closeOwnerPanel(){
     document.getElementById('ownerPanelOverlay').classList.remove('show');
+    document.getElementById('ownerSearchInput').value = '';
+    document.getElementById('ownerSearchResult').innerHTML = '';
+  }
+
+  function initials(name){ return (name || '?').trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase(); }
+
+  // Looks a person up by their ID (member ID for procurement / processing /
+  // distribution records, or email for a site account) across everything
+  // loaded into the Owner Section, so the owner can jump straight to one
+  // person instead of scanning through every tab.
+  function opFindPersonById(idRaw){
+    const q = (idRaw || '').trim().toLowerCase();
+    if(!q) return null;
+
+    const acct = ownerData.accounts.find(a => (a.email || '').toLowerCase() === q);
+    if(acct) return { type: 'accounts', name: acct.name || acct.email, sub: acct.email, tabLabel: 'Site Accounts' };
+
+    const proc = ownerData.procurement.find(m => (m.memberId || '').toLowerCase() === q);
+    if(proc) return { type: 'procurement', name: proc.name, sub: `${proc.memberId} — Procurement Member`, tabLabel: 'Procurement' };
+
+    const prs = ownerData.processing.find(m => (m.memberId || '').toLowerCase() === q);
+    if(prs) return { type: 'processing', name: prs.name, sub: `${prs.memberId} — Processing (${prs.category})`, tabLabel: 'Creators (Processing)' };
+
+    const dist = ownerData.distribution.find(o => (o.memberId || '').toLowerCase() === q);
+    if(dist) return { type: 'distribution', name: dist.contactPerson || dist.storeName, sub: `${dist.memberId} — ${dist.storeName}`, tabLabel: 'Distributors' };
+
+    return null;
+  }
+
+  function runOwnerSearch(){
+    const val = document.getElementById('ownerSearchInput').value;
+    const area = document.getElementById('ownerSearchResult');
+    const result = opFindPersonById(val);
+    if(!result){
+      area.innerHTML = val.trim() ? `<div class="op-search-empty">No user found for ID "${opEsc(val.trim())}".</div>` : '';
+      return;
+    }
+    area.innerHTML = `
+      <div class="op-search-card">
+        <div class="avatar op-search-avatar">${initials(result.name)}</div>
+        <div>
+          <div class="op-search-name">${opEsc(result.name)}</div>
+          <div class="op-search-sub">${opEsc(result.sub)}</div>
+        </div>
+        <button class="op-search-view" onclick="opJumpToOwnerTab('${result.type}')">View in ${result.tabLabel} →</button>
+      </div>
+    `;
+  }
+
+  function opJumpToOwnerTab(tab){
+    const btns = Array.from(document.querySelectorAll('#ownerPanelTabs button'));
+    const idx = { accounts:0, procurement:1, processing:2, distribution:3 }[tab];
+    const btn = btns[idx];
+    if(btn) switchOwnerTab(tab, btn);
   }
 
   function switchOwnerTab(tab, btn){
