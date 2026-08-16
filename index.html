@@ -972,6 +972,11 @@
     if(entered === OWNER_PASSWORD){
       msgEl.classList.add('ok');
       msgEl.textContent = 'Password correct — welcome, Owner.';
+      if(currentAccount){
+        currentAccount.ownerAccessHistory = currentAccount.ownerAccessHistory || [];
+        currentAccount.ownerAccessHistory.push({ at: new Date().toISOString() });
+        await dbPut(AUTH_COLLECTION, currentAccount.email, currentAccount);
+      }
       setTimeout(async () => {
         closeOwnerPasswordModal();
         await showOwnerPanel();
@@ -1030,18 +1035,25 @@
   function renderOwnerTab(tab){
     const body = document.getElementById('ownerPanelBody');
     if(tab === 'accounts'){
-      const rows = ownerData.accounts.map(a => {
-        const lastActive = (a.loginHistory || []).slice().reverse().find(h => h.type === 'login' || h.type === 'signup');
+      // Only accounts that have actually unlocked this Owner Section with the
+      // owner password (after their account was created) show up here — not
+      // every signed-up account. Each row's "Owner Password Entered" column
+      // is the most recent time that account used the owner password, so
+      // this stays current every time someone unlocks the panel again.
+      const ownerVerified = ownerData.accounts.filter(a => (a.ownerAccessHistory || []).length > 0);
+      const rows = ownerVerified.map(a => {
+        const history = (a.ownerAccessHistory || []).slice().reverse();
+        const lastEntry = history[0];
         return [
           a.name || '—', a.email, a.phone || '—',
           a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-IN') : '—',
-          lastActive ? new Date(lastActive.at).toLocaleString('en-IN') : '—',
-          (a.loginHistory || []).length
+          lastEntry ? new Date(lastEntry.at).toLocaleString('en-IN') : '—',
+          history.length
         ];
       });
       body.innerHTML = `
-        <div class="op-section-head">Site Accounts<span class="op-count-pill">${ownerData.accounts.length}</span></div>
-        ${opTable(['Name','Email','Phone','Joined','Last Active','Login Events'], rows)}
+        <div class="op-section-head">Site Accounts — Owner Password Verified<span class="op-count-pill">${ownerVerified.length}</span></div>
+        ${opTable(['Name','Email','Phone','Joined','Owner Password Entered','Times Entered'], rows)}
       `;
     } else if(tab === 'procurement'){
       const rows = ownerData.procurement.map(m => [
