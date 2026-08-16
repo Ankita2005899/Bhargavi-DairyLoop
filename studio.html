@@ -1,0 +1,3671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Flow</title>
+<style>
+  :root{
+    --procure-bg: #3E3324;
+    --procure-bg-2: #4A3D2C;
+    --procure-accent: #C89B4C;
+
+    --process-bg: #17393B;
+    --process-bg-2: #1E4749;
+    --process-accent: #4FBFAA;
+
+    --distribute-bg: #17233F;
+    --distribute-bg-2: #1F2E52;
+    --distribute-accent: #6E9BE0;
+
+    --ink-light: #F4EFE6;
+    --ink-dim: rgba(244,239,230,0.68);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html,body{
+    height:100%;
+    font-family:'Times New Roman', Times, serif;
+    background:#0B0B0C;
+  }
+
+  .page{
+    display:flex;
+    flex-direction:row;
+    min-height:100vh;
+    width:100%;
+    position:relative;
+    overflow:hidden;
+    padding-bottom:96px;
+  }
+
+  .stage{
+    position:relative;
+    flex:1;
+    min-height:100vh;
+    padding:64px 44px 56px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    overflow:hidden;
+    isolation:isolate;
+    transition: flex-basis 0.55s cubic-bezier(.4,0,.2,1), max-width 0.55s cubic-bezier(.4,0,.2,1), filter 0.4s ease, transform 0.4s ease;
+    filter: blur(0px);
+  }
+
+  #procurement{ background: linear-gradient(160deg, var(--procure-bg) 0%, var(--procure-bg-2) 100%); z-index:3; }
+  #processing{ background: linear-gradient(160deg, var(--process-bg) 0%, var(--process-bg-2) 100%); }
+  #distribution{ background: linear-gradient(160deg, var(--distribute-bg) 0%, var(--distribute-bg-2) 100%); }
+
+  #procurement::after,
+  #processing::after,
+  #distribution::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    opacity:0.05;
+    z-index:-1;
+    pointer-events:none;
+  }
+  #procurement::after{ background-image: repeating-linear-gradient(45deg, #000 0 2px, transparent 2px 14px); }
+  #processing::after{ background-image: repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 10px); }
+  #distribution::after{ background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 22px 22px; }
+
+  .stage.blurred{ filter: blur(7px); }
+  .page.detail-open .stage.blurred{ pointer-events:none; }
+
+  .stage.shrink{
+    order:-1;
+    flex: 0 0 300px;
+    max-width:300px;
+    transform: translateX(-6px);
+  }
+
+  .stage-number{
+    font-size:15px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:26px;
+  }
+  #procurement .stage-number{ color: var(--procure-accent); }
+  #processing .stage-number{ color: var(--process-accent); }
+  #distribution .stage-number{ color: var(--distribute-accent); }
+
+  .stage-title{
+    font-weight:700; font-size:clamp(26px, 3vw, 42px); line-height:1.08; color: var(--ink-light);
+    text-transform:uppercase; letter-spacing:0.01em; transition: font-size 0.4s ease;
+  }
+  .stage.shrink .stage-title{ font-size:22px; }
+
+  .stage-role{ font-style:italic; font-size:16px; color: var(--ink-dim); margin-top:12px; max-width:30ch; line-height:1.5; }
+  .stage-divider{ width:40px; height:3px; margin-top:28px; }
+  #procurement .stage-divider{ background: var(--procure-accent); }
+  #processing .stage-divider{ background: var(--process-accent); }
+  #distribution .stage-divider{ background: var(--distribute-accent); }
+
+  .stage-body{ margin-top:auto; padding-top:50px; }
+  .stage-list{ list-style:none; }
+  .stage-list li{ font-size:15px; color: var(--ink-dim); padding:10px 0; border-top:1px solid rgba(244,239,230,0.14); display:flex; justify-content:space-between; gap:12px; }
+  .stage-list li:last-child{ border-bottom:1px solid rgba(244,239,230,0.14); }
+  .stage-list li span:last-child{ color: var(--ink-light); font-weight:700; text-align:right; }
+
+  .stage-options{ display:flex; flex-direction:column; gap:12px; margin-top:50px; }
+  .option-btn{
+    font-family:'Times New Roman', Times, serif; font-size:16px; text-align:left;
+    background: rgba(244,239,230,0.08); border:1px solid rgba(244,239,230,0.28); color: var(--ink-light);
+    padding:14px 16px; border-radius:4px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+  }
+  #procurement .option-btn:hover{ background: rgba(200,155,76,0.22); border-color: var(--procure-accent); transform: translateX(3px); }
+  #procurement .option-btn.active{ background: rgba(200,155,76,0.3); border-color: var(--procure-accent); }
+  #processing .option-btn:hover{ background: rgba(79,191,170,0.22); border-color: var(--process-accent); transform: translateX(3px); }
+  #processing .option-btn.active{ background: rgba(79,191,170,0.3); border-color: var(--process-accent); }
+  #distribution .option-btn:hover{ background: rgba(110,155,224,0.22); border-color: var(--distribute-accent); transform: translateX(3px); }
+  #distribution .option-btn.active{ background: rgba(110,155,224,0.3); border-color: var(--distribute-accent); }
+  .stage.shrink .option-btn{ font-size:14px; padding:11px 12px; }
+
+  .flow-arrow{
+    position:absolute; top:50%; right:-19px; transform:translateY(-50%); width:38px; height:38px; border-radius:50%;
+    background:#0B0B0C; border:2px solid var(--arrow-color); display:flex; align-items:center; justify-content:center; z-index:5;
+  }
+  .flow-arrow svg{ width:16px; height:16px; }
+  #procurement .flow-arrow{ --arrow-color: var(--procure-accent); }
+  #processing .flow-arrow{ --arrow-color: var(--process-accent); }
+  .page.detail-open .flow-arrow{ display:none; }
+
+  .flow-label{
+    position:absolute; bottom:56px; left:44px; right:44px; font-size:13px; letter-spacing:0.1em; text-transform:uppercase;
+    color: var(--ink-dim); display:flex; align-items:center; gap:8px;
+  }
+  .flow-label .dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  #procurement .flow-label .dot{ background: var(--procure-accent); }
+  #processing .flow-label .dot{ background: var(--process-accent); }
+  #distribution .flow-label .dot{ background: var(--distribute-accent); }
+  .page.detail-open .flow-label{ display:none; }
+
+  /* ---- Global flat horizontal payment bar (spans all three stages) ---- */
+  .global-payment-bar{
+    display:flex; align-items:center; gap:14px; width:100%; flex-wrap:wrap;
+    padding:18px 44px; background:linear-gradient(90deg, var(--procure-bg-2) 0%, var(--process-bg-2) 50%, var(--distribute-bg-2) 100%);
+    border-top:2px solid rgba(244,239,230,0.2); position:fixed; left:0; right:0; bottom:0; z-index:60;
+    box-shadow:0 -10px 30px rgba(0,0,0,0.35);
+  }
+  .global-payment-title{
+    font-weight:700; font-size:13px; letter-spacing:0.08em; text-transform:uppercase;
+    color: var(--ink-light); flex-shrink:0; white-space:nowrap;
+  }
+  .global-payment-select{
+    flex:2 1 220px; font-family:'Times New Roman', Times, serif; font-size:15px; padding:12px 14px;
+    border-radius:4px; border:2px solid rgba(244,239,230,0.28); background:rgba(244,239,230,0.08);
+    color: var(--ink-light); cursor:pointer;
+  }
+  .global-payment-select.has-pick{ border-color:#4478f5; background:#cfe2ff; color:#0b1a3d; font-weight:700; }
+  .global-payment-select::placeholder{ color: var(--ink-dim); }
+  .global-payment-bar input[type="number"], .global-payment-bar select{
+    flex:1 1 120px; font-family:'Times New Roman', Times, serif; font-size:14px; padding:11px 12px;
+    border-radius:4px; border:1px solid rgba(244,239,230,0.28); background:rgba(244,239,230,0.08); color: var(--ink-light);
+  }
+  .global-payment-btn{
+    font-family:'Times New Roman', Times, serif; font-size:15px; font-weight:700; flex-shrink:0;
+    background: var(--ink-light); color:#17233F; border:none; padding:12px 26px; border-radius:4px; cursor:pointer;
+  }
+  .global-payment-btn:hover{ opacity:0.88; }
+  .dist-payment-msg{ margin:0; font-size:13px; padding:10px 12px; border-radius:4px; flex-shrink:0; }
+  .dist-payment-msg.success{ background:rgba(93,202,165,0.18); color:#9fe1cb; border:1px solid rgba(93,202,165,0.4); }
+  .dist-payment-msg.error{ background:rgba(224,110,110,0.18); color:#f0999b; border:1px solid rgba(224,110,110,0.4); }
+
+  .pay-history{ width:100%; max-height:150px; overflow-y:auto; border-top:1px solid rgba(244,239,230,0.15); margin-top:2px; }
+  .pay-history-row{
+    display:flex; align-items:center; gap:12px; padding:8px 0; font-size:13px; color:var(--ink-dim); flex-wrap:wrap;
+  }
+  .pay-history-row .ph-name{ flex:1 1 160px; color:var(--ink-light); font-weight:700; }
+  .pay-history-row .ph-amount{ flex:0 0 auto; }
+  .pay-history-row .ph-shot-btn{
+    background:none; border:1px solid rgba(244,239,230,0.4); color:var(--ink-light); border-radius:4px;
+    padding:4px 10px; cursor:pointer; font-size:12px; flex-shrink:0; font-family:'Times New Roman', Times, serif;
+  }
+  .pay-history-row .ph-shot-btn:hover{ background:rgba(244,239,230,0.15); }
+  .pay-history-row .ph-shot-btn.has-shot{ border-color:#4FBFAA; color:#4FBFAA; }
+
+  @media (max-width: 900px){
+    .global-payment-bar{ padding:14px 20px; }
+  }
+
+  /* ---- Payment picking mode: keep the real page exactly as-is, just tint it
+     yellow so it visibly differs from normal browsing. No separate screen. ---- */
+  #yellowSelectOverlay{
+    display:none; position:fixed; inset:0; z-index:40; pointer-events:none;
+    background: rgba(255, 200, 0, 0.22);
+    box-shadow: inset 0 0 160px rgba(255,180,0,0.35);
+  }
+  body.payment-picking #yellowSelectOverlay{ display:block; }
+
+  .pay-pick-close-btn{
+    display:none; position:fixed; top:26px; right:34px; z-index:70;
+    font-family:'Times New Roman', Times, serif; background:#1a1a1a; color:#ffe27a;
+    border:2px solid #ffd400; padding:11px 22px; border-radius:4px; cursor:pointer; font-size:14px; font-weight:700;
+  }
+  .pay-pick-close-btn:hover{ background:#ffd400; color:#1a1a1a; }
+  body.payment-picking .pay-pick-close-btn{ display:block; }
+
+  /* Hide the normal option list, show the pickable members/stores in its place —
+     same buttons, same per-stage accent colours already defined on .option-btn. */
+  body.payment-picking .stage-options{ display:none; }
+  body.payment-picking .flow-arrow, body.payment-picking .flow-label{ display:none; }
+  body.payment-picking .page{ overflow:visible; }
+  body.payment-picking .stage{ overflow:visible; }
+  .payment-pick-list{ display:none; flex-direction:column; gap:12px; margin-top:50px; }
+  body.payment-picking .payment-pick-list{ display:flex; }
+  .option-btn.pay-pick-btn{ text-align:left; }
+  .pay-pick-btn-sub{ display:block; font-size:12px; font-weight:400; opacity:0.75; margin-top:3px; }
+  .pay-pick-btn-status{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; flex-shrink:0; white-space:nowrap; }
+  .pay-pick-btn-status.paid{ background:rgba(93,202,165,0.35); color:#eafff6; }
+  .pay-pick-btn-status.pending{ background:rgba(224,110,110,0.35); color:#ffeceb; }
+  .option-btn.pay-pick-btn.picked{
+    border-color:#0e2d80 !important; background:#cfe2ff !important; color:#0b1a3d !important;
+  }
+  .option-btn.pay-pick-btn.picked .pay-pick-btn-sub{ color:#0b1a3d; opacity:0.7; }
+
+  .detail-overlay{
+    position:absolute; top:0; right:0; bottom:0; width:0; overflow:hidden; background:#F7F3EA;
+    box-shadow: -12px 0 40px rgba(0,0,0,0.35); z-index:10; transition: width 0.55s cubic-bezier(.4,0,.2,1);
+  }
+  .page.detail-open .detail-overlay{ width: calc(100% - 300px); }
+
+  .detail-inner{ padding:44px 48px; height:100%; overflow-y:auto; min-width:640px; }
+
+  .detail-header{
+    display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px;
+    border-bottom:2px solid #3E3324; padding-bottom:16px;
+  }
+  .detail-header h2{ font-size:28px; color:#3E3324; text-transform:uppercase; letter-spacing:0.03em; }
+  .detail-header p{ font-style:italic; color:#6b5c42; margin-top:6px; font-size:14px; }
+  .close-btn{
+    font-family:'Times New Roman', Times, serif; background:#3E3324; color:#F7F3EA; border:none;
+    padding:10px 18px; border-radius:4px; cursor:pointer; font-size:14px; letter-spacing:0.05em;
+  }
+  .close-btn:hover{ background:#C89B4C; color:#3E3324; }
+
+  .summary-cards{ display:flex; gap:20px; flex-wrap:wrap; margin-bottom:30px; }
+  .summary-card{ flex:1 1 200px; background:#fff; border:1px solid #e2d9c4; border-left:5px solid #C89B4C; padding:18px 20px; border-radius:4px; }
+  .summary-card .label{ font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:#8a7a58; }
+  .summary-card .value{ font-size:26px; color:#3E3324; font-weight:700; margin-top:6px; }
+
+  table.detail-table{ width:100%; border-collapse: collapse; background:#fff; font-size:14px; }
+  table.detail-table th{ background:#3E3324; color:#F7F3EA; text-align:left; padding:12px 10px; font-weight:700; letter-spacing:0.03em; white-space:nowrap; }
+  table.detail-table td{ padding:10px; border-bottom:1px solid #eee2cc; color:#3E3324; vertical-align:middle; }
+  table.detail-table tr.member-row:nth-child(even) td{ background:#FBF8F0; }
+
+  tr.new-member-row td{ background:#F1EAD8 !important; border-top:2px solid #C89B4C; padding:8px 6px; }
+  .new-input{
+    font-family:'Times New Roman', Times, serif;
+    font-size:13px;
+    width:100%;
+    min-width:90px;
+    padding:7px 8px;
+    border:1px solid #cbbf9e;
+    border-radius:4px;
+    background:#fff;
+  }
+
+  .avatar{ width:36px; height:36px; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+
+  .view-btn{ font-family:'Times New Roman', Times, serif; background:#17393B; color:#F7F3EA; border:none; padding:6px 14px; border-radius:3px; cursor:pointer; font-size:13px; }
+  .view-btn:hover{ background:#4FBFAA; color:#17393B; }
+
+  .simple-detail p{ font-size:15px; line-height:1.8; color:#3E3324; max-width:60ch; }
+
+  /* --- total collection: place / id / result 3-column layout --- */
+  .result-col-wrap{ display:flex; flex-direction:column; gap:16px; }
+  .place-hover-strip{
+    display:none;
+    gap:16px;
+    background:#FBF6EA;
+    border:1px solid #e2d9c4;
+    border-radius:6px;
+    padding:16px 20px;
+    overflow-x:auto;
+  }
+  .place-hover-strip.visible{ display:flex; }
+  .strip-person{ display:flex; flex-direction:column; align-items:center; gap:5px; width:76px; text-align:center; flex-shrink:0; }
+  .strip-person .avatar{ width:42px; height:42px; font-size:13px; }
+  .strip-name{ font-size:12px; color:#3E3324; font-weight:700; line-height:1.2; }
+  .strip-id{ font-size:11px; color:#8a7a58; }
+
+  .collection-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr 2.4fr;
+    gap:22px;
+    align-items:start;
+  }
+  .collection-col{
+    background:#fff;
+    border:1px solid #e2d9c4;
+    border-radius:6px;
+    padding:18px 20px;
+  }
+  .col-title{
+    font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.05em;
+    color:#3E3324; margin-bottom:14px; border-bottom:1px solid #eee2cc; padding-bottom:8px;
+  }
+  .place-list{ list-style:none; }
+  .place-list li{
+    padding:10px 8px; font-size:15px; cursor:pointer; border-radius:4px; color:#3E3324; transition: background 0.2s ease;
+  }
+  .place-list li:hover{ background:#FBF6EA; }
+  .place-list li.active{ background:#C89B4C; color:#3E3324; font-weight:700; }
+
+  .id-col input{
+    width:100%; font-family:'Times New Roman', Times, serif; font-size:15px; padding:9px 10px;
+    border:1px solid #cbbf9e; border-radius:4px; margin-bottom:12px;
+  }
+  .id-col button{
+    width:100%; font-family:'Times New Roman', Times, serif; background:#3E3324; color:#F7F3EA;
+    border:none; padding:9px 10px; border-radius:4px; cursor:pointer; font-size:14px;
+  }
+  .id-col button:hover{ background:#C89B4C; color:#3E3324; }
+
+  .table-input-row td{ background:#FBF8F0; padding:8px 6px; }
+  .table-input-row input, .table-input-row select{
+    width:100%; font-family:'Times New Roman', Times, serif; font-size:13px; padding:7px 8px;
+    border:1px solid #cbbf9e; border-radius:4px; background:#fff;
+  }
+  .table-add-btn{
+    width:100%; font-family:'Times New Roman', Times, serif; background:#3E3324; color:#F7F3EA;
+    border:none; padding:8px 10px; border-radius:4px; cursor:pointer; font-size:13px; white-space:nowrap;
+  }
+  .table-add-btn:hover{ background:#C89B4C; color:#3E3324; }
+  .row-delete-btn{
+    background:none; border:1px solid #c0392b; color:#c0392b; border-radius:4px; cursor:pointer;
+    font-size:15px; padding:5px 9px; line-height:1;
+  }
+  .row-delete-btn:hover{ background:#c0392b; color:#fff; }
+
+  .custom-modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,16,10,0.55); z-index:9999;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .custom-modal-overlay.show{ display:flex; }
+  .custom-modal-box{
+    background:#F7F3EA; border-radius:8px; max-width:360px; width:100%; padding:28px 26px 22px;
+    text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.4); font-family:'Times New Roman', Times, serif;
+  }
+  .custom-modal-icon{ font-size:30px; margin-bottom:10px; }
+  .custom-modal-title{ font-size:19px; font-weight:700; color:#3E3324; margin-bottom:8px; }
+  .custom-modal-text{ font-size:14px; color:#7a6c4d; margin-bottom:22px; }
+  .custom-modal-actions{ display:flex; gap:12px; justify-content:center; }
+  .custom-modal-btn{
+    font-family:'Times New Roman', Times, serif; font-size:14px; padding:10px 22px; border-radius:5px;
+    cursor:pointer; border:1px solid #cbbf9e; background:#fff; color:#3E3324;
+  }
+  .custom-modal-btn.confirm{ background:#c0392b; border-color:#c0392b; color:#fff; }
+  .custom-modal-btn.confirm:hover{ background:#a5301f; }
+  .custom-modal-btn.cancel:hover{ background:#eee2cc; }
+  .custom-modal-btn.confirm.pay{ background:#2678a3; border-color:#2678a3; }
+  .custom-modal-btn.confirm.pay:hover{ background:#1f6488; }
+
+  /* ---- payment item rows inside the global-payment entity detail table ---- */
+  .pay-item-row{ cursor:pointer; }
+  .pay-item-row:hover td{ background:#FBF6EA; }
+  .pay-item-hint{ font-size:12px; color:#8a7a58; }
+
+  /* ---- screenshot lightbox ---- */
+  .shot-lightbox-overlay{
+    display:none; position:fixed; inset:0; background:rgba(11,11,12,0.86);
+    z-index:300; align-items:center; justify-content:center; padding:30px;
+  }
+  .shot-lightbox-overlay.show{ display:flex; }
+  .shot-lightbox-box{
+    background:#fff; border-radius:8px; padding:20px; max-width:min(560px,90vw); max-height:90vh;
+    display:flex; flex-direction:column; gap:14px; overflow:auto;
+  }
+  .shot-lightbox-head{ display:flex; justify-content:space-between; align-items:center; gap:20px; }
+  .shot-lightbox-head h3{ font-size:16px; color:#3E3324; }
+  .shot-lightbox-box img{ max-width:100%; max-height:60vh; display:block; border-radius:4px; border:1px solid #eee2cc; }
+  .shot-lightbox-actions{ display:flex; gap:10px; justify-content:flex-end; }
+  .no-shot-msg{ font-size:13px; color:#8a7a58; background:#FBF6EA; border:1px solid #e2d9c4; border-radius:4px; padding:12px 14px; }
+
+  .result-col{ min-height:280px; }
+  .result-placeholder{ color:#8a7a58; font-style:italic; font-size:14px; }
+
+  .member-detail-card + .member-detail-card{ margin-top:16px; padding-top:16px; border-top:1px solid #eee2cc; }
+  .mdc-header{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+  .mdc-name{ font-size:18px; font-weight:700; color:#3E3324; }
+  .mdc-id{ font-size:13px; color:#8a7a58; margin-top:2px; }
+  .mdc-rows{ display:flex; flex-direction:column; gap:2px; }
+  .mdc-row{ display:flex; justify-content:space-between; gap:16px; font-size:14px; padding:8px 0; border-bottom:1px dashed #eee2cc; }
+  .mdc-row span:first-child{ color:#8a7a58; }
+  .mdc-row span:last-child{ color:#3E3324; font-weight:600; text-align:right; }
+
+  /* --- clickable cells inside member table --- */
+  td.clickable{ cursor:pointer; }
+  td.clickable .cell-inner{
+    display:inline-block;
+    transition: transform 0.25s ease, color 0.25s ease;
+    border-bottom:1px dashed #C89B4C;
+  }
+  td.clickable .cell-inner.lifted{
+    transform: translateY(-4px);
+    color:#8a5a12;
+    font-weight:700;
+  }
+
+  tr.expand-row td{ background:#FFFDF6 !important; border-bottom:2px solid #e2d9c4; padding:0; }
+  .expand-content{
+    padding:18px 22px 24px;
+    animation: slideDown 0.3s ease;
+    border-left:4px solid #C89B4C;
+    margin:8px 10px 10px;
+    background:#FBF6EA;
+    border-radius:4px;
+  }
+  @keyframes slideDown{
+    from{ opacity:0; transform: translateY(-10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .expand-title{ font-weight:700; font-size:15px; color:#3E3324; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.04em; }
+
+  .dual-info{ display:flex; gap:24px; flex-wrap:wrap; }
+  .dual-info .info-block{ background:#fff; border:1px solid #e2d9c4; border-radius:4px; padding:12px 16px; min-width:220px; }
+  .dual-info .info-block .tag{ font-size:11px; text-transform:uppercase; letter-spacing:0.07em; color:#8a7a58; }
+  .dual-info .info-block .val{ font-size:15px; color:#3E3324; margin-top:4px; font-weight:600; }
+
+  .liter-update-row{ display:flex; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+  .liter-update-row input[type=number]{
+    font-family:'Times New Roman', Times, serif; font-size:15px; padding:7px 10px; border:1px solid #cbbf9e; border-radius:4px; width:120px;
+  }
+  .liter-update-row button, .year-arrow{
+    font-family:'Times New Roman', Times, serif; background:#3E3324; color:#F7F3EA; border:none; padding:8px 14px;
+    border-radius:4px; cursor:pointer; font-size:14px;
+  }
+  .liter-update-row button:hover{ background:#C89B4C; color:#3E3324; }
+
+  table.mini-table{ border-collapse:collapse; width:100%; max-width:420px; background:#fff; }
+  table.mini-table th{ background:#17393B; color:#F7F3EA; text-align:left; padding:8px 12px; font-size:13px; }
+  table.mini-table td{ padding:8px 12px; border-bottom:1px solid #eee2cc; font-size:14px; color:#3E3324; }
+  .tick-yes{ color:#1f8a3b; font-weight:700; }
+  .tick-no{ color:#b0a586; }
+  .week-tick{ color:#1f8a3b; font-weight:700; }
+  .week-bad-msg{ color:#b8322f; font-weight:700; font-size:12.5px; }
+  table.mini-table td.week-status-cell{ white-space:nowrap; }
+
+  .year-selector{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .year-selector .year-label{ font-size:18px; font-weight:700; color:#3E3324; min-width:60px; text-align:center; }
+  .year-arrow{ width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; font-size:16px; }
+
+  .month-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; max-width:520px; }
+  .month-cell{ background:#fff; border:1px solid #e2d9c4; border-radius:4px; padding:10px 8px; text-align:center; }
+  .month-cell .m-name{ font-size:13px; font-weight:700; color:#3E3324; }
+  .month-cell .m-status-row{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px; }
+  .month-cell .m-status{ font-size:12px; font-weight:700; }
+  .month-cell.paid{ border-left:4px solid #1f8a3b; }
+  .month-cell.paid .m-status{ color:#1f8a3b; }
+  .month-cell.pending{ border-left:4px solid #b8562f; }
+  .month-cell.pending .m-status{ color:#b8562f; }
+  .download-btn{
+    background:transparent; border:1px solid #1f8a3b; border-radius:3px; padding:2px 4px; cursor:pointer;
+    color:#1f8a3b; display:flex; align-items:center; justify-content:center;
+  }
+  .download-btn:hover{ background: rgba(31,138,59,0.15); }
+
+  /* --- add-member panel inside Collection view --- */
+  .add-member-panel{ background:#fff; border:1px solid #e2d9c4; border-radius:6px; padding:18px 20px; margin-top:20px; }
+  .add-member-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+  .add-member-grid input{
+    font-family:'Times New Roman', Times, serif; font-size:14px; padding:9px 10px;
+    border:1px solid #cbbf9e; border-radius:4px; width:100%;
+  }
+  .add-member-panel button{
+    margin-top:14px; font-family:'Times New Roman', Times, serif; background:#3E3324; color:#F7F3EA;
+    border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-size:14px;
+  }
+  .add-member-panel button:hover{ background:#C89B4C; color:#3E3324; }
+  .add-member-note{ font-size:12px; color:#8a7a58; margin-top:10px; }
+
+  /* --- member form document modal (View Form) --- */
+  .form-modal-backdrop{
+    position:fixed; inset:0; background:rgba(20,15,5,0.55); z-index:100;
+    display:flex; align-items:center; justify-content:center; padding:30px;
+  }
+  .form-doc{
+    background:#fff; width:100%; max-width:640px; max-height:90vh; overflow-y:auto;
+    border-radius:6px; box-shadow:0 20px 60px rgba(0,0,0,0.4); padding:0;
+  }
+  .form-doc-head{
+    background:#3E3324; color:#F7F3EA; padding:22px 30px; display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .form-doc-head h3{ font-size:20px; letter-spacing:0.03em; text-transform:uppercase; }
+  .form-doc-head p{ font-size:12px; color:#d8cdb2; margin-top:4px; font-style:italic; }
+  .form-doc-close{
+    background:transparent; border:1px solid #F7F3EA; color:#F7F3EA; border-radius:4px; padding:6px 12px; cursor:pointer; font-size:13px;
+    font-family:'Times New Roman', Times, serif;
+  }
+  .form-doc-close:hover{ background:#F7F3EA; color:#3E3324; }
+  .form-doc-body{ padding:30px; }
+  .form-doc-id{ text-align:center; margin-bottom:22px; }
+  .form-doc-id .avatar{ width:60px; height:60px; font-size:18px; margin:0 auto 10px; }
+  .form-doc-id .fname{ font-size:20px; font-weight:700; color:#3E3324; }
+  .form-doc-id .fmeta{ font-size:13px; color:#8a7a58; margin-top:2px; }
+  table.form-doc-table{ width:100%; border-collapse:collapse; margin-top:10px; }
+  table.form-doc-table td{ padding:11px 6px; border-bottom:1px solid #eee2cc; font-size:14px; }
+  table.form-doc-table td:first-child{ color:#8a7a58; width:42%; text-transform:uppercase; font-size:11.5px; letter-spacing:0.05em; }
+  table.form-doc-table td:last-child{ color:#3E3324; font-weight:600; }
+  .form-doc-footer{ padding:18px 30px 26px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee2cc; }
+  .form-doc-footer button{
+    font-family:'Times New Roman', Times, serif; font-size:14px; padding:10px 18px; border-radius:4px; cursor:pointer; border:none;
+  }
+  .btn-download{ background:#1f8a3b; color:#fff; display:flex; align-items:center; gap:8px; }
+  .btn-download:hover{ background:#166b2c; }
+
+  /* --- payment lookup / pay flow --- */
+  .pay-member-head{ display:flex; align-items:center; gap:14px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid #eee2cc; }
+  .pay-summary-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .pay-summary-row .mini-stat{ background:#FBF6EA; border:1px solid #e2d9c4; border-radius:4px; padding:10px 16px; font-size:13px; }
+  .pay-summary-row .mini-stat b{ display:block; font-size:17px; color:#3E3324; margin-top:2px; }
+  table.pay-table{ width:100%; border-collapse:collapse; background:#fff; font-size:13.5px; }
+  table.pay-table th{ background:#17393B; color:#F7F3EA; text-align:left; padding:10px 8px; font-weight:700; }
+  table.pay-table td{ padding:9px 8px; border-bottom:1px solid #eee2cc; color:#3E3324; vertical-align:middle; }
+  .pay-status{ font-weight:700; font-size:12px; padding:3px 9px; border-radius:12px; display:inline-block; }
+  .pay-status.completed{ background:#e4f5e8; color:#1f8a3b; }
+  .pay-status.pending{ background:#fdece3; color:#b8562f; }
+  .pay-now-btn{
+    font-family:'Times New Roman', Times, serif; background:#3399cc; color:#fff; border:none; padding:6px 13px;
+    border-radius:3px; cursor:pointer; font-size:12.5px;
+  }
+  .pay-now-btn:hover{ background:#2678a3; }
+  .txn-id{ font-size:11px; color:#8a7a58; }
+  .shot-btn{
+    background:transparent; border:1px solid #6b5c42; border-radius:3px; padding:4px 6px; cursor:pointer;
+    color:#6b5c42; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .shot-btn.has-shot{ border-color:#1f8a3b; color:#1f8a3b; }
+  .shot-btn:hover{ background:rgba(107,92,66,0.12); }
+
+  /* --- processing: category-grouped member detail --- */
+  .category-member-block{ margin-bottom:34px; padding-bottom:22px; border-bottom:1px solid #eee2cc; }
+  .category-member-block:last-child{ border-bottom:none; }
+  .category-member-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .cat-badge{
+    width:40px; height:40px; border-radius:50%; border:1.5px solid #cbbf9e; display:inline-flex;
+    align-items:center; justify-content:center; font-size:19px; flex-shrink:0;
+  }
+  .cat-name{ font-weight:700; color:#3E3324; font-size:16px; }
+  .cat-sub{ font-size:12px; color:#8a7a58; }
+  .mini-pay-strip{ display:flex; gap:2px; flex-wrap:wrap; max-width:110px; }
+  .mini-pay-dot{ width:8px; height:8px; border-radius:2px; background:#ddd; }
+  .mini-pay-dot.paid{ background:#1f8a3b; }
+  .mini-pay-dot.pending{ background:#e2704a; }
+  .mini-pay-count{ font-size:11px; color:#8a7a58; margin-top:4px; }
+  .live-clock-tag{ font-size:11px; color:#8a7a58; margin-top:3px; font-style:italic; }
+  .cat-cell{ display:inline-flex; align-items:center; gap:8px; }
+  .cat-cell .cat-badge{ width:30px; height:30px; font-size:15px; }
+
+  /* --- distribution: small vs big member detail --- */
+  .dist-tabs{ display:flex; gap:16px; margin-bottom:26px; flex-wrap:wrap; }
+  .dist-tab-btn{
+    font-family:'Times New Roman', Times, serif; text-align:left; background:#fff; border:1.5px solid #e2d9c4;
+    border-radius:6px; padding:16px 22px; cursor:pointer; flex:1 1 220px; min-width:220px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .dist-tab-btn .dist-tab-title{ display:block; font-size:17px; font-weight:700; color:#3E3324; }
+  .dist-tab-btn .dist-tab-sub{ display:block; font-size:12.5px; color:#8a7a58; margin-top:4px; font-style:italic; }
+  .dist-tab-btn:hover{ border-color: var(--distribute-accent); background: rgba(110,155,224,0.08); }
+  .dist-tab-btn.active{ border-color: var(--distribute-accent); background: rgba(110,155,224,0.16); }
+  .dist-table-scroll{ overflow-x:auto; }
+  .dist-monthly-summary{
+    display:inline-block; font-size:14px; font-weight:700; color:#3E3324; background:#FBF6EA;
+    border:1px solid #e2d9c4; border-radius:4px; padding:10px 16px; margin-bottom:16px;
+  }
+
+  /* --- distribution: delivery boy ID chip + mini card --- */
+  .dlv-id-chip{
+    display:inline-flex; align-items:center; gap:6px; background:rgba(110,155,224,0.14);
+    border:1px solid #b9cdf0; color:#26407a; font-weight:700; font-size:12.5px;
+    padding:5px 10px; border-radius:20px;
+  }
+  .dlv-id-chip .dot{ width:6px; height:6px; border-radius:50%; background:#6E9BE0; }
+  .dlv-mini-card{ display:flex; align-items:center; gap:16px; }
+  .dlv-mini-card .avatar{ width:54px; height:54px; font-size:16px; flex-shrink:0; background:#26407a; }
+  .dlv-mini-card .dlv-mini-name{ font-size:16px; font-weight:700; color:#3E3324; }
+  .dlv-mini-card .dlv-mini-id{ font-size:12px; color:#8a7a58; margin-top:2px; }
+  .dlv-mini-card .dlv-mini-phone{ font-size:14px; color:#26407a; font-weight:700; margin-top:6px; }
+  .dlv-mini-card .dlv-mini-route{ font-size:12.5px; color:#8a7a58; margin-top:3px; font-style:italic; }
+
+  /* --- distribution: delivery person detail table --- */
+  .dperson-avatar{ width:44px; height:44px; font-size:14px; background:#26407a; }
+  .track-btn{
+    font-family:'Times New Roman', Times, serif; background:#26407a; color:#fff; border:none;
+    padding:6px 14px; border-radius:3px; cursor:pointer; font-size:13px;
+  }
+  .track-btn:hover{ background:#6E9BE0; color:#17233F; }
+
+  /* --- distribution: delivery detail / tracking chain --- */
+  .dtrack-select-bar{
+    display:flex; gap:16px; flex-wrap:wrap; background:#FBF6EA; border:1px solid #e2d9c4;
+    border-radius:6px; padding:18px 20px; margin-bottom:28px; align-items:flex-end;
+  }
+  .dtrack-select-field{ display:flex; flex-direction:column; gap:6px; flex:1 1 220px; min-width:200px; }
+  .dtrack-select-field label{ font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:#8a7a58; font-weight:700; }
+  .dtrack-select-field select{
+    font-family:'Times New Roman', Times, serif; font-size:14px; padding:9px 10px; border:1px solid #cbbf9e;
+    border-radius:4px; background:#fff; color:#3E3324;
+  }
+  .dtrack-summary-banner{
+    display:flex; flex-wrap:wrap; gap:24px; align-items:center; background:#17233F; color:#F4EFE6;
+    border-radius:8px; padding:20px 26px; margin-bottom:36px;
+  }
+  .dtrack-summary-banner .dsb-avatar{ width:56px; height:56px; font-size:17px; background:#6E9BE0; color:#17233F; }
+  .dtrack-summary-banner .dsb-name{ font-size:18px; font-weight:700; }
+  .dtrack-summary-banner .dsb-sub{ font-size:12.5px; color:rgba(244,239,230,0.68); margin-top:3px; }
+  .dtrack-summary-banner .dsb-metric{ margin-left:auto; text-align:right; }
+  .dtrack-summary-banner .dsb-metric .dsb-metric-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:rgba(244,239,230,0.6); }
+  .dtrack-summary-banner .dsb-metric .dsb-metric-value{ font-size:24px; font-weight:700; color:#8FC1FF; margin-top:2px; }
+
+  .delivery-chain{
+    display:flex; align-items:flex-start; overflow-x:auto; padding:10px 4px 30px;
+  }
+  .chain-step{
+    display:flex; flex-direction:column; align-items:center; flex:1 1 0; min-width:120px; position:relative;
+  }
+  .chain-node{
+    width:46px; height:46px; border-radius:50%; background:#1f8a3b; color:#fff; display:flex; align-items:center;
+    justify-content:center; font-size:19px; z-index:2; box-shadow:0 0 0 5px #e4f5e8; flex-shrink:0;
+  }
+  .chain-step.pending .chain-node{ background:#cbbf9e; box-shadow:0 0 0 5px #f4efe0; color:#6b5c42; }
+  .chain-line{
+    position:absolute; top:23px; left:calc(-50% + 23px); width:calc(100% - 46px); height:3px; background:#1f8a3b; z-index:1;
+  }
+  .chain-step:first-child .chain-line{ display:none; }
+  .chain-step.pending .chain-line{ background:#cbbf9e; }
+  .chain-label{ font-size:13px; font-weight:700; color:#3E3324; text-align:center; margin-top:12px; max-width:130px; line-height:1.35; }
+  .chain-time{ font-size:11.5px; color:#8a7a58; margin-top:4px; text-align:center; }
+  .chain-elapsed{ font-size:11px; color:#1f8a3b; font-weight:700; margin-top:3px; text-align:center; }
+
+  .dtrack-store-card{
+    display:flex; gap:16px; align-items:center; background:#fff; border:1px solid #e2d9c4; border-left:5px solid #6E9BE0;
+    border-radius:4px; padding:16px 20px; margin-bottom:24px;
+  }
+  .dtrack-store-card .avatar{ width:46px; height:46px; font-size:14px; }
+  .dtrack-store-card .dsc-name{ font-size:15px; font-weight:700; color:#3E3324; }
+  .dtrack-store-card .dsc-sub{ font-size:12.5px; color:#8a7a58; margin-top:2px; }
+
+  @media (max-width: 860px){
+    .delivery-chain{ flex-direction:column; align-items:stretch; padding-bottom:6px; }
+    .chain-step{ flex-direction:row; text-align:left; align-items:flex-start; padding:14px 0; min-width:0; }
+    .chain-line{ top:0; left:22px; width:3px; height:calc(100% - 6px); }
+    .chain-label, .chain-time, .chain-elapsed{ text-align:left; margin-left:16px; margin-top:0; max-width:none; }
+    .dtrack-summary-banner .dsb-metric{ margin-left:0; text-align:left; }
+  }
+
+  @media (max-width: 860px){
+    .page{ flex-direction:column; }
+    .stage{ min-height:auto; padding:48px 28px 100px; }
+    .flow-arrow{ top:auto; bottom:-19px; right:auto; left:44px; transform:rotate(90deg); }
+    .flow-label{ position:static; margin-top:34px; }
+    .page.detail-open .stage.shrink{ flex-basis:auto; max-width:100%; transform:none; }
+    .detail-overlay{ position:relative; top:auto; right:auto; width:100% !important; }
+    .detail-inner{ min-width:0; }
+    .dual-info{ flex-direction:column; }
+    .month-grid{ grid-template-columns:repeat(3,1fr); }
+    .collection-grid{ grid-template-columns:1fr; }
+    .add-member-grid{ grid-template-columns:1fr 1fr; }
+    .form-doc{ max-width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<button id="backToStoreBtn" onclick="if(window.parent && window.parent !== window){ window.parent.postMessage('closeStudio','*'); } else { window.location.href='index.html'; }" style="position:fixed; top:16px; left:16px; z-index:999; font-family:'Times New Roman', Times, serif; background:#F7F3EA; color:#3E3324; border:1px solid #C89B4C; padding:10px 18px; border-radius:4px; cursor:pointer; font-size:14px; letter-spacing:0.04em; box-shadow:0 4px 14px rgba(0,0,0,0.35);">&#8592; Back to Store</button>
+
+<div class="page" id="pageRoot">
+
+  <section class="stage" id="procurement">
+    <div class="stage-number">01 — Sourcing</div>
+    <h1 class="stage-title">Procurement<br>Side</h1>
+    <p class="stage-role">Raw Material Provider</p>
+    <div class="stage-divider"></div>
+
+    <div class="stage-options" id="procurement-options">
+      <button class="option-btn" data-detail="members">Member Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="collection">Total Milk Collection Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="payment">Total Payment Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="quality">Milk Quality / Fat & SNF Testing <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="route">Collection Vehicle / Route Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="rejection">Adulteration / Rejection Record <span class="arrow">›</span></button>
+    </div>
+    <div class="payment-pick-list" id="pay-pick-procurement"></div>
+
+    <div class="flow-arrow" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h16M14 6l6 6-6 6" stroke="#C89B4C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="flow-label"><span class="dot"></span> Raw material moves to processing</div>
+  </section>
+
+  <section class="stage" id="processing">
+    <div class="stage-number">02 — Transformation</div>
+    <h1 class="stage-title">Processing<br>Team</h1>
+    <p class="stage-role">Raw to Product Creator</p>
+    <div class="stage-divider"></div>
+    <div class="stage-options" id="processing-options">
+      <button class="option-btn" data-detail="proc-members">Member Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="proc-category">Category Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="proc-batch">Batch / Production Log <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="proc-machine">Machine / Equipment Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="proc-wastage">Wastage / Loss Tracking <span class="arrow">›</span></button>
+    </div>
+    <div class="payment-pick-list" id="pay-pick-processing"></div>
+    <div class="flow-arrow" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h16M14 6l6 6-6 6" stroke="#4FBFAA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="flow-label"><span class="dot"></span> Finished product moves to distribution</div>
+  </section>
+
+  <section class="stage" id="distribution">
+    <div class="stage-number">03 — Delivery</div>
+    <h1 class="stage-title">Distribution<br>Side</h1>
+    <p class="stage-role">Product Supplier</p>
+    <div class="stage-divider"></div>
+    <div class="stage-options" id="distribution-options">
+      <button class="option-btn" data-detail="dist-members">Member Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="dist-delivery">Delivery Related Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="dist-returns">Returns / Complaints Log <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="dist-expiry">Expiry / Shelf-Life Tracking <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="dist-orderhistory">Order History (Past Months) <span class="arrow">›</span></button>
+    </div>
+    <div class="payment-pick-list" id="pay-pick-distribution"></div>
+
+    <div class="flow-label"><span class="dot"></span> Product reaches the customer</div>
+  </section>
+
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-inner" id="detailInner"></div>
+  </div>
+
+  <div class="custom-modal-overlay" id="deleteConfirmOverlay">
+    <div class="custom-modal-box">
+      <div class="custom-modal-icon">🗑</div>
+      <div class="custom-modal-title">Delete this row?</div>
+      <div class="custom-modal-text">This action cannot be undone.</div>
+      <div class="custom-modal-actions">
+        <button class="custom-modal-btn cancel" id="deleteConfirmCancel">Cancel</button>
+        <button class="custom-modal-btn confirm" id="deleteConfirmOk">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="custom-modal-overlay" id="addAmountConfirmOverlay">
+    <div class="custom-modal-box">
+      <div class="custom-modal-icon">💳</div>
+      <div class="custom-modal-title">Add this amount to payment?</div>
+      <div class="custom-modal-text" id="addAmountConfirmText"></div>
+      <div class="custom-modal-actions">
+        <button class="custom-modal-btn cancel" id="addAmountConfirmCancel">Cancel</button>
+        <button class="custom-modal-btn confirm pay" id="addAmountConfirmOk">Yes, Add Amount</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="shot-lightbox-overlay" id="shotLightboxOverlay">
+    <div class="shot-lightbox-box">
+      <div class="shot-lightbox-head">
+        <h3 id="shotLightboxTitle">Payment Screenshot</h3>
+        <button class="close-btn" id="shotLightboxClose">Close ✕</button>
+      </div>
+      <div class="no-shot-msg" id="shotLightboxEmpty">No screenshot uploaded yet for this payment.</div>
+      <img id="shotLightboxImg" src="" alt="Payment screenshot" style="display:none;">
+      <div class="shot-lightbox-actions">
+        <button class="global-payment-btn" id="shotLightboxUpload" type="button">Upload Screenshot</button>
+        <button class="global-payment-btn" id="shotLightboxDownload" type="button" style="display:none;">Download</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="global-payment-bar" id="globalPaymentBar">
+  <div class="global-payment-title">Make a Payment</div>
+  <input type="text" id="globalPaymentSelect" class="global-payment-select" placeholder="Click to select a member / store" readonly onclick="openPaymentSelect()">
+  <input type="number" id="globalPaymentAmount" placeholder="Amount (₹)">
+  <select id="globalPaymentMode">
+    <option value="UPI">UPI</option>
+    <option value="Cash">Cash</option>
+    <option value="Bank Transfer">Bank Transfer</option>
+    <option value="Cheque">Cheque</option>
+  </select>
+  <button class="global-payment-btn" onclick="processGlobalPayment()">Pay Now</button>
+  <div id="globalPaymentStatus"></div>
+  <div class="pay-history" id="paymentHistoryList"></div>
+</div>
+
+<div id="yellowSelectOverlay" aria-hidden="true"></div>
+<button class="pay-pick-close-btn" id="paymentPickCloseBtn" onclick="closePaymentSelect()">Close ✕</button>
+
+<input type="file" id="shotFileInput" accept="image/*" style="display:none;">
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const pageRoot = document.getElementById('pageRoot');
+  const procurement = document.getElementById('procurement');
+  const processing = document.getElementById('processing');
+  const distribution = document.getElementById('distribution');
+  const stages = [procurement, processing, distribution];
+  const detailInner = document.getElementById('detailInner');
+  const optionBtns = document.querySelectorAll('.option-btn');
+
+  stages.forEach(stage => {
+    stage.addEventListener('mouseenter', () => {
+      if(pageRoot.classList.contains('detail-open')) return;
+      stages.forEach(s => { if(s !== stage) s.classList.add('blurred'); });
+    });
+    stage.addEventListener('mouseleave', () => {
+      stages.forEach(s => s.classList.remove('blurred'));
+    });
+  });
+
+  const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const YEARS = [2024, 2025, 2026];
+
+  function seededRand(seed){
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+
+  const baseMembers = [
+    {name:"Ramesh Patil", email:"ramesh.patil@mail.com", phone:"98220 11234", altPhone:"91234 56780", address:"Village Karad, Satara", altAddress:"Shop No. 4, Main Bazar, Karad", liter:"18.5 L/day", payment:"₹ 14,200"},
+    {name:"Sunita Jadhav", email:"sunita.jadhav@mail.com", phone:"98230 22345", altPhone:"90123 45671", address:"Village Wai, Satara", altAddress:"Near Bus Stand, Wai", liter:"12.0 L/day", payment:"₹ 9,600"},
+    {name:"Vikram Sable", email:"vikram.sable@mail.com", phone:"97650 33456", altPhone:"89012 34562", address:"Village Koregaon", altAddress:"Plot 12, Koregaon Road", liter:"22.3 L/day", payment:"₹ 17,900"},
+    {name:"Anita More", email:"anita.more@mail.com", phone:"96890 44567", altPhone:"88901 23453", address:"Village Phaltan", altAddress:"Gandhi Chowk, Phaltan", liter:"9.8 L/day", payment:"₹ 7,850"},
+    {name:"Suresh Kadam", email:"suresh.kadam@mail.com", phone:"95120 55678", altPhone:"87890 12344", address:"Village Karad, Satara", altAddress:"Behind Temple, Karad", liter:"15.6 L/day", payment:"₹ 12,480"},
+    {name:"Meena Shinde", email:"meena.shinde@mail.com", phone:"94330 66789", altPhone:"86789 01235", address:"Village Wai, Satara", altAddress:"Station Road, Wai", liter:"20.1 L/day", payment:"₹ 16,080"},
+    {name:"Dattatray Pawar", email:"dattatray.pawar@mail.com", phone:"93540 77890", altPhone:"85678 90126", address:"Village Koregaon", altAddress:"Farm House, Koregaon", liter:"11.4 L/day", payment:"₹ 9,120"},
+    {name:"Kavita Bhosale", email:"kavita.bhosale@mail.com", phone:"92760 88901", altPhone:"84567 89017", address:"Village Phaltan", altAddress:"Market Yard, Phaltan", liter:"17.2 L/day", payment:"₹ 13,760"},
+    {name:"Ganesh Chavan", email:"ganesh.chavan@mail.com", phone:"91980 99012", altPhone:"83456 78908", address:"Village Karad, Satara", altAddress:"Near School, Karad", liter:"25.0 L/day", payment:"₹ 20,000"},
+    {name:"Pooja Deshmukh", email:"pooja.deshmukh@mail.com", phone:"90190 10123", altPhone:"82345 67899", address:"Village Wai, Satara", altAddress:"Lake Road, Wai", liter:"8.6 L/day", payment:"₹ 6,880"},
+    {name:"Ravindra Gaikwad", email:"ravindra.gaikwad@mail.com", phone:"89410 21234", altPhone:"81234 56780", address:"Village Koregaon", altAddress:"Old Colony, Koregaon", liter:"19.9 L/day", payment:"₹ 15,920"},
+    {name:"Sarika Nikam", email:"sarika.nikam@mail.com", phone:"88620 32345", altPhone:"80123 45671", address:"Village Phaltan", altAddress:"New Housing Society, Phaltan", liter:"13.7 L/day", payment:"₹ 10,960"},
+  ];
+
+  const PLACES = ["Pune", "Mumbai", "Nashik", "Kolhapur", "Nagpur", "Satara"];
+
+  function buildMemberRecord(m, i){
+    const weeklyByYear = {};
+    YEARS.forEach((y, yi) => {
+      weeklyByYear[y] = DAYS.map((d, di) => {
+        const r = seededRand(i*7 + di + 1 + yi*17);
+        const provided = r > 0.18;
+        const amount = provided ? Math.round((6 + r*20) * 10) / 10 : 0;
+        return { day: d, liter: amount, provided };
+      });
+    });
+    const paymentYears = {};
+    YEARS.forEach((y, yi) => {
+      const status = {};
+      MONTHS.forEach((mo, mi) => {
+        const r = seededRand(i*100 + yi*13 + mi + 3);
+        status[mo] = (y < 2026 || mi < 8) ? (r > 0.22) : false;
+      });
+      paymentYears[y] = status;
+    });
+    return { ...m, weeklyByYear, paymentYears, currentYear: 2026, literYear: 2026,
+      place: m.place || PLACES[i % PLACES.length],
+      memberId: m.memberId || ('MEM' + String(i+1).padStart(3,'0')) };
+  }
+
+  const members = baseMembers.map((m, i) => buildMemberRecord(m, i));
+
+  function initials(name){ return name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase(); }
+
+  function renderMembers(){
+    let rows = members.map((m, i) => `
+      <tr class="member-row" id="member-row-${i}">
+        <td>${i+1}</td>
+        <td><div class="avatar">${initials(m.name)}</div></td>
+        <td>${m.name}</td>
+        <td>${m.email}</td>
+        <td class="clickable" onclick="toggleExpand(${i}, 'number', this)"><span class="cell-inner">${m.phone}</span></td>
+        <td class="clickable" onclick="toggleExpand(${i}, 'address', this)"><span class="cell-inner">${m.address}</span></td>
+        <td class="clickable" onclick="toggleExpand(${i}, 'liter', this)"><span class="cell-inner">${m.liter}</span></td>
+        <td class="clickable" onclick="toggleExpand(${i}, 'payment', this)"><span class="cell-inner">${m.payment}</span></td>
+        <td><button class="view-btn" onclick="openMemberFormDoc(${i})">View Form</button></td>
+      </tr>
+      <tr class="expand-row" id="expand-${i}" data-type="" style="display:none;">
+        <td colspan="9"><div class="expand-content" id="expand-content-${i}"></div></td>
+      </tr>
+    `).join('');
+
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h2>Member Detail</h2>
+          <p>${members.length} registered members — Procurement Side. Click a phone, address, liter or payment cell for more.</p>
+        </div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Sr. No</th><th>Photo</th><th>Name</th><th>Email</th><th>Number</th>
+            <th>Address</th><th>Total Liter</th><th>Monthly Payment</th><th>View Form</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+      <div class="add-member-panel">
+        <div class="col-title">Add New Member</div>
+        <div class="add-member-grid">
+          <input type="text" id="new-place" placeholder="Place" />
+          <input type="text" id="new-id" placeholder="Member ID (optional)" />
+          <input type="text" id="new-name" placeholder="Full name" />
+          <input type="email" id="new-email" placeholder="Email" />
+          <input type="text" id="new-phone" placeholder="Number" />
+          <input type="text" id="new-address" placeholder="Address" />
+          <input type="text" id="new-liter" placeholder="Liter e.g. 15.0" />
+          <input type="text" id="new-payment" placeholder="Payment e.g. ₹ 10,000" />
+        </div>
+        <button onclick="addMemberFromForm()">Save Member</button>
+        <div class="add-member-note">New members are added and become searchable by place or ID immediately.</div>
+      </div>
+    `;
+    bindClose();
+  }
+
+  function addMemberFromForm(){
+    const place = document.getElementById('new-place').value.trim();
+    const memberId = document.getElementById('new-id').value.trim();
+    const name = document.getElementById('new-name').value.trim();
+    const email = document.getElementById('new-email').value.trim();
+    const phone = document.getElementById('new-phone').value.trim();
+    const address = document.getElementById('new-address').value.trim();
+    const literVal = document.getElementById('new-liter').value.trim();
+    const payment = document.getElementById('new-payment').value.trim();
+
+    if(!name){ alert('Please enter at least the member name.'); return; }
+
+    const idx = members.length;
+    const newMember = buildMemberRecord({
+      name,
+      email: email || '—',
+      phone: phone || '—',
+      altPhone: '—',
+      address: address || '—',
+      altAddress: address || '—',
+      liter: literVal ? (parseFloat(literVal) || 0).toFixed(1) + ' L/day' : '0.0 L/day',
+      payment: payment || '₹ 0',
+      place: place || undefined,
+      memberId: memberId || undefined
+    }, idx);
+
+    members.push(newMember);
+    renderMembers();
+  }
+
+  function openMemberFormDoc(i){
+    const m = members[i];
+    const rows = [
+      ['Member ID', m.memberId], ['Place', m.place], ['Full Name', m.name],
+      ['Email', m.email], ['Primary Number', m.phone], ['Alternate Number', m.altPhone],
+      ['Permanent Address', m.address], ['Collection Address', m.altAddress],
+      ['Total Liter', m.liter], ['Monthly Payment', m.payment]
+    ];
+    const html = `
+      <div class="form-modal-backdrop" id="formModalBackdrop">
+        <div class="form-doc">
+          <div class="form-doc-head">
+            <div><h3>Member Registration Form</h3><p>Bhargavi DairyLoop — Procurement Side</p></div>
+            <button class="form-doc-close" onclick="closeMemberFormDoc()">Close ✕</button>
+          </div>
+          <div class="form-doc-body">
+            <div class="form-doc-id">
+              <div class="avatar">${initials(m.name)}</div>
+              <div class="fname">${m.name}</div>
+              <div class="fmeta">${m.memberId} — ${m.place}</div>
+            </div>
+            <table class="form-doc-table">
+              ${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
+            </table>
+          </div>
+          <div class="form-doc-footer">
+            <button class="btn-download" onclick="downloadMemberFormDoc(${i})">${downloadIconSVG()} Download</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function closeMemberFormDoc(){
+    const el = document.getElementById('formModalBackdrop');
+    if(el) el.remove();
+  }
+
+  function downloadMemberFormDoc(i){
+    const m = members[i];
+    const content =
+`BHARGAVI DAIRYLOOP — MEMBER REGISTRATION FORM
+================================================
+
+Member ID           : ${m.memberId}
+Place                : ${m.place}
+Full Name            : ${m.name}
+Email                : ${m.email}
+Primary Number       : ${m.phone}
+Alternate Number     : ${m.altPhone}
+Permanent Address    : ${m.address}
+Collection Address   : ${m.altAddress}
+Total Liter           : ${m.liter}
+Monthly Payment      : ${m.payment}
+
+================================================
+Issued by Procurement Side.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MemberForm_${m.name.replace(/\s+/g,'_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function toggleExpand(i, type, cellEl){
+    const expandRow = document.getElementById('expand-'+i);
+    const contentDiv = document.getElementById('expand-content-'+i);
+    const wasSameOpen = expandRow.dataset.type === type && expandRow.style.display !== 'none';
+
+    document.querySelectorAll(`#member-row-${i} .cell-inner`).forEach(el => el.classList.remove('lifted'));
+
+    if(wasSameOpen){
+      expandRow.style.display = 'none';
+      expandRow.dataset.type = '';
+      return;
+    }
+
+    cellEl.querySelector('.cell-inner').classList.add('lifted');
+    expandRow.dataset.type = type;
+    expandRow.style.display = 'table-row';
+
+    if(type === 'number') contentDiv.innerHTML = numberDetail(i);
+    else if(type === 'address') contentDiv.innerHTML = addressDetail(i);
+    else if(type === 'liter') contentDiv.innerHTML = literDetail(i);
+    else if(type === 'payment') contentDiv.innerHTML = paymentDetail(i);
+
+    if(type === 'liter') bindLiterUpdate(i);
+    if(type === 'payment') bindYearArrows(i);
+  }
+
+  function numberDetail(i){
+    const m = members[i];
+    return `
+      <div class="expand-title">Contact Numbers</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Primary Number</div><div class="val">${m.phone}</div></div>
+        <div class="info-block"><div class="tag">Alternate Number</div><div class="val">${m.altPhone}</div></div>
+      </div>
+    `;
+  }
+
+  function addressDetail(i){
+    const m = members[i];
+    return `
+      <div class="expand-title">Registered Addresses</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Permanent Address</div><div class="val">${m.address}</div></div>
+        <div class="info-block"><div class="tag">Current / Collection Address</div><div class="val">${m.altAddress}</div></div>
+      </div>
+    `;
+  }
+
+  function literDetail(i){
+    const m = members[i];
+    return `
+      <div class="expand-title">Update Total Liter</div>
+      <div class="liter-update-row">
+        <input type="number" step="0.1" id="liter-input-${i}" value="${parseFloat(m.liter)}" />
+        <span>L / day</span>
+        <button onclick="updateLiter(${i})">Update</button>
+        <span id="liter-saved-${i}" style="color:#1f8a3b; font-weight:700; display:none;">Updated ✓</span>
+      </div>
+      <div class="expand-title">Weekly Collection</div>
+      <div class="year-selector">
+        <button class="year-arrow" onclick="changeLiterYear(${i}, -1)">&#8249;</button>
+        <div class="year-label" id="liter-year-label-${i}">${m.literYear}</div>
+        <button class="year-arrow" onclick="changeLiterYear(${i}, 1)">&#8250;</button>
+      </div>
+      <table class="mini-table" id="liter-table-${i}">
+        <thead><tr><th>Day</th><th>Liter Provided</th></tr></thead>
+        <tbody>${weeklyRowsHTML(i)}</tbody>
+      </table>
+    `;
+  }
+
+  function weeklyRowsHTML(i){
+    const m = members[i];
+    return m.weeklyByYear[m.literYear].map(d => `
+      <tr>
+        <td>${d.day}</td>
+        <td>${d.provided ? d.liter.toFixed(1) + ' L <span class="tick-yes">&#10004;</span>' : '<span class="tick-no">Not provided</span>'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function changeLiterYear(i, dir){
+    const m = members[i];
+    const idx = YEARS.indexOf(m.literYear);
+    const newIdx = Math.min(YEARS.length-1, Math.max(0, idx + dir));
+    m.literYear = YEARS[newIdx];
+    document.getElementById('liter-year-label-'+i).textContent = m.literYear;
+    document.querySelector(`#liter-table-${i} tbody`).innerHTML = weeklyRowsHTML(i);
+  }
+
+  function updateLiter(i){
+    const val = document.getElementById('liter-input-'+i).value;
+    members[i].liter = parseFloat(val).toFixed(1) + ' L/day';
+    document.querySelector(`#member-row-${i} td:nth-child(7) .cell-inner`).textContent = members[i].liter;
+    const savedTag = document.getElementById('liter-saved-'+i);
+    savedTag.style.display = 'inline';
+    setTimeout(()=> savedTag.style.display='none', 1800);
+  }
+
+  function bindLiterUpdate(i){ /* buttons wired via inline onclick */ }
+
+  function paymentDetail(i){
+    const m = members[i];
+    return `
+      <div class="expand-title">Payment Status by Month</div>
+      <div class="year-selector">
+        <button class="year-arrow" onclick="changeYear(${i}, -1)">&#8249;</button>
+        <div class="year-label" id="year-label-${i}">${m.currentYear}</div>
+        <button class="year-arrow" onclick="changeYear(${i}, 1)">&#8250;</button>
+      </div>
+      <div class="month-grid" id="month-grid-${i}">${monthGridHTML(i)}</div>
+    `;
+  }
+
+  function monthGridHTML(i){
+    const m = members[i];
+    const status = m.paymentYears[m.currentYear];
+    return MONTHS.map(mo => {
+      const paid = status[mo];
+      return `<div class="month-cell ${paid ? 'paid' : 'pending'}">
+        <div class="m-name">${mo}</div>
+        <div class="m-status-row">
+          <span class="m-status">${paid ? 'Paid ✓' : 'Pending'}</span>
+          ${paid ? `<button class="download-btn" title="Download receipt" onclick="downloadReceipt(${i}, '${mo}', ${m.currentYear})">${downloadIconSVG()}</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function downloadIconSVG(){
+    return `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function downloadReceipt(i, mo, year){
+    const m = members[i];
+    const content = `PAYMENT RECEIPT\n\nMember: ${m.name}\nAddress: ${m.address}\nMonth: ${mo} ${year}\nAmount Paid: ${m.payment}\nStatus: Paid\n\nIssued by Procurement Side.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Receipt_${m.name.replace(/\s+/g,'_')}_${mo}${year}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function changeYear(i, dir){
+    const m = members[i];
+    const idx = YEARS.indexOf(m.currentYear);
+    const newIdx = Math.min(YEARS.length-1, Math.max(0, idx + dir));
+    m.currentYear = YEARS[newIdx];
+    document.getElementById('year-label-'+i).textContent = m.currentYear;
+    document.getElementById('month-grid-'+i).innerHTML = monthGridHTML(i);
+  }
+
+  function bindYearArrows(i){ /* buttons wired via inline onclick */ }
+
+  function renderCollection(){
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div><h2>Total Milk Collection Detail</h2><p>Look up a member by place or by ID to view their collection record</p></div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      <div class="collection-grid">
+        <div class="collection-col place-col">
+          <div class="col-title">Place</div>
+          <ul class="place-list" id="placeList"></ul>
+        </div>
+        <div class="collection-col id-col">
+          <div class="col-title">Enter ID</div>
+          <input type="text" id="idInput" placeholder="e.g. MEM001" />
+          <button onclick="searchById()">Search</button>
+        </div>
+        <div class="result-col-wrap">
+          <div class="place-hover-strip" id="placeHoverStrip"></div>
+          <div class="collection-col result-col" id="resultCol">
+            <div class="col-title">Member Detail</div>
+            <div class="result-placeholder">Select a place or enter a member ID to view details here.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    renderPlaceList();
+    bindClose();
+    document.getElementById('idInput').addEventListener('keydown', e => { if(e.key === 'Enter') searchById(); });
+  }
+
+  function renderPlaceList(){
+    const uniquePlaces = [...new Set(members.map(m => m.place))];
+    document.getElementById('placeList').innerHTML = uniquePlaces.map(p =>
+      `<li onclick="filterByPlace('${p}', this)" onmouseenter="showPlaceStrip('${p}')" onmouseleave="hidePlaceStrip()">${p}</li>`
+    ).join('');
+  }
+
+  function showPlaceStrip(place){
+    const matches = members.filter(m => m.place === place);
+    const strip = document.getElementById('placeHoverStrip');
+    strip.innerHTML = matches.map(m => `
+      <div class="strip-person">
+        <div class="avatar">${initials(m.name)}</div>
+        <div class="strip-name">${m.name}</div>
+        <div class="strip-id">${m.memberId}</div>
+      </div>
+    `).join('');
+    strip.classList.add('visible');
+  }
+
+  function hidePlaceStrip(){
+    document.getElementById('placeHoverStrip').classList.remove('visible');
+  }
+
+  function filterByPlace(place, el){
+    document.querySelectorAll('#placeList li').forEach(li => li.classList.remove('active'));
+    el.classList.add('active');
+    const matches = members.filter(m => m.place === place);
+    document.getElementById('resultCol').innerHTML = `
+      <div class="col-title">Members in ${place}</div>
+      ${matches.map(m => memberCardHTML(m)).join('')}
+    `;
+  }
+
+  function searchById(){
+    const val = document.getElementById('idInput').value.trim().toUpperCase();
+    const found = members.find(m => m.memberId.toUpperCase() === val);
+    const resultCol = document.getElementById('resultCol');
+    document.querySelectorAll('#placeList li').forEach(li => li.classList.remove('active'));
+    if(!found){
+      resultCol.innerHTML = `<div class="col-title">Member Detail</div><div class="result-placeholder">No member found for ID "${val || '—'}". Try e.g. MEM001.</div>`;
+      return;
+    }
+    resultCol.innerHTML = `<div class="col-title">Member Detail</div>${memberCardHTML(found)}`;
+  }
+
+  function memberCardHTML(m){
+    return `
+      <div class="member-detail-card">
+        <div class="mdc-header">
+          <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(m.name)}</div>
+          <div>
+            <div class="mdc-name">${m.name}</div>
+            <div class="mdc-id">${m.memberId} — ${m.place}</div>
+          </div>
+        </div>
+        <div class="mdc-rows">
+          <div class="mdc-row"><span>Email</span><span>${m.email}</span></div>
+          <div class="mdc-row"><span>Phone</span><span>${m.phone}</span></div>
+          <div class="mdc-row"><span>Address</span><span>${m.address}</span></div>
+          <div class="mdc-row"><span>Total Liter</span><span>${m.liter}</span></div>
+          <div class="mdc-row"><span>Monthly Payment</span><span>${m.payment}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  const RAZORPAY_KEY = 'rzp_test_1DP5mmOlF5G5ag'; // Razorpay sandbox/test key — replace with your live key_id
+
+  function renderPayment(){
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div><h2>Total Payment Detail</h2><p>Look up a member by place or by ID — the third column shows their payment record</p></div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      <div class="collection-grid">
+        <div class="collection-col place-col">
+          <div class="col-title">Place</div>
+          <ul class="place-list" id="payPlaceList"></ul>
+        </div>
+        <div class="collection-col id-col">
+          <div class="col-title">Enter ID</div>
+          <input type="text" id="payIdInput" placeholder="e.g. MEM001" />
+          <button onclick="searchPaymentById()">Search</button>
+        </div>
+        <div class="result-col-wrap">
+          <div class="collection-col result-col" id="payResultCol">
+            <div class="col-title">Payment Detail</div>
+            <div class="result-placeholder">Select a place or enter a member ID to view payment records here.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    renderPayPlaceList();
+    bindClose();
+    document.getElementById('payIdInput').addEventListener('keydown', e => { if(e.key === 'Enter') searchPaymentById(); });
+  }
+
+  function renderPayPlaceList(){
+    const uniquePlaces = [...new Set(members.map(m => m.place))];
+    document.getElementById('payPlaceList').innerHTML = uniquePlaces.map(p =>
+      `<li onclick="filterPayByPlace('${p}', this)">${p}</li>`
+    ).join('');
+  }
+
+  function filterPayByPlace(place, el){
+    document.querySelectorAll('#payPlaceList li').forEach(li => li.classList.remove('active'));
+    el.classList.add('active');
+    const matches = members.filter(m => m.place === place);
+    const col = document.getElementById('payResultCol');
+    if(matches.length === 1){
+      col.innerHTML = `<div class="col-title">Payment Detail</div>${paymentColumnHTML(members.indexOf(matches[0]))}`;
+      return;
+    }
+    col.innerHTML = `
+      <div class="col-title">Members in ${place}</div>
+      ${matches.map(m => `<div class="member-detail-card" style="cursor:pointer;" onclick="showPaymentFor('${m.memberId}')">
+        <div class="mdc-header">
+          <div class="avatar">${initials(m.name)}</div>
+          <div><div class="mdc-name">${m.name}</div><div class="mdc-id">${m.memberId}</div></div>
+        </div>
+      </div>`).join('')}
+    `;
+  }
+
+  function showPaymentFor(memberId){
+    const i = members.findIndex(m => m.memberId === memberId);
+    if(i === -1) return;
+    document.getElementById('payResultCol').innerHTML = `<div class="col-title">Payment Detail</div>${paymentColumnHTML(i)}`;
+  }
+
+  function searchPaymentById(){
+    const val = document.getElementById('payIdInput').value.trim().toUpperCase();
+    const i = members.findIndex(m => m.memberId.toUpperCase() === val);
+    const col = document.getElementById('payResultCol');
+    document.querySelectorAll('#payPlaceList li').forEach(li => li.classList.remove('active'));
+    if(i === -1){
+      col.innerHTML = `<div class="col-title">Payment Detail</div><div class="result-placeholder">No member found for ID "${val || '—'}". Try e.g. MEM001.</div>`;
+      return;
+    }
+    col.innerHTML = `<div class="col-title">Payment Detail</div>${paymentColumnHTML(i)}`;
+  }
+
+  function paymentColumnHTML(i){
+    const m = members[i];
+    const status = m.paymentYears[m.currentYear];
+    const paidCount = MONTHS.filter(mo => status[mo]).length;
+    const pendingCount = MONTHS.length - paidCount;
+    const rows = MONTHS.map(mo => {
+      const paid = status[mo];
+      const key = m.currentYear + '-' + mo;
+      const shot = (m.screenshots || {})[key];
+      const txnId = (m.txnIds || {})[key] || ('TXN' + m.memberId.replace(/\D/g,'') + m.currentYear + MONTHS.indexOf(mo));
+      return `
+        <tr>
+          <td>${mo} ${m.currentYear}</td>
+          <td><span class="pay-status ${paid ? 'completed' : 'pending'}">${paid ? 'Completed' : 'Pending'}</span></td>
+          <td>${m.payment}</td>
+          <td class="txn-id">${paid ? txnId : '—'}</td>
+          <td>
+            ${paid
+              ? `<button class="shot-btn ${shot ? 'has-shot' : ''}" title="${shot ? 'Download screenshot' : 'Upload screenshot'}" onclick="${shot ? `downloadShot(${i}, '${key}')` : `uploadShot(${i}, '${key}')`}">${downloadIconSVG()}</button>`
+              : `<button class="pay-now-btn" onclick="payNow(${i}, '${mo}', ${m.currentYear})">Pay</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <div class="pay-member-head">
+        <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(m.name)}</div>
+        <div>
+          <div class="mdc-name">${m.name}</div>
+          <div class="mdc-id">${m.memberId} — ${m.place}</div>
+        </div>
+      </div>
+      <div class="pay-summary-row">
+        <div class="mini-stat">Completed<b>${paidCount} / ${MONTHS.length}</b></div>
+        <div class="mini-stat">Pending<b>${pendingCount} / ${MONTHS.length}</b></div>
+        <div class="mini-stat">Monthly Rate<b>${m.payment}</b></div>
+      </div>
+      <div class="year-selector">
+        <button class="year-arrow" onclick="changePayYear(${i}, -1)">&#8249;</button>
+        <div class="year-label" id="pay-year-label-${i}">${m.currentYear}</div>
+        <button class="year-arrow" onclick="changePayYear(${i}, 1)">&#8250;</button>
+      </div>
+      <table class="pay-table" id="pay-table-${i}">
+        <thead><tr><th>Month</th><th>Status</th><th>Amount</th><th>Txn ID</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function changePayYear(i, dir){
+    const m = members[i];
+    const idx = YEARS.indexOf(m.currentYear);
+    const newIdx = Math.min(YEARS.length-1, Math.max(0, idx + dir));
+    m.currentYear = YEARS[newIdx];
+    document.getElementById('payResultCol').innerHTML = `<div class="col-title">Payment Detail</div>${paymentColumnHTML(i)}`;
+  }
+
+  function payNow(i, mo, year){
+    const m = members[i];
+    const amountStr = (m.payment || '0').replace(/[^0-9.]/g, '');
+    const amount = Math.max(1, Math.round(parseFloat(amountStr || '0')));
+    const txnId = 'TXN' + m.memberId.replace(/\D/g,'') + year + MONTHS.indexOf(mo) + Date.now().toString().slice(-4);
+
+    if(typeof Razorpay === 'undefined'){
+      alert('Razorpay checkout could not load (no network access to checkout.razorpay.com). Reference ID generated: ' + txnId);
+      return;
+    }
+
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: amount * 100,
+      currency: 'INR',
+      name: 'Bhargavi DairyLoop',
+      description: `${mo} ${year} payment — ${m.name} (${m.memberId})`,
+      notes: { member_id: m.memberId, month: mo, year: String(year), reference_id: txnId },
+      prefill: { name: m.name, email: m.email !== '—' ? m.email : '', contact: (m.phone || '').replace(/\D/g,'') },
+      theme: { color: '#3E3324' },
+      handler: function(response){
+        const finalTxnId = response.razorpay_payment_id || txnId;
+        markMonthPaid(i, mo, year, finalTxnId);
+      }
+    };
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(resp){ alert('Payment failed / cancelled: ' + (resp.error && resp.error.description ? resp.error.description : 'unknown error')); });
+    rzp.open();
+  }
+
+  function markMonthPaid(i, mo, year, txnId){
+    const m = members[i];
+    if(!m.paymentYears[year]) m.paymentYears[year] = {};
+    m.paymentYears[year][mo] = true;
+    if(!m.txnIds) m.txnIds = {};
+    m.txnIds[year + '-' + mo] = txnId;
+    alert(`Payment successful for ${m.name} — ${mo} ${year}. Transaction ID: ${txnId}. This has been added as monthly payment done.`);
+    document.getElementById('payResultCol').innerHTML = `<div class="col-title">Payment Detail</div>${paymentColumnHTML(i)}`;
+  }
+
+  function uploadShot(i, key){
+    const input = document.getElementById('shotFileInput');
+    input.onchange = () => {
+      const file = input.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const m = members[i];
+        if(!m.screenshots) m.screenshots = {};
+        m.screenshots[key] = { dataUrl: e.target.result, fileName: file.name };
+        document.getElementById('payResultCol').innerHTML = `<div class="col-title">Payment Detail</div>${paymentColumnHTML(i)}`;
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    };
+    input.click();
+  }
+
+  function downloadShot(i, key){
+    const m = members[i];
+    const shot = (m.screenshots || {})[key];
+    if(!shot) return;
+    const a = document.createElement('a');
+    a.href = shot.dataUrl;
+    a.download = `Screenshot_${m.name.replace(/\s+/g,'_')}_${key}${(shot.fileName.match(/\.\w+$/)||[''])[0]}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function bindClose(){
+    if(liveClockInterval){ clearInterval(liveClockInterval); liveClockInterval = null; }
+    document.getElementById('closeDetail').addEventListener('click', () => {
+      pageRoot.classList.remove('detail-open');
+      stages.forEach(s => { s.classList.remove('shrink'); s.classList.remove('blurred'); });
+      optionBtns.forEach(b => b.classList.remove('active'));
+      if(liveClockInterval){ clearInterval(liveClockInterval); liveClockInterval = null; }
+    });
+  }
+
+  let liveClockInterval = null;
+
+  const CATEGORY_META = {
+    "Toned Milk": { icon:"🥛", color:"#3399cc" },
+    "Curd":       { icon:"🥣", color:"#c9a227" },
+    "Paneer":     { icon:"🧀", color:"#e0a83e" },
+    "Ghee":       { icon:"🫙", color:"#b8862f" },
+    "Butter":     { icon:"🧈", color:"#e8c547" },
+    "Cheese":     { icon:"🟨", color:"#d9b23c" },
+  };
+
+  const CATEGORY_DETAIL = [
+    { category:"Toned Milk", monthlyDemand:3400, unit:"L" },
+    { category:"Curd",       monthlyDemand:640,  unit:"kg" },
+    { category:"Paneer",     monthlyDemand:220,  unit:"kg" },
+    { category:"Ghee",       monthlyDemand:85,   unit:"kg" },
+    { category:"Butter",     monthlyDemand:130,  unit:"kg" },
+    { category:"Cheese",     monthlyDemand:75,   unit:"kg" },
+  ].map((c, i) => {
+    const r = seededRand(i * 31 + 9);
+    const filledQty = Math.round(c.monthlyDemand * (0.45 + r * 0.4));
+
+    const weekCount = 4;
+    const baseWeekDemand = Math.floor(c.monthlyDemand / weekCount);
+    let demandRunning = 0, filledRunning = 0;
+    const weekly = [];
+    for(let w = 0; w < weekCount; w++){
+      const weekDemand = (w === weekCount - 1) ? (c.monthlyDemand - demandRunning) : baseWeekDemand;
+      demandRunning += weekDemand;
+      const wr = seededRand(i * 53 + w * 11 + 7);
+      let weekFilled;
+      if(w === weekCount - 1){
+        weekFilled = Math.max(0, Math.min(weekDemand, filledQty - filledRunning));
+      } else {
+        weekFilled = Math.round(weekDemand * (0.55 + wr * 0.55));
+        weekFilled = Math.min(weekFilled, weekDemand + Math.round(weekDemand * 0.1));
+      }
+      filledRunning += weekFilled;
+      const weekRemaining = Math.max(0, weekDemand - weekFilled);
+      weekly.push({
+        week: `Week ${w + 1}`,
+        demand: weekDemand,
+        filled: weekFilled,
+        remaining: weekRemaining,
+        complete: weekFilled >= weekDemand
+      });
+    }
+
+    return { ...c, filledQty, remainingQty: c.monthlyDemand - filledQty, weekly };
+  });
+
+  const processingMembersRaw = {
+    "Toned Milk": [
+      { name:"Ramesh Kadam", email:"ramesh.kadam@mail.com", phone:"98220 10011", altPhone:"91234 10011", address:"Sector 4, Processing Colony, Satara", altAddress:"Plant Quarters, Block B", post:"Toning Line Operator", payment:"₹ 13,500" },
+      { name:"Savita Bhagat", email:"savita.bhagat@mail.com", phone:"98230 10022", altPhone:"91234 10022", address:"Sector 2, Processing Colony, Satara", altAddress:"Plant Quarters, Block A", post:"Toning Line Assistant", payment:"₹ 10,800" },
+    ],
+    "Curd": [
+      { name:"Deepak Salunkhe", email:"deepak.salunkhe@mail.com", phone:"97650 10033", altPhone:"91234 10033", address:"Sector 1, Processing Colony, Satara", altAddress:"Plant Quarters, Block C", post:"Dahi Maker", payment:"₹ 12,200" },
+      { name:"Rekha Kale", email:"rekha.kale@mail.com", phone:"96890 10044", altPhone:"91234 10044", address:"Sector 3, Processing Colony, Satara", altAddress:"Plant Quarters, Block A", post:"Dahi Setting Assistant", payment:"₹ 9,900" },
+    ],
+    "Paneer": [
+      { name:"Santosh Bhosale", email:"santosh.bhosale@mail.com", phone:"95120 10055", altPhone:"91234 10055", address:"Sector 5, Processing Colony, Satara", altAddress:"Plant Quarters, Block D", post:"Paneer Maker", payment:"₹ 14,000" },
+      { name:"Manisha Pawar", email:"manisha.pawar@mail.com", phone:"94330 10066", altPhone:"91234 10066", address:"Sector 2, Processing Colony, Satara", altAddress:"Plant Quarters, Block B", post:"Paneer Press Assistant", payment:"₹ 11,300" },
+    ],
+    "Ghee": [
+      { name:"Prakash Jagtap", email:"prakash.jagtap@mail.com", phone:"93540 10077", altPhone:"91234 10077", address:"Sector 6, Processing Colony, Satara", altAddress:"Plant Quarters, Block C", post:"Ghee Maker", payment:"₹ 15,600" },
+      { name:"Aarti Deshmukh", email:"aarti.deshmukh@mail.com", phone:"92760 10088", altPhone:"91234 10088", address:"Sector 1, Processing Colony, Satara", altAddress:"Plant Quarters, Block D", post:"Ghee Boiling Assistant", payment:"₹ 12,900" },
+    ],
+    "Butter": [
+      { name:"Nitin Kulkarni", email:"nitin.kulkarni@mail.com", phone:"91980 10099", altPhone:"91234 10099", address:"Sector 4, Processing Colony, Satara", altAddress:"Plant Quarters, Block A", post:"Butter Churner", payment:"₹ 12,700" },
+      { name:"Shubhangi Nikam", email:"shubhangi.nikam@mail.com", phone:"90190 10100", altPhone:"91234 10100", address:"Sector 3, Processing Colony, Satara", altAddress:"Plant Quarters, Block B", post:"Butter Packing Assistant", payment:"₹ 10,200" },
+    ],
+    "Cheese": [
+      { name:"Yogesh Mane", email:"yogesh.mane@mail.com", phone:"89410 10111", altPhone:"91234 10111", address:"Sector 5, Processing Colony, Satara", altAddress:"Plant Quarters, Block C", post:"Cheese Maker", payment:"₹ 16,200" },
+      { name:"Pallavi Gaikwad", email:"pallavi.gaikwad@mail.com", phone:"88620 10122", altPhone:"91234 10122", address:"Sector 2, Processing Colony, Satara", altAddress:"Plant Quarters, Block D", post:"Cheese Aging Assistant", payment:"₹ 11,700" },
+    ],
+  };
+
+  function buildProcessingMember(m, seedIndex, category){
+    const paymentYears = {};
+    YEARS.forEach((y, yi) => {
+      const status = {};
+      MONTHS.forEach((mo, mi) => {
+        const r = seededRand(seedIndex * 97 + yi * 13 + mi + 51);
+        status[mo] = (y < 2026 || mi < 8) ? (r > 0.22) : false;
+      });
+      paymentYears[y] = status;
+    });
+    return { ...m, category, paymentYears, currentYear: 2026,
+      memberId: m.memberId || ('PRC' + String(seedIndex + 1).padStart(3, '0')) };
+  }
+
+  const processingMembers = {};
+  let procSeed = 0;
+  Object.keys(processingMembersRaw).forEach(cat => {
+    processingMembers[cat] = processingMembersRaw[cat].map(m => buildProcessingMember(m, procSeed++, cat));
+  });
+
+  function processingPaymentStrip(m){
+    const status = m.paymentYears[m.currentYear];
+    const paidCount = MONTHS.filter(mo => status[mo]).length;
+    const dots = MONTHS.map(mo =>
+      `<span class="mini-pay-dot ${status[mo] ? 'paid' : 'pending'}" title="${mo} ${m.currentYear}: ${status[mo] ? 'Paid' : 'Pending'}"></span>`
+    ).join('');
+    return `<div class="mini-pay-strip">${dots}</div><div class="mini-pay-count">${paidCount}/12 paid (${m.currentYear})</div>`;
+  }
+
+  const SLUG_TO_CATEGORY = {};
+  Object.keys(CATEGORY_META).forEach(cat => { SLUG_TO_CATEGORY[cat.replace(/\s+/g, '-').toLowerCase()] = cat; });
+
+  function getProcMember(slug, i){
+    return processingMembers[SLUG_TO_CATEGORY[slug]][i];
+  }
+
+  function renderProcessingMembers(){
+    const sections = Object.keys(processingMembersRaw).map(cat => {
+      const meta = CATEGORY_META[cat];
+      const list = processingMembers[cat];
+      const slug = cat.replace(/\s+/g, '-').toLowerCase();
+      const rows = list.map((m, idx) => `
+        <tr class="member-row" id="proc-row-${slug}-${idx}">
+          <td>${idx+1}</td>
+          <td><div class="avatar">${initials(m.name)}</div></td>
+          <td>${m.name}</td>
+          <td>${m.email}</td>
+          <td class="clickable" onclick="toggleProcExpand('${slug}', ${idx}, 'number', this)"><span class="cell-inner">${m.phone}</span></td>
+          <td class="clickable" onclick="toggleProcExpand('${slug}', ${idx}, 'address', this)"><span class="cell-inner">${m.address}</span></td>
+          <td>${m.post}</td>
+          <td class="clickable" onclick="toggleProcExpand('${slug}', ${idx}, 'payment', this)"><span class="cell-inner">${m.payment}</span></td>
+          <td><button class="view-btn" onclick="openProcMemberFormDoc('${slug}', ${idx})">View Form</button></td>
+        </tr>
+        <tr class="expand-row" id="proc-expand-${slug}-${idx}" data-type="" style="display:none;">
+          <td colspan="9"><div class="expand-content" id="proc-expand-content-${slug}-${idx}"></div></td>
+        </tr>
+      `).join('');
+
+      return `
+        <div class="category-member-block">
+          <div class="category-member-head">
+            <span class="cat-badge" style="background:${meta.color}22; border-color:${meta.color};">${meta.icon}</span>
+            <div>
+              <div class="cat-name">${cat}</div>
+              <div class="cat-sub">${list.length} member${list.length !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <table class="detail-table">
+            <thead><tr><th>Sr. No</th><th>Photo</th><th>Name</th><th>Email</th><th>Number</th><th>Address</th><th>Post</th><th>Payment</th><th>View Form</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="add-member-panel">
+            <div class="col-title">Add New Member — ${cat}</div>
+            <div class="add-member-grid">
+              <input type="text" id="pm-${slug}-name" placeholder="Full name" />
+              <input type="email" id="pm-${slug}-email" placeholder="Email" />
+              <input type="text" id="pm-${slug}-phone" placeholder="Number" />
+              <input type="text" id="pm-${slug}-altphone" placeholder="Alternate number" />
+              <input type="text" id="pm-${slug}-address" placeholder="Address" />
+              <input type="text" id="pm-${slug}-altaddress" placeholder="Alternate address" />
+              <input type="text" id="pm-${slug}-post" placeholder="Post e.g. ${list[0] ? list[0].post : 'Maker'}" />
+              <input type="text" id="pm-${slug}-payment" placeholder="Payment e.g. ₹ 12,000" />
+            </div>
+            <button onclick="addProcessingMember('${cat}')">Save Member</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h2>Member Detail</h2>
+          <p>Processing team, grouped by product category. Click a number, address or payment cell for more.</p>
+        </div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      ${sections}
+    `;
+    bindClose();
+  }
+
+  function toggleProcExpand(slug, i, type, cellEl){
+    const expandRow = document.getElementById(`proc-expand-${slug}-${i}`);
+    const contentDiv = document.getElementById(`proc-expand-content-${slug}-${i}`);
+    const wasSameOpen = expandRow.dataset.type === type && expandRow.style.display !== 'none';
+
+    document.querySelectorAll(`#proc-row-${slug}-${i} .cell-inner`).forEach(el => el.classList.remove('lifted'));
+
+    if(wasSameOpen){
+      expandRow.style.display = 'none';
+      expandRow.dataset.type = '';
+      return;
+    }
+
+    cellEl.querySelector('.cell-inner').classList.add('lifted');
+    expandRow.dataset.type = type;
+    expandRow.style.display = 'table-row';
+
+    if(type === 'number') contentDiv.innerHTML = procNumberDetail(slug, i);
+    else if(type === 'address') contentDiv.innerHTML = procAddressDetail(slug, i);
+    else if(type === 'payment') contentDiv.innerHTML = procPaymentDetail(slug, i);
+  }
+
+  function procNumberDetail(slug, i){
+    const m = getProcMember(slug, i);
+    return `
+      <div class="expand-title">Contact Numbers</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Primary Number</div><div class="val">${m.phone}</div></div>
+        <div class="info-block"><div class="tag">Alternate Number</div><div class="val">${m.altPhone}</div></div>
+      </div>
+    `;
+  }
+
+  function procAddressDetail(slug, i){
+    const m = getProcMember(slug, i);
+    return `
+      <div class="expand-title">Registered Addresses</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Permanent Address</div><div class="val">${m.address}</div></div>
+        <div class="info-block"><div class="tag">Alternate / Plant Address</div><div class="val">${m.altAddress}</div></div>
+      </div>
+    `;
+  }
+
+  function procPaymentDetail(slug, i){
+    const m = getProcMember(slug, i);
+    return `
+      <div class="expand-title">Payment Status by Month</div>
+      <div class="year-selector">
+        <button class="year-arrow" onclick="changeProcYear('${slug}', ${i}, -1)">&#8249;</button>
+        <div class="year-label" id="proc-year-label-${slug}-${i}">${m.currentYear}</div>
+        <button class="year-arrow" onclick="changeProcYear('${slug}', ${i}, 1)">&#8250;</button>
+      </div>
+      <div class="month-grid" id="proc-month-grid-${slug}-${i}">${procMonthGridHTML(slug, i)}</div>
+    `;
+  }
+
+  function procMonthGridHTML(slug, i){
+    const m = getProcMember(slug, i);
+    const status = m.paymentYears[m.currentYear];
+    return MONTHS.map(mo => {
+      const paid = status[mo];
+      return `<div class="month-cell ${paid ? 'paid' : 'pending'}">
+        <div class="m-name">${mo}</div>
+        <div class="m-status-row">
+          <span class="m-status">${paid ? 'Paid ✓' : 'Pending'}</span>
+          ${paid ? `<button class="download-btn" title="Download receipt" onclick="downloadProcReceipt('${slug}', ${i}, '${mo}', ${m.currentYear})">${downloadIconSVG()}</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function changeProcYear(slug, i, dir){
+    const m = getProcMember(slug, i);
+    const idx = YEARS.indexOf(m.currentYear);
+    const newIdx = Math.min(YEARS.length - 1, Math.max(0, idx + dir));
+    m.currentYear = YEARS[newIdx];
+    document.getElementById(`proc-year-label-${slug}-${i}`).textContent = m.currentYear;
+    document.getElementById(`proc-month-grid-${slug}-${i}`).innerHTML = procMonthGridHTML(slug, i);
+  }
+
+  function downloadProcReceipt(slug, i, mo, year){
+    const m = getProcMember(slug, i);
+    const content = `PAYMENT RECEIPT\n\nMember: ${m.name}\nCategory: ${m.category}\nPost: ${m.post}\nAddress: ${m.address}\nMonth: ${mo} ${year}\nAmount Paid: ${m.payment}\nStatus: Paid\n\nIssued by Processing Team.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Receipt_${m.name.replace(/\s+/g,'_')}_${mo}${year}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function openProcMemberFormDoc(slug, i){
+    const m = getProcMember(slug, i);
+    const rows = [
+      ['Member ID', m.memberId], ['Category', m.category], ['Post', m.post], ['Full Name', m.name],
+      ['Email', m.email], ['Primary Number', m.phone], ['Alternate Number', m.altPhone],
+      ['Permanent Address', m.address], ['Alternate / Plant Address', m.altAddress],
+      ['Monthly Payment', m.payment]
+    ];
+    const html = `
+      <div class="form-modal-backdrop" id="formModalBackdrop">
+        <div class="form-doc">
+          <div class="form-doc-head">
+            <div><h3>Member Registration Form</h3><p>Bhargavi DairyLoop — Processing Team</p></div>
+            <button class="form-doc-close" onclick="closeMemberFormDoc()">Close ✕</button>
+          </div>
+          <div class="form-doc-body">
+            <div class="form-doc-id">
+              <div class="avatar">${initials(m.name)}</div>
+              <div class="fname">${m.name}</div>
+              <div class="fmeta">${m.memberId} — ${m.post}</div>
+            </div>
+            <table class="form-doc-table">
+              ${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
+            </table>
+          </div>
+          <div class="form-doc-footer">
+            <button class="btn-download" onclick="downloadProcMemberFormDoc('${slug}', ${i})">${downloadIconSVG()} Download</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function downloadProcMemberFormDoc(slug, i){
+    const m = getProcMember(slug, i);
+    const content =
+`BHARGAVI DAIRYLOOP — MEMBER REGISTRATION FORM
+================================================
+
+Member ID                 : ${m.memberId}
+Category                  : ${m.category}
+Post                      : ${m.post}
+Full Name                 : ${m.name}
+Email                     : ${m.email}
+Primary Number            : ${m.phone}
+Alternate Number          : ${m.altPhone}
+Permanent Address         : ${m.address}
+Alternate / Plant Address : ${m.altAddress}
+Monthly Payment           : ${m.payment}
+
+================================================
+Issued by Processing Team.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MemberForm_${m.name.replace(/\s+/g,'_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function addProcessingMember(cat){
+    const slug = cat.replace(/\s+/g, '-').toLowerCase();
+    const name = document.getElementById(`pm-${slug}-name`).value.trim();
+    const email = document.getElementById(`pm-${slug}-email`).value.trim();
+    const phone = document.getElementById(`pm-${slug}-phone`).value.trim();
+    const altPhone = document.getElementById(`pm-${slug}-altphone`).value.trim();
+    const address = document.getElementById(`pm-${slug}-address`).value.trim();
+    const altAddress = document.getElementById(`pm-${slug}-altaddress`).value.trim();
+    const post = document.getElementById(`pm-${slug}-post`).value.trim();
+    const payment = document.getElementById(`pm-${slug}-payment`).value.trim();
+
+    if(!name){ alert('Please enter at least the member name.'); return; }
+
+    const raw = {
+      name, email: email || '—', phone: phone || '—', altPhone: altPhone || '—',
+      address: address || '—', altAddress: altAddress || '—',
+      post: post || 'Team Member', payment: payment || '₹ 0'
+    };
+    const newMember = buildProcessingMember(raw, procSeed++, cat);
+    processingMembers[cat].push(newMember);
+    processingMembersRaw[cat].push(raw);
+    renderProcessingMembers();
+  }
+
+  function formatKolkataNow(){
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata', day:'2-digit', month:'short', year:'numeric',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true
+    }).format(new Date());
+  }
+
+  function startLiveClock(){
+    if(liveClockInterval) clearInterval(liveClockInterval);
+    liveClockInterval = setInterval(() => {
+      document.querySelectorAll('[data-live-clock]').forEach(el => { el.textContent = formatKolkataNow(); });
+    }, 1000);
+  }
+
+  function renderCategoryDetail(){
+    const rows = CATEGORY_DETAIL.map((c, i) => {
+      const meta = CATEGORY_META[c.category];
+      return `
+        <tr class="member-row" id="cat-row-${i}">
+          <td>${c.category}</td>
+          <td><span class="cat-badge" style="background:${meta.color}22; border-color:${meta.color};">${meta.icon}</span></td>
+          <td class="clickable" onclick="toggleCategoryExpand(${i}, 'demand', this)"><span class="cell-inner">${c.monthlyDemand.toLocaleString('en-IN')} ${c.unit}</span></td>
+          <td class="clickable" onclick="toggleCategoryExpand(${i}, 'filled', this)"><span class="cell-inner">${c.filledQty.toLocaleString('en-IN')} ${c.unit}</span><div class="live-clock-tag" data-live-clock>${formatKolkataNow()}</div></td>
+          <td class="clickable" onclick="toggleCategoryExpand(${i}, 'remaining', this)"><span class="cell-inner">${c.remainingQty.toLocaleString('en-IN')} ${c.unit}</span><div class="live-clock-tag" data-live-clock>${formatKolkataNow()}</div></td>
+          <td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td>
+        </tr>
+        <tr class="expand-row" id="cat-expand-${i}" data-type="" style="display:none;">
+          <td colspan="6"><div class="expand-content" id="cat-expand-content-${i}"></div></td>
+        </tr>
+      `;
+    }).join('');
+
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h2>Category Detail</h2>
+          <p>Monthly demand vs production — live Kolkata (IST) time. Click demand, filled or remaining for a weekly breakdown.</p>
+        </div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      <table class="detail-table" id="categoryTable">
+        <thead><tr><th>Category</th><th>Category Image</th><th>Monthly Demand</th><th>Filled</th><th>Remaining</th><th>Action</th></tr></thead>
+        <tbody id="categoryTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="cd-category" placeholder="e.g. Lassi"></td>
+            <td><input type="text" id="cd-icon" placeholder="Emoji e.g. 🥤"></td>
+            <td><input type="number" id="cd-demand" placeholder="Monthly Demand"></td>
+            <td><input type="number" id="cd-filled" placeholder="Filled"></td>
+            <td><input type="number" id="cd-remaining" placeholder="auto"></td>
+            <td><button class="table-add-btn" onclick="addCategoryRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    bindClose();
+    startLiveClock();
+  }
+
+  function addCategoryRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const category = val('cd-category') || '—';
+    const icon = val('cd-icon') || '🥛';
+    const demand = parseFloat(val('cd-demand')) || 0;
+    const filled = parseFloat(val('cd-filled')) || 0;
+    const remainingInput = val('cd-remaining');
+    const remaining = remainingInput ? parseFloat(remainingInput) : Math.max(0, demand - filled);
+    const rowHTML = `<tr class="member-row"><td>${category}</td><td><span class="cat-badge" style="background:#C89B4C22; border-color:#C89B4C;">${icon}</span></td><td>${demand.toLocaleString('en-IN')}</td><td>${filled.toLocaleString('en-IN')}</td><td>${remaining.toLocaleString('en-IN')}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#categoryTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['cd-category','cd-icon','cd-demand','cd-filled','cd-remaining'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function toggleCategoryExpand(i, type, cellEl){
+    const expandRow = document.getElementById(`cat-expand-${i}`);
+    const contentDiv = document.getElementById(`cat-expand-content-${i}`);
+    const wasSameOpen = expandRow.dataset.type === type && expandRow.style.display !== 'none';
+
+    document.querySelectorAll(`#cat-row-${i} .cell-inner`).forEach(el => el.classList.remove('lifted'));
+
+    if(wasSameOpen){
+      expandRow.style.display = 'none';
+      expandRow.dataset.type = '';
+      return;
+    }
+
+    cellEl.querySelector('.cell-inner').classList.add('lifted');
+    expandRow.dataset.type = type;
+    expandRow.style.display = 'table-row';
+
+    if(type === 'demand') contentDiv.innerHTML = categoryDemandDetail(i);
+    else if(type === 'filled') contentDiv.innerHTML = categoryFilledDetail(i);
+    else if(type === 'remaining') contentDiv.innerHTML = categoryRemainingDetail(i);
+  }
+
+  function categoryDemandDetail(i){
+    const c = CATEGORY_DETAIL[i];
+    const rows = c.weekly.map(w => `
+      <tr>
+        <td>${w.week}</td>
+        <td>${w.demand.toLocaleString('en-IN')} ${c.unit}</td>
+        <td class="week-status-cell">${w.complete ? '<span class="week-tick">Completed &#10004;</span>' : '<span class="tick-no">In progress</span>'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="expand-title">Weekly Demand — ${c.category}</div>
+      <table class="mini-table">
+        <thead><tr><th>Week</th><th>Demand</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function categoryFilledDetail(i){
+    const c = CATEGORY_DETAIL[i];
+    const rows = c.weekly.map(w => `
+      <tr>
+        <td>${w.week}</td>
+        <td>${w.filled.toLocaleString('en-IN')} ${c.unit} / ${w.demand.toLocaleString('en-IN')} ${c.unit}</td>
+        <td class="week-status-cell">${w.complete ? '<span class="week-tick">Fulfilled &#10004;</span>' : '<span class="tick-no">Pending</span>'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="expand-title">Weekly Filled — ${c.category}</div>
+      <table class="mini-table">
+        <thead><tr><th>Week</th><th>Filled</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function categoryRemainingDetail(i){
+    const c = CATEGORY_DETAIL[i];
+    const rows = c.weekly.map(w => `
+      <tr>
+        <td>${w.week}</td>
+        <td>${w.remaining.toLocaleString('en-IN')} ${c.unit}</td>
+        <td class="week-status-cell">${w.remaining > 0
+          ? '<span class="week-bad-msg">&#9888; Demand not fulfilled this week</span>'
+          : '<span class="week-tick">Fully fulfilled &#10004;</span>'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="expand-title">Weekly Remaining — ${c.category}</div>
+      <table class="mini-table">
+        <thead><tr><th>Week</th><th>Remaining</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  optionBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      optionBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      pageRoot.classList.add('detail-open');
+      const stageEl = btn.closest('.stage');
+      stages.forEach(s => {
+        if(s === stageEl){ s.classList.add('shrink'); s.classList.remove('blurred'); }
+        else { s.classList.add('blurred'); s.classList.remove('shrink'); }
+      });
+      const type = btn.dataset.detail;
+      if(type === 'members') renderMembers();
+      else if(type === 'collection') renderCollection();
+      else if(type === 'payment') renderPayment();
+      else if(type === 'proc-members') renderProcessingMembers();
+      else if(type === 'proc-category') renderCategoryDetail();
+      else if(type === 'dist-members') renderDistributionMembers();
+      else if(type === 'dist-delivery') renderDistributionDelivery();
+      else if(type === 'quality') renderQualityDetail();
+      else if(type === 'route') renderRouteDetail();
+      else if(type === 'rejection') renderRejectionDetail();
+      else if(type === 'proc-batch') renderBatchDetail();
+      else if(type === 'proc-machine') renderMachineDetail();
+      else if(type === 'proc-wastage') renderWastageDetail();
+      else if(type === 'dist-returns') renderReturnsDetail();
+      else if(type === 'dist-expiry') renderExpiryDetail();
+      else if(type === 'dist-orderhistory') renderOrderHistoryDetail();
+    });
+  });
+
+  const DISTRIBUTION_OUTLETS_RAW = {
+    small: [
+      { place:"Karad", storeName:"Shreeram General Store", contactPerson:"Anil Bhosale", email:"shreeram.store@mail.com", phone:"98220 12121", altPhone:"91234 12121", address:"Main Bazar, Karad", altAddress:"Warehouse Lane, Karad", weeklyQty:280, unit:"L", rate:60 },
+      { place:"Wai", storeName:"Ganesh Kirana", contactPerson:"Sunita Patil", email:"ganesh.kirana@mail.com", phone:"98230 23232", altPhone:"91234 23232", address:"Station Road, Wai", altAddress:"Behind Bus Stand, Wai", weeklyQty:175, unit:"L", rate:60 },
+      { place:"Phaltan", storeName:"Om Milk Center", contactPerson:"Ravindra Jadhav", email:"om.milkcenter@mail.com", phone:"97650 34343", altPhone:"91234 34343", address:"Gandhi Chowk, Phaltan", altAddress:"New Market Yard, Phaltan", weeklyQty:224, unit:"L", rate:60 },
+      { place:"Koregaon", storeName:"Annapurna Dairy Booth", contactPerson:"Meena Shinde", email:"annapurna.dairy@mail.com", phone:"96890 45454", altPhone:"91234 45454", address:"Farm Road, Koregaon", altAddress:"Old Colony, Koregaon", weeklyQty:126, unit:"L", rate:60 },
+    ],
+    big: [
+      { place:"Pune", storeName:"D-Mart Supermarket", contactPerson:"Regional Procurement, D-Mart Retail Pvt Ltd", email:"procurement.pune@dmart.com", phone:"020-4123 5566", altPhone:"91234 55661", address:"Hinjewadi Phase 2, Pune", altAddress:"Warehouse, Chakan MIDC, Pune", weeklyQty:8400, unit:"L", rate:54 },
+      { place:"Mumbai", storeName:"Taj Hotel Group — Central Kitchen", contactPerson:"Chief Purchase Manager", email:"purchase.ck@tajhotels.com", phone:"022-6789 1122", altPhone:"91234 11221", address:"Colaba, Mumbai", altAddress:"Central Kitchen, Lower Parel, Mumbai", weeklyQty:5950, unit:"L", rate:56 },
+      { place:"Nashik", storeName:"Big Bazaar Wholesale", contactPerson:"Store Manager, Big Bazaar", email:"store.nashik@bigbazaar.com", phone:"0253-234 5566", altPhone:"91234 55662", address:"College Road, Nashik", altAddress:"Distribution Hub, Ambad, Nashik", weeklyQty:4480, unit:"L", rate:54 },
+      { place:"Kolhapur", storeName:"Hotel Shalini Palace — Catering Dept", contactPerson:"Catering Head", email:"catering@shalinipalace.com", phone:"0231-256 7788", altPhone:"91234 77881", address:"Rankala, Kolhapur", altAddress:"Banquet Store, Kolhapur", weeklyQty:2800, unit:"L", rate:56 },
+    ],
+  };
+
+  const DELIVERY_DAYS = [
+    'Mon, Wed, Fri', 'Tue, Thu, Sat', 'Daily (Mon–Sat)', 'Mon, Thu', 'Wed, Sat', 'Daily (Mon–Sun)'
+  ];
+  const DELIVERY_SLOTS = ['Early Morning (5–7 AM)', 'Morning (7–9 AM)', 'Late Morning (9–11 AM)', 'Evening (5–7 PM)'];
+  const PACKAGING_TYPES = ['20L Steel Can', '10L Plastic Crate', '1L Pouch — Case of 12', '500ml Pouch — Case of 24', '5L Jar'];
+  const VEHICLE_TYPES = ['Insulated Delivery Van', 'Two-Wheeler Milk Carrier', 'Mini Tempo (Chiller)', 'Auto-Rickshaw (Cans)'];
+  const SPECIAL_INSTRUCTIONS = [
+    'Use rear entrance for delivery', 'Call contact person 15 min before arrival', 'Security gate pass required',
+    'Deliver before shop opens at 8 AM', 'Keep cold storage box sealed till handover', 'Collect empty cans on next visit',
+    'No delivery on public holidays', 'Weigh-in slip must be signed on delivery'
+  ];
+  const ORDER_FREQUENCIES = ['Daily', 'Alternate Days', 'Twice a Week', 'Weekly'];
+  const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
+  const PRODUCT_CATALOG = [
+    { name: 'Milk', unit: 'L' }, { name: 'Ghee', unit: 'kg' }, { name: 'Paneer', unit: 'kg' },
+    { name: 'Curd', unit: 'kg' }, { name: 'Butter', unit: 'kg' }, { name: 'Buttermilk', unit: 'L' }
+  ];
+
+  const DELIVERY_PERSONS = [
+    { id: 'DLV001', name: 'Ramesh Pawar', phone: '98221 10011', vehicle: 'Two-Wheeler Milk Carrier', route: 'Karad — Wai Route' },
+    { id: 'DLV002', name: 'Suresh Jagtap', phone: '98221 10022', vehicle: 'Insulated Delivery Van', route: 'Phaltan — Koregaon Route' },
+    { id: 'DLV003', name: 'Vitthal More', phone: '98221 10033', vehicle: 'Mini Tempo (Chiller)', route: 'Pune City Route' },
+    { id: 'DLV004', name: 'Ganesh Kadam', phone: '98221 10044', vehicle: 'Insulated Delivery Van', route: 'Mumbai City Route' },
+    { id: 'DLV005', name: 'Prakash Chavan', phone: '98221 10055', vehicle: 'Mini Tempo (Chiller)', route: 'Nashik City Route' },
+    { id: 'DLV006', name: 'Santosh Deshmukh', phone: '98221 10066', vehicle: 'Insulated Delivery Van', route: 'Kolhapur City Route' },
+    { id: 'DLV007', name: 'Dattatray Salunkhe', phone: '98221 10077', vehicle: 'Auto-Rickshaw (Cans)', route: 'Karad — Phaltan Route' },
+    { id: 'DLV008', name: 'Balaji Shelar', phone: '98221 10088', vehicle: 'Two-Wheeler Milk Carrier', route: 'Wai — Koregaon Route' },
+  ];
+
+  function formatDuration(min){
+    if(min < 60) return `${min} min`;
+    const h = Math.floor(min / 60), m = min % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+
+  const DELIVERY_STEP_LABELS = [
+    'Order Packed at Plant', 'Picked Up for Delivery', 'In Transit',
+    'Reached Locality', 'Shifted to Store', 'Delivered'
+  ];
+  const DELIVERY_STEP_FRACTIONS = [0, 0.10, 0.35, 0.72, 0.9, 1.0];
+
+  function buildDeliveryChainSteps(o){
+    const total = o.deliveryDurationMinutes;
+    const steps = DELIVERY_STEP_LABELS.map((label, i) => {
+      const elapsed = Math.round(total * DELIVERY_STEP_FRACTIONS[i]);
+      let elapsedLabel;
+      if(i === 0) elapsedLabel = 'Start';
+      else if(i === DELIVERY_STEP_LABELS.length - 1) elapsedLabel = `Total: ${formatDuration(elapsed)}`;
+      else elapsedLabel = `+ ${formatDuration(elapsed)}`;
+      return { label, elapsedLabel };
+    });
+    return { steps, totalMinutes: total };
+  }
+
+  function getAllDeliveryAssignments(personId){
+    const result = [];
+    Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
+      DISTRIBUTION_OUTLETS[cat].forEach((o, idx) => {
+        if(o.deliveryPersonId === personId) result.push({ cat, idx, o });
+      });
+    });
+    return result;
+  }
+
+  function buildDistOutlet(raw, seedIndex, category){
+    const weekly = [];
+    let totalQty = 0;
+    for(let w = 0; w < 4; w++){
+      const qr = seededRand(seedIndex * 41 + w * 9 + 5);
+      const qty = Math.round(raw.weeklyQty * (0.85 + qr * 0.3));
+      const pr = seededRand(seedIndex * 29 + w * 13 + 17);
+      const paid = pr > 0.25;
+      weekly.push({ week: `Week ${w + 1}`, qty, paid, amount: qty * raw.rate });
+      totalQty += qty;
+    }
+    const monthlyPaid = weekly.every(w => w.paid);
+
+    const gstNumber = `27${String.fromCharCode(65 + Math.floor(seededRand(seedIndex*7+1)*26))}${String.fromCharCode(65 + Math.floor(seededRand(seedIndex*7+2)*26))}${String.fromCharCode(65 + Math.floor(seededRand(seedIndex*7+3)*26))}${String.fromCharCode(65 + Math.floor(seededRand(seedIndex*7+4)*26))}${(1000 + Math.floor(seededRand(seedIndex*7+5)*8999))}${String.fromCharCode(65 + Math.floor(seededRand(seedIndex*7+6)*26))}1Z${Math.floor(seededRand(seedIndex*7+7)*9)+1}`;
+    const deliveryDay = DELIVERY_DAYS[seedIndex % DELIVERY_DAYS.length];
+    const deliverySlot = DELIVERY_SLOTS[Math.floor(seededRand(seedIndex*11+3) * DELIVERY_SLOTS.length)];
+    const packagingType = PACKAGING_TYPES[Math.floor(seededRand(seedIndex*13+9) * PACKAGING_TYPES.length)];
+    const coldStorage = seededRand(seedIndex*17+2) > 0.4 ? 'Yes' : 'No';
+    const vehicleType = VEHICLE_TYPES[Math.floor(seededRand(seedIndex*19+5) * VEHICLE_TYPES.length)];
+    const creditLimit = 5000 + Math.floor(seededRand(seedIndex*23+8) * 15) * 1000;
+    const specialInstructions = SPECIAL_INSTRUCTIONS[Math.floor(seededRand(seedIndex*29+11) * SPECIAL_INSTRUCTIONS.length)];
+
+    const fssaiLicense = String(10000000 + Math.floor(seededRand(seedIndex*31+2) * 89999999));
+    const orderFrequency = ORDER_FREQUENCIES[Math.floor(seededRand(seedIndex*37+4) * ORDER_FREQUENCIES.length)];
+    const preferredPaymentMode = PAYMENT_MODES[Math.floor(seededRand(seedIndex*43+6) * PAYMENT_MODES.length)];
+    const outstandingDue = seededRand(seedIndex*47+8) > 0.55 ? Math.round((300 + seededRand(seedIndex*47+9) * 4200) / 50) * 50 : 0;
+    const memberSinceYear = 2019 + Math.floor(seededRand(seedIndex*53+3) * 7);
+    const memberSinceMonth = MONTHS[Math.floor(seededRand(seedIndex*53+11) * MONTHS.length)];
+    const memberSince = `${memberSinceMonth} ${memberSinceYear}`;
+
+    const numProducts = 2 + Math.floor(seededRand(seedIndex*59+1) * 3);
+    const shuffled = [...PRODUCT_CATALOG].sort((a, b) => seededRand(seedIndex*61 + PRODUCT_CATALOG.indexOf(a)) - seededRand(seedIndex*61 + PRODUCT_CATALOG.indexOf(b)));
+    const productsPurchased = shuffled.slice(0, numProducts).map((p, pi) => ({
+      product: p.name, unit: p.unit,
+      qty: Math.round((10 + seededRand(seedIndex*67 + pi*3) * 90) * (p.unit === 'kg' ? 0.4 : 1))
+    }));
+
+    const deliveryPersonId = DELIVERY_PERSONS[seedIndex % DELIVERY_PERSONS.length].id;
+    const deliveryDurationMinutes = category === 'small'
+      ? 18 + Math.floor(seededRand(seedIndex*71+3) * 58)
+      : 90 + Math.floor(seededRand(seedIndex*71+5) * 330);
+
+    return {
+      ...raw, category, weekly, monthlyQty: totalQty, monthlyPaid,
+      memberId: 'DST' + category.slice(0,1).toUpperCase() + String(seedIndex + 1).padStart(3, '0'),
+      gstNumber, deliveryDay, deliverySlot, packagingType, coldStorage, vehicleType, creditLimit, specialInstructions,
+      fssaiLicense, orderFrequency, preferredPaymentMode, outstandingDue, memberSince, productsPurchased,
+      deliveryPersonId, deliveryDurationMinutes
+    };
+  }
+
+  const DISTRIBUTION_OUTLETS = {};
+  let distSeed = 0;
+  Object.keys(DISTRIBUTION_OUTLETS_RAW).forEach(cat => {
+    DISTRIBUTION_OUTLETS[cat] = DISTRIBUTION_OUTLETS_RAW[cat].map(o => buildDistOutlet(o, distSeed++, cat));
+  });
+
+  function getDistOutlet(cat, i){ return DISTRIBUTION_OUTLETS[cat][i]; }
+
+  function renderDistributionMembers(){
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h2>Member Detail</h2>
+          <p>Choose a distribution category to view store-wise details</p>
+        </div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      <div class="dist-tabs">
+        <button class="dist-tab-btn" id="dist-tab-small" onclick="showDistCategory('small')">
+          <span class="dist-tab-title">Small Shops</span>
+          <span class="dist-tab-sub">Local retail & kirana stores</span>
+        </button>
+        <button class="dist-tab-btn" id="dist-tab-big" onclick="showDistCategory('big')">
+          <span class="dist-tab-title">Big Demand</span>
+          <span class="dist-tab-sub">Supermarkets, hotels & bulk buyers</span>
+        </button>
+      </div>
+      <div id="dist-result">
+        <div class="result-placeholder">Select Small Shops or Big Demand above to view store details.</div>
+      </div>
+    `;
+    bindClose();
+  }
+
+  function renderDistributionDelivery(){
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h2>Delivery Related Detail</h2>
+          <p>View delivery person profiles, or track a delivery's journey step-by-step</p>
+        </div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      <div class="dist-tabs">
+        <button class="dist-tab-btn" id="dist-tab-dperson" onclick="showDeliveryPersonDetail()">
+          <span class="dist-tab-title">Delivery Person Detail</span>
+          <span class="dist-tab-sub">All delivery boys & their routes</span>
+        </button>
+        <button class="dist-tab-btn" id="dist-tab-track" onclick="showDeliveryTrackDetail()">
+          <span class="dist-tab-title">Delivery Detail</span>
+          <span class="dist-tab-sub">Track a delivery's journey step-by-step</span>
+        </button>
+      </div>
+      <div id="dist-result">
+        <div class="result-placeholder">Select Delivery Person Detail or Delivery Detail above to view details.</div>
+      </div>
+    `;
+    bindClose();
+  }
+
+  function goToDeliveryTracking(personId, outletKey){
+    const btn = document.querySelector('.option-btn[data-detail="dist-delivery"]');
+    if(btn) btn.click();
+    showDeliveryTrackDetail(personId, outletKey);
+  }
+
+  function setActiveDistTab(activeId){
+    ['dist-tab-small', 'dist-tab-big', 'dist-tab-dperson', 'dist-tab-track'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.classList.toggle('active', id === activeId);
+    });
+  }
+
+  function showDistCategory(cat){
+    setActiveDistTab(`dist-tab-${cat}`);
+    const list = DISTRIBUTION_OUTLETS[cat];
+    const rows = list.map((o, idx) => `
+      <tr class="member-row" id="dist-row-${cat}-${idx}">
+        <td>${idx + 1}</td>
+        <td><div class="avatar">${initials(o.contactPerson)}</div></td>
+        <td>${o.place}</td>
+        <td>${o.storeName}</td>
+        <td>${o.contactPerson}</td>
+        <td>${o.email}</td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'number', this)"><span class="cell-inner">${o.phone}</span></td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'address', this)"><span class="cell-inner">${o.address}</span></td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'quantity', this)"><span class="cell-inner">${o.monthlyQty.toLocaleString('en-IN')} ${o.unit}/mo</span></td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'products', this)"><span class="cell-inner">${o.productsPurchased.map(p => p.product).join(', ')}</span></td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'payment', this)"><span class="cell-inner">${o.monthlyPaid ? 'Paid' : 'Pending'}${o.outstandingDue > 0 ? ' ⚠' : ''}</span></td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'supply', this)"><span class="cell-inner">${o.deliveryDay}</span></td>
+        <td class="clickable" onclick="toggleDistExpand('${cat}', ${idx}, 'delivery', this)"><span class="cell-inner"><span class="dlv-id-chip"><span class="dot"></span>${o.deliveryPersonId}</span></span></td>
+        <td><button class="view-btn" onclick="openDistMemberFormDoc('${cat}', ${idx})">View Form</button></td>
+      </tr>
+      <tr class="expand-row" id="dist-expand-${cat}-${idx}" data-type="" style="display:none;">
+        <td colspan="13"><div class="expand-content" id="dist-expand-content-${cat}-${idx}"></div></td>
+      </tr>
+    `).join('');
+    const dperOptions = DELIVERY_PERSONS.map(p => `<option value="${p.id}">${p.id} — ${p.name}</option>`).join('');
+    document.getElementById('dist-result').innerHTML = `
+      <div class="dist-table-scroll">
+        <table class="detail-table" id="distMembersTable">
+          <thead>
+            <tr>
+              <th>Sr. No</th><th>Photo</th><th>Place</th><th>Store Name</th><th>Contact Person</th>
+              <th>Email</th><th>Number</th><th>Address</th><th>Quantity Supplied</th><th>Products Purchased</th><th>Payment</th>
+              <th>Supply Schedule</th><th>Delivery Boy ID</th><th>View Form</th>
+            </tr>
+          </thead>
+          <tbody id="distMembersTableBody">${rows}
+            <tr class="table-input-row">
+              <td>—</td>
+              <td>—</td>
+              <td><input type="text" id="dm-place" placeholder="Place"></td>
+              <td><input type="text" id="dm-store" placeholder="Store Name"></td>
+              <td><input type="text" id="dm-contact" placeholder="Contact Person"></td>
+              <td><input type="text" id="dm-email" placeholder="Email"></td>
+              <td><input type="text" id="dm-phone" placeholder="Number"></td>
+              <td><input type="text" id="dm-address" placeholder="Address"></td>
+              <td><input type="text" id="dm-qty" placeholder="e.g. 500 L/mo"></td>
+              <td><input type="text" id="dm-products" placeholder="e.g. Milk, Ghee"></td>
+              <td>
+                <select id="dm-payment">
+                  <option value="Paid">Paid</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </td>
+              <td><input type="text" id="dm-supply" placeholder="e.g. Mon, Wed, Fri"></td>
+              <td><select id="dm-dperson">${dperOptions}</select></td>
+              <td><button class="table-add-btn" onclick="addDistMemberRow('${cat}')">+ Add</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function addDistMemberRow(cat){
+    const val = id => document.getElementById(id).value.trim();
+    const place = val('dm-place') || '—';
+    const store = val('dm-store') || '—';
+    const contact = val('dm-contact') || '—';
+    const email = val('dm-email') || '—';
+    const phone = val('dm-phone') || '—';
+    const address = val('dm-address') || '—';
+    const qty = val('dm-qty') || '—';
+    const products = val('dm-products') || '—';
+    const payment = document.getElementById('dm-payment').value;
+    const supply = val('dm-supply') || '—';
+    const dperson = document.getElementById('dm-dperson').value;
+    const srNo = document.querySelectorAll(`#distMembersTableBody tr.member-row`).length + 1;
+    const rowHTML = `<tr class="member-row">
+        <td>${srNo}</td>
+        <td><div class="avatar">${initials(contact !== '—' ? contact : store)}</div></td>
+        <td>${place}</td>
+        <td>${store}</td>
+        <td>${contact}</td>
+        <td>${email}</td>
+        <td>${phone}</td>
+        <td>${address}</td>
+        <td>${qty}</td>
+        <td>${products}</td>
+        <td>${payment}</td>
+        <td>${supply}</td>
+        <td><span class="dlv-id-chip"><span class="dot"></span>${dperson}</span></td>
+        <td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td>
+      </tr>`;
+    document.querySelector('#distMembersTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['dm-place','dm-store','dm-contact','dm-email','dm-phone','dm-address','dm-qty','dm-products','dm-supply'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function toggleDistExpand(cat, i, type, cellEl){
+    const expandRow = document.getElementById(`dist-expand-${cat}-${i}`);
+    const contentDiv = document.getElementById(`dist-expand-content-${cat}-${i}`);
+    const wasSameOpen = expandRow.dataset.type === type && expandRow.style.display !== 'none';
+
+    document.querySelectorAll(`#dist-row-${cat}-${i} .cell-inner`).forEach(el => el.classList.remove('lifted'));
+
+    if(wasSameOpen){
+      expandRow.style.display = 'none';
+      expandRow.dataset.type = '';
+      return;
+    }
+
+    cellEl.querySelector('.cell-inner').classList.add('lifted');
+    expandRow.dataset.type = type;
+    expandRow.style.display = 'table-row';
+
+    if(type === 'number') contentDiv.innerHTML = distNumberDetail(cat, i);
+    else if(type === 'address') contentDiv.innerHTML = distAddressDetail(cat, i);
+    else if(type === 'quantity') contentDiv.innerHTML = distQuantityDetail(cat, i);
+    else if(type === 'payment') contentDiv.innerHTML = distPaymentDetail(cat, i);
+    else if(type === 'supply') contentDiv.innerHTML = distSupplyDetail(cat, i);
+    else if(type === 'products') contentDiv.innerHTML = distProductsDetail(cat, i);
+    else if(type === 'delivery') contentDiv.innerHTML = distDeliveryMiniDetail(cat, i);
+  }
+
+  function distDeliveryMiniDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    const p = DELIVERY_PERSONS.find(dp => dp.id === o.deliveryPersonId);
+    return `
+      <div class="expand-title">Assigned Delivery Person</div>
+      <div class="dlv-mini-card">
+        <div class="avatar">${initials(p.name)}</div>
+        <div>
+          <div class="dlv-mini-name">${p.name}</div>
+          <div class="dlv-mini-id">${p.id} — ${p.vehicle}</div>
+          <div class="dlv-mini-phone">📞 ${p.phone}</div>
+          <div class="dlv-mini-route">${p.route}</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="track-btn" onclick="goToDeliveryTracking('${p.id}', '${cat}:${i}')">Track This Delivery</button>
+      </div>
+    `;
+  }
+
+  function showDeliveryPersonDetail(){
+    setActiveDistTab('dist-tab-dperson');
+    const rows = DELIVERY_PERSONS.map(p => {
+      const assigned = getAllDeliveryAssignments(p.id);
+      return `
+        <tr class="member-row">
+          <td>${p.id}</td>
+          <td><div class="avatar dperson-avatar">${initials(p.name)}</div></td>
+          <td>${p.name}</td>
+          <td>${p.phone}</td>
+          <td>${p.vehicle}</td>
+          <td>${p.route}</td>
+          <td>${assigned.length} store${assigned.length !== 1 ? 's' : ''}</td>
+          <td><button class="track-btn" onclick="showDeliveryTrackDetail('${p.id}')">Track Deliveries</button></td>
+        </tr>
+      `;
+    }).join('');
+    document.getElementById('dist-result').innerHTML = `
+      <div class="dist-table-scroll">
+        <table class="detail-table" id="dpersonTable">
+          <thead>
+            <tr>
+              <th>Delivery Boy ID</th><th>Photo</th><th>Name</th><th>Phone</th><th>Vehicle</th>
+              <th>Assigned Route</th><th>Stores Covered</th><th>Track</th>
+            </tr>
+          </thead>
+          <tbody id="dpersonTableBody">${rows}
+            <tr class="table-input-row">
+              <td><input type="text" id="dp-id" placeholder="e.g. DLV009"></td>
+              <td>—</td>
+              <td><input type="text" id="dp-name" placeholder="Name"></td>
+              <td><input type="text" id="dp-phone" placeholder="Phone"></td>
+              <td><input type="text" id="dp-vehicle" placeholder="Vehicle"></td>
+              <td><input type="text" id="dp-route" placeholder="Route"></td>
+              <td>0 stores</td>
+              <td><button class="table-add-btn" onclick="addDeliveryPersonRow()">+ Add</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function addDeliveryPersonRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const id_ = val('dp-id') || '—';
+    const name = val('dp-name') || '—';
+    const phone = val('dp-phone') || '—';
+    const vehicle = val('dp-vehicle') || '—';
+    const route = val('dp-route') || '—';
+    const rowHTML = `<tr class="member-row">
+        <td>${id_}</td>
+        <td><div class="avatar dperson-avatar">${initials(name)}</div></td>
+        <td>${name}</td>
+        <td>${phone}</td>
+        <td>${vehicle}</td>
+        <td>${route}</td>
+        <td>0 stores</td>
+        <td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td>
+      </tr>`;
+    document.querySelector('#dpersonTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function showDeliveryTrackDetail(personId, outletKey){
+    setActiveDistTab('dist-tab-track');
+    const selPerson = personId || DELIVERY_PERSONS[0].id;
+    const assignments = getAllDeliveryAssignments(selPerson);
+    const selKey = (outletKey && assignments.some(a => `${a.cat}:${a.idx}` === outletKey))
+      ? outletKey
+      : (assignments[0] ? `${assignments[0].cat}:${assignments[0].idx}` : '');
+
+    const personOptions = DELIVERY_PERSONS.map(p =>
+      `<option value="${p.id}" ${p.id === selPerson ? 'selected' : ''}>${p.id} — ${p.name}</option>`
+    ).join('');
+    const storeOptions = assignments.map(a => {
+      const key = `${a.cat}:${a.idx}`;
+      return `<option value="${key}" ${key === selKey ? 'selected' : ''}>${a.o.place} — ${a.o.storeName}</option>`;
+    }).join('');
+
+    document.getElementById('dist-result').innerHTML = `
+      <div class="dtrack-select-bar">
+        <div class="dtrack-select-field">
+          <label>Delivery Person</label>
+          <select id="dtrack-person-select" onchange="showDeliveryTrackDetail(this.value)">${personOptions}</select>
+        </div>
+        <div class="dtrack-select-field">
+          <label>Delivery To</label>
+          <select id="dtrack-store-select" onchange="renderDeliveryChainInto(document.getElementById('dtrack-person-select').value, this.value)">
+            ${storeOptions || '<option>No stores assigned</option>'}
+          </select>
+        </div>
+      </div>
+      <div id="dtrack-chain-area"></div>
+    `;
+    if(selKey) renderDeliveryChainInto(selPerson, selKey);
+    else document.getElementById('dtrack-chain-area').innerHTML = '<div class="result-placeholder">No deliveries assigned to this person yet.</div>';
+  }
+
+  function renderDeliveryChainInto(personId, outletKey){
+    const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
+    const [cat, idxStr] = outletKey.split(':');
+    const idx = parseInt(idxStr, 10);
+    const o = getDistOutlet(cat, idx);
+    const chain = buildDeliveryChainSteps(o);
+
+    const stepsHtml = chain.steps.map(s => `
+      <div class="chain-step">
+        <div class="chain-line"></div>
+        <div class="chain-node">✓</div>
+        <div class="chain-label">${s.label}</div>
+        <div class="chain-time">${s.elapsedLabel}</div>
+      </div>
+    `).join('');
+
+    document.getElementById('dtrack-chain-area').innerHTML = `
+      <div class="dtrack-summary-banner">
+        <div class="avatar dsb-avatar">${initials(p.name)}</div>
+        <div>
+          <div class="dsb-name">${p.name}</div>
+          <div class="dsb-sub">${p.id} — ${p.vehicle} — ${p.route} — 📞 ${p.phone}</div>
+        </div>
+        <div class="dsb-metric">
+          <div class="dsb-metric-label">Time to Deliver</div>
+          <div class="dsb-metric-value">${formatDuration(o.deliveryDurationMinutes)}</div>
+        </div>
+      </div>
+      <div class="dtrack-store-card">
+        <div class="avatar">${initials(o.contactPerson)}</div>
+        <div>
+          <div class="dsc-name">${o.storeName} — ${o.place}</div>
+          <div class="dsc-sub">${o.contactPerson} · ${o.address}</div>
+        </div>
+      </div>
+      <div class="expand-title">Delivery Journey</div>
+      <div class="delivery-chain">${stepsHtml}</div>
+    `;
+  }
+
+  function distProductsDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    const rows = o.productsPurchased.map(p => `
+      <tr>
+        <td>${p.product}</td>
+        <td>${p.qty.toLocaleString('en-IN')} ${p.unit}/mo</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="expand-title">Products Purchased by This Member</div>
+      <table class="mini-table">
+        <thead><tr><th>Product</th><th>Approx. Monthly Quantity</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="expand-title" style="margin-top:16px;">Order Pattern</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Order Frequency</div><div class="val">${o.orderFrequency}</div></div>
+        <div class="info-block"><div class="tag">FSSAI License No.</div><div class="val">${o.fssaiLicense}</div></div>
+      </div>
+    `;
+  }
+
+  function distSupplyDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    return `
+      <div class="expand-title">Supply Requirements — For Delivery Team</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Delivery Days</div><div class="val">${o.deliveryDay}</div></div>
+        <div class="info-block"><div class="tag">Preferred Time Slot</div><div class="val">${o.deliverySlot}</div></div>
+        <div class="info-block"><div class="tag">Packaging Type</div><div class="val">${o.packagingType}</div></div>
+        <div class="info-block"><div class="tag">Cold Storage Required</div><div class="val">${o.coldStorage}</div></div>
+        <div class="info-block"><div class="tag">Vehicle Type</div><div class="val">${o.vehicleType}</div></div>
+        <div class="info-block"><div class="tag">Special Instructions</div><div class="val">${o.specialInstructions}</div></div>
+      </div>
+      <div class="expand-title" style="margin-top:16px;">Account & Business Details</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">GST Number</div><div class="val">${o.gstNumber}</div></div>
+        <div class="info-block"><div class="tag">FSSAI License No.</div><div class="val">${o.fssaiLicense}</div></div>
+        <div class="info-block"><div class="tag">Credit Limit</div><div class="val">₹ ${o.creditLimit.toLocaleString('en-IN')}</div></div>
+        <div class="info-block"><div class="tag">Outstanding Due</div><div class="val" style="${o.outstandingDue > 0 ? 'color:#c0392b;' : ''}">${o.outstandingDue > 0 ? '₹ ' + o.outstandingDue.toLocaleString('en-IN') : 'None'}</div></div>
+        <div class="info-block"><div class="tag">Preferred Payment Mode</div><div class="val">${o.preferredPaymentMode}</div></div>
+        <div class="info-block"><div class="tag">Member Since</div><div class="val">${o.memberSince}</div></div>
+      </div>
+    `;
+  }
+
+  function openDistMemberFormDoc(cat, i){
+    const o = getDistOutlet(cat, i);
+    const productsList = o.productsPurchased.map(p => `${p.product} (${p.qty.toLocaleString('en-IN')} ${p.unit}/mo)`).join(', ');
+    const rows = [
+      ['Member ID', o.memberId], ['Category', cat === 'small' ? 'Small Shops' : 'Big Demand'],
+      ['Place', o.place], ['Store Name', o.storeName], ['Contact Person', o.contactPerson],
+      ['Email', o.email], ['Primary Number', o.phone], ['Alternate Number', o.altPhone],
+      ['Store Address', o.address], ['Alternate / Warehouse Address', o.altAddress],
+      ['Products Purchased', productsList], ['Order Frequency', o.orderFrequency],
+      ['Quantity Supplied (Monthly)', `${o.monthlyQty.toLocaleString('en-IN')} ${o.unit}`],
+      ['Rate', `₹ ${o.rate} / ${o.unit}`], ['Payment Status', o.monthlyPaid ? 'Paid' : 'Pending'],
+      ['Outstanding Due', o.outstandingDue > 0 ? `₹ ${o.outstandingDue.toLocaleString('en-IN')}` : 'None'],
+      ['Preferred Payment Mode', o.preferredPaymentMode], ['Credit Limit', `₹ ${o.creditLimit.toLocaleString('en-IN')}`],
+      ['GST Number', o.gstNumber], ['FSSAI License No.', o.fssaiLicense], ['Member Since', o.memberSince],
+      ['Delivery Days', o.deliveryDay], ['Preferred Time Slot', o.deliverySlot],
+      ['Packaging Type', o.packagingType], ['Cold Storage Required', o.coldStorage],
+      ['Vehicle Type', o.vehicleType], ['Special Instructions', o.specialInstructions]
+    ];
+    const html = `
+      <div class="form-modal-backdrop" id="formModalBackdrop">
+        <div class="form-doc">
+          <div class="form-doc-head">
+            <div><h3>Distribution Member — Combined Detail</h3><p>Bhargavi DairyLoop — Distribution Side</p></div>
+            <button class="form-doc-close" onclick="closeMemberFormDoc()">Close ✕</button>
+          </div>
+          <div class="form-doc-body">
+            <div class="form-doc-id">
+              <div class="avatar">${initials(o.contactPerson)}</div>
+              <div class="fname">${o.storeName}</div>
+              <div class="fmeta">${o.memberId} — ${o.place}</div>
+            </div>
+            <table class="form-doc-table">
+              ${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
+            </table>
+          </div>
+          <div class="form-doc-footer">
+            <button class="btn-download" onclick="downloadDistMemberFormDoc('${cat}', ${i})">${downloadIconSVG()} Download</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  function downloadDistMemberFormDoc(cat, i){
+    const o = getDistOutlet(cat, i);
+    const productsList = o.productsPurchased.map(p => `${p.product} (${p.qty.toLocaleString('en-IN')} ${p.unit}/mo)`).join(', ');
+    const content =
+`BHARGAVI DAIRYLOOP — DISTRIBUTION MEMBER FORM
+================================================
+
+Member ID                    : ${o.memberId}
+Category                     : ${cat === 'small' ? 'Small Shops' : 'Big Demand'}
+Place                        : ${o.place}
+Store Name                   : ${o.storeName}
+Contact Person                : ${o.contactPerson}
+Email                        : ${o.email}
+Primary Number                : ${o.phone}
+Alternate Number              : ${o.altPhone}
+Store Address                 : ${o.address}
+Alternate / Warehouse Address : ${o.altAddress}
+Products Purchased            : ${productsList}
+Order Frequency                : ${o.orderFrequency}
+Quantity Supplied (Monthly)   : ${o.monthlyQty.toLocaleString('en-IN')} ${o.unit}
+Rate                          : ₹ ${o.rate} / ${o.unit}
+Payment Status                : ${o.monthlyPaid ? 'Paid' : 'Pending'}
+Outstanding Due                : ${o.outstandingDue > 0 ? '₹ ' + o.outstandingDue.toLocaleString('en-IN') : 'None'}
+Preferred Payment Mode         : ${o.preferredPaymentMode}
+Credit Limit                   : ₹ ${o.creditLimit.toLocaleString('en-IN')}
+GST Number                    : ${o.gstNumber}
+FSSAI License No.              : ${o.fssaiLicense}
+Member Since                   : ${o.memberSince}
+Delivery Days                 : ${o.deliveryDay}
+Preferred Time Slot            : ${o.deliverySlot}
+Packaging Type                 : ${o.packagingType}
+Cold Storage Required          : ${o.coldStorage}
+Vehicle Type                   : ${o.vehicleType}
+Special Instructions           : ${o.specialInstructions}
+
+================================================
+Issued by Distribution Side.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MemberForm_${o.storeName.replace(/\s+/g,'_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function distNumberDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    return `
+      <div class="expand-title">Contact Numbers</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Primary Number</div><div class="val">${o.phone}</div></div>
+        <div class="info-block"><div class="tag">Alternate Number</div><div class="val">${o.altPhone}</div></div>
+      </div>
+    `;
+  }
+
+  function distAddressDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    return `
+      <div class="expand-title">Registered Addresses</div>
+      <div class="dual-info">
+        <div class="info-block"><div class="tag">Store Address</div><div class="val">${o.address}</div></div>
+        <div class="info-block"><div class="tag">Alternate / Warehouse Address</div><div class="val">${o.altAddress}</div></div>
+      </div>
+    `;
+  }
+
+  function distQuantityDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    const rows = o.weekly.map(w => `
+      <tr>
+        <td>${w.week}</td>
+        <td>${w.qty.toLocaleString('en-IN')} ${o.unit}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="expand-title">Quantity Supplied — Monthly Total</div>
+      <div class="dist-monthly-summary">${o.monthlyQty.toLocaleString('en-IN')} ${o.unit} this month</div>
+      <div class="expand-title">Week-wise Supply</div>
+      <table class="mini-table">
+        <thead><tr><th>Week</th><th>Quantity Supplied</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function distPaymentDetail(cat, i){
+    const o = getDistOutlet(cat, i);
+    const rows = o.weekly.map(w => `
+      <tr>
+        <td>${w.week}</td>
+        <td>${w.qty.toLocaleString('en-IN')} ${o.unit} — ₹ ${w.amount.toLocaleString('en-IN')}</td>
+        <td class="week-status-cell">${w.paid ? '<span class="week-tick">Paid &#10004;</span>' : '<span class="week-bad-msg">&#9888; Not paid yet</span>'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="expand-title">Monthly Payment Status</div>
+      <div class="dist-monthly-summary" style="${o.monthlyPaid ? '' : 'border-color:#e2704a; background:#fdece3;'}">
+        ${o.monthlyPaid ? 'Full month payment collected ✓' : 'Payment pending for one or more weeks this month'}
+      </div>
+      <div class="expand-title">Week-wise Payment</div>
+      <table class="mini-table">
+        <thead><tr><th>Week</th><th>Amount Due</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+  // ===================== EXTRA OPTIONS (added below existing options) =====================
+
+  // Unified payment: combines Procurement members, Processing members and
+  // Distribution outlets into one list, so payments are not limited to one side.
+  function getPayableList(){
+    const list = [];
+    const curMonth = MONTHS[7]; // Aug — current month status used for the Paid/Pending badge
+    members.forEach((m, i) => {
+      const paid = !!(m.paymentYears && m.paymentYears[m.currentYear] && m.paymentYears[m.currentYear][curMonth]);
+      list.push({ stage:'procurement', label:'Procurement', key:`proc:${i}`, name:m.name, sub:`${m.memberId} — ${m.place}`, ref:{ i }, paid });
+    });
+    Object.keys(processingMembers).forEach(cat => {
+      processingMembers[cat].forEach((m, i) => {
+        const paid = !!(m.paymentYears && m.paymentYears[m.currentYear] && m.paymentYears[m.currentYear][curMonth]);
+        list.push({ stage:'processing', label:'Processing', key:`procm:${cat}:${i}`, name:m.name, sub:`${m.memberId} — ${cat}`, ref:{ cat, i }, paid });
+      });
+    });
+    ['small','big'].forEach(cat => {
+      (DISTRIBUTION_OUTLETS[cat] || []).forEach((o, i) => {
+        list.push({ stage:'distribution', label:'Distribution', key:`dist:${cat}:${i}`, name:o.storeName, sub:`${o.memberId} — ${o.place}`, ref:{ cat, i }, paid: !!o.monthlyPaid });
+      });
+    });
+    return list;
+  }
+
+  // Instead of a popup / scrolling modal or a separate designed screen, clicking
+  // the select field shows the exact same page — just tinted yellow — with the
+  // pickable members/stores swapped in for each stage's normal option buttons,
+  // styled identically to the rest of the app (.option-btn).
+  function openPaymentSelect(){
+    renderPaymentPickRows();
+    document.body.classList.add('payment-picking');
+    document.getElementById('globalPaymentBar').style.display = 'none';
+  }
+
+  function closePaymentSelect(){
+    document.body.classList.remove('payment-picking');
+    document.getElementById('globalPaymentBar').style.display = 'flex';
+  }
+
+  function renderPaymentPickRows(){
+    const list = getPayableList();
+    const currentKey = document.getElementById('globalPaymentSelect').dataset.key;
+    const groups = { procurement: [], processing: [], distribution: [] };
+    list.forEach(e => groups[e.stage].push(e));
+    Object.keys(groups).forEach(stage => {
+      const container = document.getElementById(`pay-pick-${stage}`);
+      if(!container) return;
+      container.innerHTML = groups[stage].map(e => `
+        <button class="option-btn pay-pick-btn ${e.key===currentKey?'picked':''}" onclick="pickPayEntity('${e.key}')">
+          <span>${e.name}<span class="pay-pick-btn-sub">${e.sub}</span></span>
+          <span class="pay-pick-btn-status ${e.paid?'paid':'pending'}">${e.paid?'Paid':'Pending'}</span>
+        </button>
+      `).join('');
+    });
+  }
+
+  // Whatever the user clicks gets selected — one row at a time — and is carried
+  // back to the payment bar highlighted with a dark blue border / light blue fill.
+  // Right after picking, we also open that person's full payment detail (paid vs
+  // pending) so the payment amount is never entered blind.
+  function pickPayEntity(key){
+    const entity = getPayableList().find(e => e.key === key);
+    if(!entity) return;
+    const selEl = document.getElementById('globalPaymentSelect');
+    selEl.value = `${entity.name} (${entity.label})`;
+    selEl.dataset.key = key;
+    selEl.classList.add('has-pick');
+    document.getElementById('globalPaymentAmount').value = '';
+    const statusEl = document.getElementById('globalPaymentStatus');
+    if(statusEl) statusEl.innerHTML = '';
+    pendingPayItem = null;
+    closePaymentSelect();
+    openEntityPaymentDetail(key);
+  }
+
+  // ---- Per-entity payment detail (opened right after picking someone in the bar) ----
+
+  // Normalises procurement / processing / distribution into one list of "items"
+  // (a month for procurement & processing, a week for distribution) each with
+  // its own paid/pending state, amount and screenshot.
+  function getPaymentItems(entity){
+    if(entity.stage === 'procurement' || entity.stage === 'processing'){
+      const m = entity.stage === 'procurement' ? members[entity.ref.i] : processingMembers[entity.ref.cat][entity.ref.i];
+      const rate = Math.max(1, Math.round(parseFloat((m.payment || '0').replace(/[^0-9.]/g,'')) || 0));
+      if(!m.paymentYears[m.currentYear]) m.paymentYears[m.currentYear] = {};
+      const status = m.paymentYears[m.currentYear];
+      return MONTHS.map(mo => {
+        const shotKey = m.currentYear + '-' + mo;
+        return {
+          id: mo,
+          label: `${mo} ${m.currentYear}`,
+          amount: rate,
+          paid: !!status[mo],
+          screenshot: (m.screenshots || {})[shotKey] || null,
+          txnId: (m.txnIds || {})[shotKey] || null
+        };
+      });
+    }
+    if(entity.stage === 'distribution'){
+      const o = DISTRIBUTION_OUTLETS[entity.ref.cat][entity.ref.i];
+      if(!o.weekly) o.weekly = [];
+      if(!o.weeklyShots) o.weeklyShots = {};
+      return o.weekly.map((w, idx) => ({
+        id: String(idx),
+        label: `${w.week} — ${o.storeName}`,
+        amount: w.amount,
+        paid: !!w.paid,
+        screenshot: o.weeklyShots[idx] || null,
+        txnId: w.txnId || null
+      }));
+    }
+    return [];
+  }
+
+  // Applies a completed payment to the underlying data for one specific item.
+  function markPaymentItemPaid(entity, itemId, txnId){
+    if(entity.stage === 'procurement' || entity.stage === 'processing'){
+      const m = entity.stage === 'procurement' ? members[entity.ref.i] : processingMembers[entity.ref.cat][entity.ref.i];
+      if(!m.paymentYears[m.currentYear]) m.paymentYears[m.currentYear] = {};
+      m.paymentYears[m.currentYear][itemId] = true;
+      if(!m.txnIds) m.txnIds = {};
+      m.txnIds[m.currentYear + '-' + itemId] = txnId;
+    } else if(entity.stage === 'distribution'){
+      const o = DISTRIBUTION_OUTLETS[entity.ref.cat][entity.ref.i];
+      const idx = Number(itemId);
+      if(o.weekly[idx]){ o.weekly[idx].paid = true; o.weekly[idx].txnId = txnId; }
+      o.monthlyPaid = o.weekly.every(w => w.paid);
+      if(o.monthlyPaid) o.outstandingDue = 0;
+      refreshOpenMemberTable(entity.ref.cat);
+    }
+  }
+
+  function storePaymentItemShot(entity, itemId, shot){
+    if(entity.stage === 'procurement' || entity.stage === 'processing'){
+      const m = entity.stage === 'procurement' ? members[entity.ref.i] : processingMembers[entity.ref.cat][entity.ref.i];
+      if(!m.screenshots) m.screenshots = {};
+      m.screenshots[m.currentYear + '-' + itemId] = shot;
+    } else if(entity.stage === 'distribution'){
+      const o = DISTRIBUTION_OUTLETS[entity.ref.cat][entity.ref.i];
+      if(!o.weeklyShots) o.weeklyShots = {};
+      o.weeklyShots[itemId] = shot;
+    }
+  }
+
+  function openEntityPaymentDetail(key){
+    const entity = getPayableList().find(e => e.key === key);
+    if(!entity) return;
+    detailShell('Payment Detail', `${entity.name} — ${entity.sub}`, entityPaymentDetailHTML(key));
+    pageRoot.classList.add('detail-open');
+  }
+
+  function entityPaymentDetailHTML(key){
+    const entity = getPayableList().find(e => e.key === key);
+    if(!entity) return `<div class="result-placeholder">Not found.</div>`;
+    const items = getPaymentItems(entity);
+    const paidCount = items.filter(it => it.paid).length;
+    const pendingCount = items.length - paidCount;
+    const rows = items.map(it => `
+      <tr class="pay-item-row" onclick="handlePaymentItemClick('${key}','${it.id}')">
+        <td>${it.label}</td>
+        <td><span class="pay-status ${it.paid ? 'completed' : 'pending'}">${it.paid ? 'Completed' : 'Pending'}</span></td>
+        <td>₹ ${it.amount.toLocaleString('en-IN')}</td>
+        <td class="txn-id">${it.paid ? (it.txnId || '—') : '—'}</td>
+        <td class="pay-item-hint">${it.paid ? (it.screenshot ? 'Tap to view screenshot' : 'Tap to add screenshot') : 'Tap to pay this'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="pay-member-head">
+        <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(entity.name)}</div>
+        <div>
+          <div class="mdc-name">${entity.name}</div>
+          <div class="mdc-id">${entity.sub}</div>
+        </div>
+      </div>
+      <div class="pay-summary-row">
+        <div class="mini-stat">Completed<b>${paidCount} / ${items.length}</b></div>
+        <div class="mini-stat">Pending<b>${pendingCount} / ${items.length}</b></div>
+      </div>
+      <table class="pay-table">
+        <thead><tr><th>Period</th><th>Status</th><th>Amount</th><th>Txn ID</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  // Clicking a row: a "Completed" row opens the screenshot; a "Pending" row asks
+  // for confirmation before that amount is pushed into the Pay Now amount field.
+  function handlePaymentItemClick(key, itemId){
+    const entity = getPayableList().find(e => e.key === key);
+    if(!entity) return;
+    const item = getPaymentItems(entity).find(it => it.id === itemId);
+    if(!item) return;
+    if(item.paid){
+      openShotLightbox(key, itemId, entity, item);
+    } else {
+      openAddAmountConfirm(key, itemId, entity, item);
+    }
+  }
+
+  let activeShotRef = null;
+
+  function openShotLightbox(key, itemId, entity, item){
+    activeShotRef = { key, itemId };
+    document.getElementById('shotLightboxTitle').textContent = `${entity.name} — ${item.label}`;
+    const img = document.getElementById('shotLightboxImg');
+    const dlBtn = document.getElementById('shotLightboxDownload');
+    const uploadBtn = document.getElementById('shotLightboxUpload');
+    const emptyMsg = document.getElementById('shotLightboxEmpty');
+    if(item.screenshot){
+      img.style.display = 'block';
+      img.src = item.screenshot.dataUrl;
+      dlBtn.style.display = 'inline-block';
+      emptyMsg.style.display = 'none';
+      uploadBtn.textContent = 'Replace Screenshot';
+    } else {
+      img.style.display = 'none';
+      img.src = '';
+      dlBtn.style.display = 'none';
+      emptyMsg.style.display = 'block';
+      uploadBtn.textContent = 'Upload Screenshot';
+    }
+    document.getElementById('shotLightboxOverlay').classList.add('show');
+  }
+
+  function closeShotLightbox(){
+    document.getElementById('shotLightboxOverlay').classList.remove('show');
+    activeShotRef = null;
+  }
+
+  document.getElementById('shotLightboxClose').addEventListener('click', closeShotLightbox);
+  document.getElementById('shotLightboxOverlay').addEventListener('click', e => {
+    if(e.target.id === 'shotLightboxOverlay') closeShotLightbox();
+  });
+
+  document.getElementById('shotLightboxUpload').addEventListener('click', () => {
+    if(!activeShotRef) return;
+    const { key, itemId } = activeShotRef;
+    const input = document.getElementById('shotFileInput');
+    input.onchange = () => {
+      const file = input.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const entity = getPayableList().find(en => en.key === key);
+        if(!entity) return;
+        storePaymentItemShot(entity, itemId, { dataUrl: e.target.result, fileName: file.name });
+        const item = getPaymentItems(entity).find(it => it.id === itemId);
+        openShotLightbox(key, itemId, entity, item);
+        if(pageRoot.classList.contains('detail-open')) openEntityPaymentDetail(key);
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    };
+    input.click();
+  });
+
+  document.getElementById('shotLightboxDownload').addEventListener('click', () => {
+    if(!activeShotRef) return;
+    const { key, itemId } = activeShotRef;
+    const entity = getPayableList().find(en => en.key === key);
+    const item = entity && getPaymentItems(entity).find(it => it.id === itemId);
+    if(!item || !item.screenshot) return;
+    const a = document.createElement('a');
+    a.href = item.screenshot.dataUrl;
+    a.download = `Screenshot_${entity.name.replace(/\s+/g,'_')}_${itemId}${(item.screenshot.fileName.match(/\.\w+$/)||[''])[0]}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  // "Are you sure you want to add this amount to Pay Now?" confirmation.
+  let pendingPayItem = null;   // { key, itemId } — the exact item Pay Now will settle
+  let pendingConfirmRef = null;
+
+  function openAddAmountConfirm(key, itemId, entity, item){
+    pendingConfirmRef = { key, itemId, amount: item.amount, label: item.label };
+    document.getElementById('addAmountConfirmText').textContent =
+      `Add ₹${item.amount.toLocaleString('en-IN')} for ${item.label} (${entity.name}) to the payment amount now?`;
+    document.getElementById('addAmountConfirmOverlay').classList.add('show');
+  }
+
+  function closeAddAmountConfirm(){
+    document.getElementById('addAmountConfirmOverlay').classList.remove('show');
+  }
+
+  document.getElementById('addAmountConfirmCancel').addEventListener('click', () => {
+    pendingConfirmRef = null;
+    closeAddAmountConfirm();
+  });
+  document.getElementById('addAmountConfirmOverlay').addEventListener('click', e => {
+    if(e.target.id === 'addAmountConfirmOverlay'){ pendingConfirmRef = null; closeAddAmountConfirm(); }
+  });
+
+  document.getElementById('addAmountConfirmOk').addEventListener('click', () => {
+    if(!pendingConfirmRef) return;
+    const { key, itemId, amount } = pendingConfirmRef;
+    document.getElementById('globalPaymentAmount').value = amount;
+    pendingPayItem = { key, itemId };
+    closeAddAmountConfirm();
+    const closeBtn = document.getElementById('closeDetail');
+    if(closeBtn) closeBtn.click();
+    document.getElementById('globalPaymentBar').style.display = 'flex';
+    const statusEl = document.getElementById('globalPaymentStatus');
+    if(statusEl) statusEl.innerHTML = `<div class="dist-payment-msg">Amount added — review and tap "Pay Now" to complete.</div>`;
+    pendingConfirmRef = null;
+  });
+
+  function refreshOpenMemberTable(cat){
+    const activeTab = document.getElementById(`dist-tab-${cat}`);
+    if(activeTab && activeTab.classList.contains('active')) showDistCategory(cat);
+  }
+
+  let paymentHistory = [];
+  let paymentSeq = 0;
+
+  function processGlobalPayment(){
+    const selEl = document.getElementById('globalPaymentSelect');
+    const key = selEl.dataset.key;
+    const amountField = document.getElementById('globalPaymentAmount');
+    const modeField = document.getElementById('globalPaymentMode');
+    const statusEl = document.getElementById('globalPaymentStatus');
+    const amountVal = amountField.value.trim();
+
+    if(!key || !amountVal || Number(amountVal) <= 0){
+      statusEl.innerHTML = `<div class="dist-payment-msg error">Select a member / store and enter a valid amount.</div>`;
+      return;
+    }
+
+    const entity = getPayableList().find(e => e.key === key);
+    if(!entity) return;
+
+    const txnId = 'PAY' + Date.now().toString().slice(-8);
+    let itemLabel = entity.label;
+
+    // If the amount came from tapping a specific pending item in the payment
+    // detail screen, settle exactly that item — otherwise fall back to marking
+    // the whole record paid (old behaviour, kept for a manually typed amount).
+    if(pendingPayItem && pendingPayItem.key === key){
+      markPaymentItemPaid(entity, pendingPayItem.itemId, txnId);
+      const it = getPaymentItems(entity).find(i2 => i2.id === pendingPayItem.itemId);
+      if(it) itemLabel = it.label;
+    } else if(entity.stage === 'procurement'){
+      const m = members[entity.ref.i];
+      if(!m.paymentYears[m.currentYear]) m.paymentYears[m.currentYear] = {};
+      MONTHS.forEach(mo => { m.paymentYears[m.currentYear][mo] = true; });
+    } else if(entity.stage === 'processing'){
+      const m = processingMembers[entity.ref.cat][entity.ref.i];
+      if(!m.paymentYears[m.currentYear]) m.paymentYears[m.currentYear] = {};
+      MONTHS.forEach(mo => { m.paymentYears[m.currentYear][mo] = true; });
+    } else if(entity.stage === 'distribution'){
+      const o = DISTRIBUTION_OUTLETS[entity.ref.cat][entity.ref.i];
+      o.monthlyPaid = true;
+      o.outstandingDue = 0;
+      if(o.weekly) o.weekly.forEach(w => { w.paid = true; });
+      refreshOpenMemberTable(entity.ref.cat);
+    }
+
+    const recordId = 'rec' + (paymentSeq++);
+    paymentHistory.unshift({ id: recordId, name: entity.name, stage: entity.label, item: itemLabel, amount: Number(amountVal), mode: modeField.value, txnId, screenshot: null });
+
+    statusEl.innerHTML = `<div class="dist-payment-msg success">Paid ✓ — ₹${Number(amountVal).toLocaleString('en-IN')} via ${modeField.value} for ${itemLabel} (${entity.name}). Status: Paid. Txn ID: ${txnId}</div>`;
+
+    selEl.value = '';
+    delete selEl.dataset.key;
+    selEl.classList.remove('has-pick');
+    amountField.value = '';
+    pendingPayItem = null;
+
+    renderPaymentHistory();
+  }
+
+  // The completed payment updates here, and its screenshot can be received /
+  // downloaded from this same row via the download-style button.
+  function renderPaymentHistory(){
+    const wrap = document.getElementById('paymentHistoryList');
+    if(!wrap) return;
+    wrap.innerHTML = paymentHistory.slice(0, 6).map(r => `
+      <div class="pay-history-row">
+        <div class="ph-name">${r.name} <span style="opacity:.65;font-weight:400;">(${r.item || r.stage})</span></div>
+        <div class="ph-amount">₹${r.amount.toLocaleString('en-IN')} — ${r.mode} — ${r.txnId} — <b style="color:#1f8a3b;">Paid</b></div>
+        <button class="ph-shot-btn ${r.screenshot?'has-shot':''}" onclick="${r.screenshot ? `downloadPaymentShot('${r.id}')` : `uploadPaymentShot('${r.id}')`}">${r.screenshot ? `${downloadIconSVG()} Download Screenshot` : 'Upload Screenshot'}</button>
+      </div>
+    `).join('');
+  }
+
+  function uploadPaymentShot(recordId){
+    const input = document.getElementById('shotFileInput');
+    input.onchange = () => {
+      const file = input.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const rec = paymentHistory.find(r => r.id === recordId);
+        if(rec){ rec.screenshot = { dataUrl: e.target.result, fileName: file.name }; }
+        renderPaymentHistory();
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    };
+    input.click();
+  }
+
+  function downloadPaymentShot(recordId){
+    const rec = paymentHistory.find(r => r.id === recordId);
+    if(!rec || !rec.screenshot) return;
+    const a = document.createElement('a');
+    a.href = rec.screenshot.dataUrl;
+    a.download = `PaymentScreenshot_${rec.name.replace(/\s+/g,'_')}_${rec.txnId}${(rec.screenshot.fileName.match(/\.\w+$/)||[''])[0]}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function detailShell(title, sub, bodyHTML){
+    detailInner.innerHTML = `
+      <div class="detail-header">
+        <div><h2>${title}</h2><p>${sub}</p></div>
+        <button class="close-btn" id="closeDetail">Close ✕</button>
+      </div>
+      ${bodyHTML}
+    `;
+    bindClose();
+  }
+
+  let pendingDeleteRow = null;
+  const deleteConfirmOverlay = document.getElementById('deleteConfirmOverlay');
+
+  function confirmDeleteRow(btn){
+    pendingDeleteRow = btn.closest('tr');
+    deleteConfirmOverlay.classList.add('show');
+  }
+
+  function closeDeleteConfirm(){
+    deleteConfirmOverlay.classList.remove('show');
+    pendingDeleteRow = null;
+  }
+
+  document.getElementById('deleteConfirmCancel').addEventListener('click', closeDeleteConfirm);
+
+  document.getElementById('deleteConfirmOk').addEventListener('click', () => {
+    if(pendingDeleteRow){
+      const next = pendingDeleteRow.nextElementSibling;
+      if(next && next.classList.contains('expand-row')) next.remove();
+      pendingDeleteRow.remove();
+    }
+    closeDeleteConfirm();
+  });
+
+  deleteConfirmOverlay.addEventListener('click', (e) => {
+    if(e.target === deleteConfirmOverlay) closeDeleteConfirm();
+  });
+
+  // ---- PROCUREMENT: Milk Quality / Fat & SNF Testing ----
+  const BASE_RATE_PER_L = 32;
+  function renderQualityDetail(){
+    const rows = members.map((m, i) => {
+      const fat = (3.2 + seededRand(i*3+1) * 2.3).toFixed(1);
+      const snf = (8.0 + seededRand(i*5+2) * 1.4).toFixed(1);
+      const grade = fat >= 4.5 ? 'A' : fat >= 3.8 ? 'B' : 'C';
+      const incentive = grade === 'A' ? 2.50 : grade === 'B' ? 1.00 : 0;
+      const finalRate = BASE_RATE_PER_L + incentive;
+      const qtyPerDay = parseFloat(m.liter) || 10;
+      const qty = Math.round(qtyPerDay * 30);
+      const totalAmount = Math.round(finalRate * qty);
+      const date = `${(i%28)+1} ${MONTHS[(i+1)%12]} 2026`;
+      return `<tr class="member-row"><td>${m.memberId}</td><td>${m.name}</td><td>${date}</td><td>${fat}%</td><td>${snf}%</td><td>Grade ${grade}</td><td>₹${BASE_RATE_PER_L.toFixed(2)}/L</td><td>${incentive ? '+ ₹'+incentive.toFixed(2)+'/L' : '—'}</td><td>₹${finalRate.toFixed(2)}/L</td><td>₹ ${totalAmount.toLocaleString('en-IN')}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    }).join('');
+    const avgFat = (members.reduce((s,m,i)=> s + (3.2 + seededRand(i*3+1)*2.3), 0) / members.length).toFixed(2);
+    detailShell('Milk Quality / Fat & SNF Testing', 'Latest lab test reading per member — pricing is quality-linked, not liters-only', `
+      <div class="summary-cards">
+        <div class="summary-card"><div class="label">Members Tested</div><div class="value">${members.length}</div></div>
+        <div class="summary-card"><div class="label">Average Fat %</div><div class="value">${avgFat}%</div></div>
+        <div class="summary-card"><div class="label">Rejection Threshold</div><div class="value">Fat &lt; 3.2%</div></div>
+      </div>
+      <table class="detail-table" id="qualityTable">
+        <thead><tr><th>Member ID</th><th>Name</th><th>Date</th><th>Fat %</th><th>SNF %</th><th>Grade</th><th>Base Rate</th><th>Quality Incentive</th><th>Final Rate/Liter</th><th>Total Amount</th><th>Action</th></tr></thead>
+        <tbody id="qualityTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="q-memberId" placeholder="e.g. MEM013"></td>
+            <td><input type="text" id="q-name" placeholder="Name"></td>
+            <td><input type="text" id="q-date" placeholder="e.g. 5 Aug 2026"></td>
+            <td><input type="number" step="0.1" id="q-fat" placeholder="Fat %"></td>
+            <td><input type="number" step="0.1" id="q-snf" placeholder="SNF %"></td>
+            <td>
+              <select id="q-grade">
+                <option value="A">Grade A</option>
+                <option value="B">Grade B</option>
+                <option value="C">Grade C</option>
+              </select>
+            </td>
+            <td><input type="number" step="0.01" id="q-baserate" value="${BASE_RATE_PER_L}"></td>
+            <td><input type="number" step="0.01" id="q-incentive" placeholder="0.00"></td>
+            <td><input type="number" step="0.01" id="q-finalrate" placeholder="auto"></td>
+            <td><input type="number" step="1" id="q-qty" placeholder="Qty (L)"></td>
+            <td><button class="table-add-btn" onclick="addQualityRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addQualityRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const memberId = val('q-memberId') || '—';
+    const name = val('q-name') || '—';
+    const date = val('q-date') || '—';
+    const fat = val('q-fat') || '—';
+    const snf = val('q-snf') || '—';
+    const grade = document.getElementById('q-grade').value;
+    const baseRate = parseFloat(val('q-baserate')) || BASE_RATE_PER_L;
+    const incentive = parseFloat(val('q-incentive')) || 0;
+    const finalRateInput = parseFloat(val('q-finalrate'));
+    const finalRate = finalRateInput || (baseRate + incentive);
+    const qty = parseFloat(val('q-qty')) || 0;
+    const totalAmount = Math.round(finalRate * qty);
+    const rowHTML = `<tr class="member-row"><td>${memberId}</td><td>${name}</td><td>${date}</td><td>${fat}%</td><td>${snf}%</td><td>Grade ${grade}</td><td>₹${baseRate.toFixed(2)}/L</td><td>${incentive ? '+ ₹'+incentive.toFixed(2)+'/L' : '—'}</td><td>₹${finalRate.toFixed(2)}/L</td><td>₹ ${totalAmount.toLocaleString('en-IN')}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#qualityTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['q-memberId','q-name','q-date','q-fat','q-snf','q-incentive','q-finalrate','q-qty'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- PROCUREMENT: Collection Vehicle / Route Detail ----
+  const COLLECTION_ROUTES = [
+    { routeId:'RT-01', route:'Karad — Wai Route', collector:'Anna Salunkhe', phone:'98221 30011', vehicle:'Insulated Collection Tempo', places:'Karad, Wai', time:'5:30 AM – 7:30 AM', membersCovered:4 },
+    { routeId:'RT-02', route:'Koregaon — Phaltan Route', collector:'Bapu Thorat', phone:'98221 30022', vehicle:'Milk Collection Van', places:'Koregaon, Phaltan', time:'6:00 AM – 8:15 AM', membersCovered:4 },
+    { routeId:'RT-03', route:'Karad Local Route', collector:'Shivaji Mane', phone:'98221 30033', vehicle:'Two-Wheeler Can Carrier', places:'Karad (interior villages)', time:'5:00 AM – 6:30 AM', membersCovered:4 },
+  ];
+  function renderRouteDetail(){
+    const rows = COLLECTION_ROUTES.map((r, i) => {
+      const totalLiters = members.filter(m => r.places.includes(m.place)).reduce((s,m)=> s + (parseFloat(m.liter)||0), 0)
+        || Math.round(200 + seededRand(i*13+2) * 300);
+      return `<tr class="member-row"><td>${r.routeId}</td><td>${r.collector} — ${r.phone}</td><td>${r.vehicle}</td><td>${r.places}</td><td>${r.time}</td><td>${r.membersCovered}</td><td>${Math.round(totalLiters)} L</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    }).join('');
+    detailShell('Collection Vehicle / Route Detail', 'Which vehicle collects from which members, and at what time', `
+      <table class="detail-table" id="routeTable">
+        <thead><tr><th>Route ID</th><th>Collector Name & Phone</th><th>Vehicle Type</th><th>Places / Villages Covered</th><th>Collection Time Slot</th><th>Members Assigned</th><th>Total Liters Collected</th><th>Action</th></tr></thead>
+        <tbody id="routeTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="rt-id" placeholder="e.g. RT-04"></td>
+            <td><input type="text" id="rt-collector" placeholder="Name — Phone"></td>
+            <td><input type="text" id="rt-vehicle" placeholder="Vehicle Type"></td>
+            <td><input type="text" id="rt-places" placeholder="Places Covered"></td>
+            <td><input type="text" id="rt-time" placeholder="e.g. 6–8 AM"></td>
+            <td><input type="number" id="rt-members" placeholder="0"></td>
+            <td><input type="number" id="rt-liters" placeholder="0"></td>
+            <td><button class="table-add-btn" onclick="addRouteRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addRouteRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const routeId = val('rt-id') || '—';
+    const collector = val('rt-collector') || '—';
+    const vehicle = val('rt-vehicle') || '—';
+    const places = val('rt-places') || '—';
+    const time = val('rt-time') || '—';
+    const membersAssigned = val('rt-members') || '0';
+    const liters = val('rt-liters') || '0';
+    const rowHTML = `<tr class="member-row"><td>${routeId}</td><td>${collector}</td><td>${vehicle}</td><td>${places}</td><td>${time}</td><td>${membersAssigned}</td><td>${liters} L</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#routeTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['rt-id','rt-collector','rt-vehicle','rt-places','rt-time','rt-members','rt-liters'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- PROCUREMENT: Adulteration / Rejection Record ----
+  const REJECTION_REASONS = ['Water Adulteration Suspected', 'Fat Below Threshold', 'Sour / Curdled Sample', 'Temperature Too High on Arrival'];
+  const QUALITY_STAFF = ['Field Officer — Datta Kale', 'Quality Inspector — Sneha Rane', 'Collection Supervisor — Vilas Powar'];
+  function renderRejectionDetail(){
+    const log = members.slice(0, 6).map((m, i) => {
+      const flagged = seededRand(i*19+7) > 0.55;
+      const reason = REJECTION_REASONS[Math.floor(seededRand(i*23+3) * REJECTION_REASONS.length)];
+      const date = `${(i%28)+1} ${MONTHS[i%12]} 2026`;
+      const action = flagged ? (seededRand(i*29+5) > 0.5 ? 'Batch Rejected' : 'Warning Issued') : 'No Issue';
+      const qtyRejected = flagged ? (2 + Math.floor(seededRand(i*31+9) * 12)) : 0;
+      const reportedBy = QUALITY_STAFF[Math.floor(seededRand(i*37+4) * QUALITY_STAFF.length)];
+      return { m, flagged, reason, date, action, qtyRejected, reportedBy };
+    }).filter(r => r.flagged);
+    const rows = log.map(r => `<tr class="member-row"><td>${r.date}</td><td>${r.m.memberId} — ${r.m.name}</td><td>${r.reason}</td><td>${r.qtyRejected} L</td><td>${r.action}</td><td>${r.reportedBy}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`).join('')
+      || `<tr><td colspan="7" style="text-align:center;color:#8a7a58;">No rejection entries logged.</td></tr>`;
+    detailShell('Adulteration / Rejection Record', 'Log of rejected or flagged milk batches, by member and reason', `
+      <div class="summary-cards">
+        <div class="summary-card"><div class="label">Flagged This Period</div><div class="value">${log.length}</div></div>
+        <div class="summary-card"><div class="label">Batches Rejected</div><div class="value">${log.filter(r=>r.action==='Batch Rejected').length}</div></div>
+      </div>
+      <table class="detail-table" id="rejectionTable">
+        <thead><tr><th>Date</th><th>Member</th><th>Reason</th><th>Quantity Rejected</th><th>Action Taken</th><th>Reported By</th><th>Action</th></tr></thead>
+        <tbody id="rejectionTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="rj-date" placeholder="e.g. 5 Aug 2026"></td>
+            <td><input type="text" id="rj-member" placeholder="Member ID — Name"></td>
+            <td>
+              <select id="rj-reason">
+                ${REJECTION_REASONS.map(r => `<option value="${r}">${r}</option>`).join('')}
+              </select>
+            </td>
+            <td><input type="number" id="rj-qty" placeholder="Liters"></td>
+            <td>
+              <select id="rj-action">
+                <option value="Batch Rejected">Batch Rejected</option>
+                <option value="Warning Issued">Warning Issued</option>
+              </select>
+            </td>
+            <td><input type="text" id="rj-reportedby" placeholder="Staff Name"></td>
+            <td><button class="table-add-btn" onclick="addRejectionRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addRejectionRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const date = val('rj-date') || '—';
+    const member = val('rj-member') || '—';
+    const reason = document.getElementById('rj-reason').value;
+    const qty = val('rj-qty') || '0';
+    const action = document.getElementById('rj-action').value;
+    const reportedBy = val('rj-reportedby') || '—';
+    const rowHTML = `<tr class="member-row"><td>${date}</td><td>${member}</td><td>${reason}</td><td>${qty} L</td><td>${action}</td><td>${reportedBy}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#rejectionTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['rj-date','rj-member','rj-qty','rj-reportedby'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- PROCESSING: Batch / Production Log ----
+  function renderBatchDetail(){
+    const cats = Object.keys(CATEGORY_META);
+    const rows = cats.map((cat, i) => {
+      const rawUsed = 300 + Math.floor(seededRand(i*31+2) * 700);
+      const yieldPct = (55 + seededRand(i*37+4) * 30).toFixed(1);
+      const output = Math.round(rawUsed * (yieldPct/100));
+      const batchId = 'BATCH-' + String(1024 + i);
+      const date = `${(i%28)+2} ${MONTHS[(i+3)%12]} 2026`;
+      const staffList = processingMembers[cat] || [];
+      const processedBy = staffList.length ? `${staffList[0].name} (Shift A)` : 'Plant Staff';
+      return `<tr class="member-row"><td>${batchId}</td><td>${date}</td><td>${cat}</td><td>${rawUsed} L</td><td>${output} ${CATEGORY_META[cat].unit || 'kg'}</td><td>${yieldPct}%</td><td>${processedBy}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    }).join('');
+    detailShell('Batch / Production Log', 'Which raw milk batch went into which product batch — for traceability', `
+      <table class="detail-table" id="batchTable">
+        <thead><tr><th>Batch ID</th><th>Date</th><th>Product Category</th><th>Raw Milk Used</th><th>Output Qty</th><th>Yield %</th><th>Processed By</th><th>Action</th></tr></thead>
+        <tbody id="batchTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="b-id" placeholder="e.g. BATCH-2001"></td>
+            <td><input type="text" id="b-date" placeholder="e.g. 5 Aug 2026"></td>
+            <td><input type="text" id="b-category" placeholder="Product Category"></td>
+            <td><input type="number" id="b-rawused" placeholder="Liters"></td>
+            <td><input type="text" id="b-output" placeholder="e.g. 120 kg"></td>
+            <td><input type="number" step="0.1" id="b-yield" placeholder="Yield %"></td>
+            <td><input type="text" id="b-processedby" placeholder="Staff Name"></td>
+            <td><button class="table-add-btn" onclick="addBatchRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addBatchRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const batchId = val('b-id') || '—';
+    const date = val('b-date') || '—';
+    const category = val('b-category') || '—';
+    const rawUsed = val('b-rawused') || '0';
+    const output = val('b-output') || '—';
+    const yieldPct = val('b-yield') || '—';
+    const processedBy = val('b-processedby') || '—';
+    const rowHTML = `<tr class="member-row"><td>${batchId}</td><td>${date}</td><td>${category}</td><td>${rawUsed} L</td><td>${output}</td><td>${yieldPct}%</td><td>${processedBy}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#batchTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['b-id','b-date','b-category','b-rawused','b-output','b-yield','b-processedby'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- PROCESSING: Machine / Equipment Detail ----
+  const PROCESSING_MACHINES = [
+    { id:'MCH-01', name:'Cream Separator Unit', category:'Toned Milk', capacity:'2000 L/hr', lastService:'12 Jun 2026', nextService:'12 Sep 2026', status:'Running' },
+    { id:'MCH-02', name:'Curd Setting Tank', category:'Curd', capacity:'800 L/batch', lastService:'02 Jul 2026', nextService:'02 Oct 2026', status:'Running' },
+    { id:'MCH-03', name:'Paneer Press Machine', category:'Paneer', capacity:'150 kg/batch', lastService:'20 May 2026', nextService:'20 Aug 2026', status:'Due for Service' },
+    { id:'MCH-04', name:'Ghee Boiling Kettle', category:'Ghee', capacity:'400 L/batch', lastService:'08 Jul 2026', nextService:'08 Oct 2026', status:'Running' },
+    { id:'MCH-05', name:'Butter Churner', category:'Butter', capacity:'250 kg/batch', lastService:'15 Apr 2026', nextService:'15 Jul 2026', status:'Overdue' },
+    { id:'MCH-06', name:'Cheese Aging Chamber', category:'Cheese', capacity:'600 kg capacity', lastService:'30 Jun 2026', nextService:'30 Sep 2026', status:'Running' },
+  ];
+  function renderMachineDetail(){
+    const rows = PROCESSING_MACHINES.map(mc => `<tr class="member-row"><td>${mc.id}</td><td>${mc.name}</td><td>${mc.category}</td><td>${mc.capacity}</td><td>${mc.lastService}</td><td>${mc.nextService}</td><td>${mc.status}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`).join('');
+    detailShell('Machine / Equipment Detail', 'Which processing unit each category uses, and its service schedule', `
+      <table class="detail-table" id="machineTable">
+        <thead><tr><th>Machine ID</th><th>Machine Name</th><th>Category / Product Line</th><th>Capacity</th><th>Last Serviced</th><th>Next Service Due</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="machineTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="mc-id" placeholder="e.g. MCH-07"></td>
+            <td><input type="text" id="mc-name" placeholder="Machine Name"></td>
+            <td><input type="text" id="mc-category" placeholder="Category"></td>
+            <td><input type="text" id="mc-capacity" placeholder="e.g. 500 L/hr"></td>
+            <td><input type="text" id="mc-lastservice" placeholder="e.g. 1 Aug 2026"></td>
+            <td><input type="text" id="mc-nextservice" placeholder="e.g. 1 Nov 2026"></td>
+            <td>
+              <select id="mc-status">
+                <option value="Running">Running</option>
+                <option value="Due for Service">Due for Service</option>
+                <option value="Overdue">Overdue</option>
+                <option value="Under Maintenance">Under Maintenance</option>
+              </select>
+            </td>
+            <td><button class="table-add-btn" onclick="addMachineRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addMachineRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const id_ = val('mc-id') || '—';
+    const name = val('mc-name') || '—';
+    const category = val('mc-category') || '—';
+    const capacity = val('mc-capacity') || '—';
+    const lastService = val('mc-lastservice') || '—';
+    const nextService = val('mc-nextservice') || '—';
+    const status = document.getElementById('mc-status').value;
+    const rowHTML = `<tr class="member-row"><td>${id_}</td><td>${name}</td><td>${category}</td><td>${capacity}</td><td>${lastService}</td><td>${nextService}</td><td>${status}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#machineTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['mc-id','mc-name','mc-category','mc-capacity','mc-lastservice','mc-nextservice'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- PROCESSING: Wastage / Loss Tracking ----
+  const WASTAGE_REASONS = ['Spillage During Transfer', 'Spoilage — Temperature Lapse', 'Equipment Cleaning Loss', 'Packaging Damage'];
+  function renderWastageDetail(){
+    const cats = Object.keys(CATEGORY_META);
+    const rows = cats.map((cat, i) => {
+      const rawIn = 300 + Math.floor(seededRand(i*41+6) * 700);
+      const expected = Math.round(rawIn * 0.85);
+      const actual = Math.round(expected * (0.88 + seededRand(i*43+8) * 0.1));
+      const loss = expected - actual;
+      const lossPct = ((loss / expected) * 100).toFixed(1);
+      const date = `${(i%28)+4} ${MONTHS[(i+6)%12]} 2026`;
+      const reason = WASTAGE_REASONS[Math.floor(seededRand(i*47+3) * WASTAGE_REASONS.length)];
+      return `<tr class="member-row"><td>${date}</td><td>${cat}</td><td>${rawIn} L</td><td>${expected} kg/L</td><td>${actual} kg/L</td><td>${loss} (${lossPct}%)</td><td>${reason}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    }).join('');
+    detailShell('Wastage / Loss Tracking', 'Milk lost in processing (spillage, spoilage) vs. supplied — real yield visibility', `
+      <table class="detail-table" id="wastageTable">
+        <thead><tr><th>Date</th><th>Category</th><th>Raw Input</th><th>Expected Output</th><th>Actual Output</th><th>Loss Qty & %</th><th>Reason</th><th>Action</th></tr></thead>
+        <tbody id="wastageTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="w-date" placeholder="e.g. 5 Aug 2026"></td>
+            <td><input type="text" id="w-category" placeholder="Category"></td>
+            <td><input type="number" id="w-rawin" placeholder="Raw Input (L)"></td>
+            <td><input type="number" id="w-expected" placeholder="Expected"></td>
+            <td><input type="number" id="w-actual" placeholder="Actual"></td>
+            <td><input type="text" id="w-loss" placeholder="auto"></td>
+            <td>
+              <select id="w-reason">
+                ${WASTAGE_REASONS.map(r => `<option value="${r}">${r}</option>`).join('')}
+              </select>
+            </td>
+            <td><button class="table-add-btn" onclick="addWastageRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addWastageRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const date = val('w-date') || '—';
+    const category = val('w-category') || '—';
+    const rawIn = val('w-rawin') || '0';
+    const expected = parseFloat(val('w-expected')) || 0;
+    const actual = parseFloat(val('w-actual')) || 0;
+    const lossInput = val('w-loss');
+    const loss = lossInput || (expected && actual ? `${expected-actual} (${(((expected-actual)/expected)*100).toFixed(1)}%)` : '0');
+    const reason = document.getElementById('w-reason').value;
+    const rowHTML = `<tr class="member-row"><td>${date}</td><td>${category}</td><td>${rawIn} L</td><td>${expected} kg/L</td><td>${actual} kg/L</td><td>${loss}</td><td>${reason}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#wastageTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['w-date','w-category','w-rawin','w-expected','w-actual','w-loss'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- DISTRIBUTION: Returns / Complaints Log ----
+  const RESOLUTIONS = ['Refund Issued', 'Product Replaced', 'Credit Note Issued', 'Open — Pending Review'];
+  function renderReturnsDetail(){
+    const allOutlets = [...DISTRIBUTION_OUTLETS.small.map(o=>({...o,cat:'small'})), ...DISTRIBUTION_OUTLETS.big.map(o=>({...o,cat:'big'}))];
+    const ISSUES = ['Spoiled Stock on Arrival', 'Quantity Shortfall', 'Late Delivery', 'Wrong Product Delivered'];
+    const rows = allOutlets.map((o, i) => {
+      const hasIssue = seededRand(i*17+3) > 0.5;
+      if(!hasIssue) return null;
+      const product = (o.productsPurchased && o.productsPurchased[0]) ? o.productsPurchased[0].product : 'Milk';
+      const issue = ISSUES[Math.floor(seededRand(i*19+5) * ISSUES.length)];
+      const qty = 2 + Math.floor(seededRand(i*23+7) * 18);
+      const resIdx = Math.floor(seededRand(i*29+9) * RESOLUTIONS.length);
+      const date = `${(i%28)+3} ${MONTHS[(i+5)%12]} 2026`;
+      return { html:`<tr class="member-row"><td>${date}</td><td>${o.storeName} (${o.memberId})</td><td>${product}</td><td>${qty} units</td><td>${issue}</td><td>${RESOLUTIONS[resIdx]}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`, open: resIdx === 3 };
+    }).filter(Boolean);
+    detailShell('Returns / Complaints Log', 'Store returns of spoiled stock or quantity complaints, per member', `
+      <div class="summary-cards">
+        <div class="summary-card"><div class="label">Total Logged</div><div class="value">${rows.length}</div></div>
+        <div class="summary-card"><div class="label">Open Cases</div><div class="value">${rows.filter(r=>r.open).length}</div></div>
+      </div>
+      <table class="detail-table" id="returnsTable">
+        <thead><tr><th>Date</th><th>Store / Member ID</th><th>Product</th><th>Quantity Returned</th><th>Reason</th><th>Resolution</th><th>Action</th></tr></thead>
+        <tbody id="returnsTableBody">${rows.map(r=>r.html).join('')}
+          <tr class="table-input-row">
+            <td><input type="text" id="ret-date" placeholder="e.g. 5 Aug 2026"></td>
+            <td><input type="text" id="ret-store" placeholder="Store (Member ID)"></td>
+            <td><input type="text" id="ret-product" placeholder="Product"></td>
+            <td><input type="number" id="ret-qty" placeholder="Qty"></td>
+            <td>
+              <select id="ret-issue">
+                ${ISSUES.map(r => `<option value="${r}">${r}</option>`).join('')}
+              </select>
+            </td>
+            <td>
+              <select id="ret-resolution">
+                ${RESOLUTIONS.map(r => `<option value="${r}">${r}</option>`).join('')}
+              </select>
+            </td>
+            <td><button class="table-add-btn" onclick="addReturnsRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addReturnsRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const date = val('ret-date') || '—';
+    const store = val('ret-store') || '—';
+    const product = val('ret-product') || '—';
+    const qty = val('ret-qty') || '0';
+    const issue = document.getElementById('ret-issue').value;
+    const resolution = document.getElementById('ret-resolution').value;
+    const rowHTML = `<tr class="member-row"><td>${date}</td><td>${store}</td><td>${product}</td><td>${qty} units</td><td>${issue}</td><td>${resolution}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#returnsTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['ret-date','ret-store','ret-product','ret-qty'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- DISTRIBUTION: Expiry / Shelf-Life Tracking ----
+  function renderExpiryDetail(){
+    const allOutlets = [...DISTRIBUTION_OUTLETS.small, ...DISTRIBUTION_OUTLETS.big];
+    const SHELF_PRODUCTS = [
+      { product:'Paneer', shelfDays:6 }, { product:'Curd', shelfDays:5 }, { product:'Butter', shelfDays:45 }
+    ];
+    const rows = allOutlets.slice(0, 8).map((o, i) => {
+      const sp = SHELF_PRODUCTS[i % SHELF_PRODUCTS.length];
+      const mfgOffset = 1 + Math.floor(seededRand(i*31+2) * sp.shelfDays);
+      const daysLeft = sp.shelfDays - mfgOffset;
+      const batchId = 'PB-' + (2000 + i);
+      const mfgDate = `${(i%28)+1} ${MONTHS[(i+2)%12]} 2026`;
+      const expDate = `${((i+mfgOffset)%28)+1} ${MONTHS[(i+2)%12]} 2026`;
+      const qtySupplied = 5 + Math.floor(seededRand(i*37+11) * 40);
+      const statusLabel = daysLeft <= 0 ? 'Expired' : daysLeft <= 1 ? 'Near-Expiry' : 'Fresh';
+      return `<tr class="member-row"><td>${batchId}</td><td>${sp.product}</td><td>${mfgDate}</td><td>${expDate}</td><td>${o.storeName} — ${qtySupplied} ${sp.product === 'Curd' || sp.product === 'Paneer' || sp.product === 'Butter' ? 'kg' : 'units'}</td><td style="${daysLeft<=1?'color:#c0392b;font-weight:700;':''}">${statusLabel}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    }).join('');
+    detailShell('Expiry / Shelf-Life Tracking', 'Batch expiry dates for paneer, curd and butter, tied to delivered stock', `
+      <table class="detail-table" id="expiryTable">
+        <thead><tr><th>Batch ID</th><th>Product</th><th>Manufacture Date</th><th>Expiry Date</th><th>Quantity Supplied (Store)</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="expiryTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="exp-batch" placeholder="e.g. PB-2050"></td>
+            <td><input type="text" id="exp-product" placeholder="Product"></td>
+            <td><input type="text" id="exp-mfg" placeholder="e.g. 5 Aug 2026"></td>
+            <td><input type="text" id="exp-exp" placeholder="e.g. 10 Aug 2026"></td>
+            <td><input type="text" id="exp-qty" placeholder="Store — qty"></td>
+            <td>
+              <select id="exp-status">
+                <option value="Fresh">Fresh</option>
+                <option value="Near-Expiry">Near-Expiry</option>
+                <option value="Expired">Expired</option>
+              </select>
+            </td>
+            <td><button class="table-add-btn" onclick="addExpiryRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addExpiryRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const batch = val('exp-batch') || '—';
+    const product = val('exp-product') || '—';
+    const mfg = val('exp-mfg') || '—';
+    const exp = val('exp-exp') || '—';
+    const qty = val('exp-qty') || '—';
+    const status = document.getElementById('exp-status').value;
+    const statusStyle = status !== 'Fresh' ? ' style="color:#c0392b;font-weight:700;"' : '';
+    const rowHTML = `<tr class="member-row"><td>${batch}</td><td>${product}</td><td>${mfg}</td><td>${exp}</td><td>${qty}</td><td${statusStyle}>${status}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#expiryTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['exp-batch','exp-product','exp-mfg','exp-exp','exp-qty'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- DISTRIBUTION: Order History (Past Months) ----
+  function renderOrderHistoryDetail(){
+    const allOutlets = [...DISTRIBUTION_OUTLETS.small.map(o=>({...o,cat:'small'})), ...DISTRIBUTION_OUTLETS.big.map(o=>({...o,cat:'big'}))];
+    const last6 = MONTHS.slice(0, 6);
+    let entries = [];
+    allOutlets.forEach((o, i) => {
+      const product = (o.productsPurchased && o.productsPurchased[0]) ? o.productsPurchased[0].product : 'Milk';
+      last6.forEach((mo, mi) => {
+        const qty = Math.round(o.monthlyQty * (0.75 + seededRand(i*47 + mi*3 + 1) * 0.5));
+        const amount = qty * o.rate;
+        const paid = seededRand(i*53 + mi*7 + 2) > 0.2;
+        entries.push({ mo, store: `${o.storeName} (${o.memberId})`, product, qty, unit: o.unit, amount, paid });
+      });
+    });
+    const rows = entries.map(e => `<tr class="member-row"><td>${e.mo}</td><td>${e.store}</td><td>${e.product}</td><td>${e.qty.toLocaleString('en-IN')} ${e.unit}</td><td>₹ ${e.amount.toLocaleString('en-IN')}</td><td>${e.paid ? 'Paid' : 'Pending'}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`).join('');
+    detailShell('Order History (Past Months)', 'Running month-wise order log per member — spot growth or decline in buying pattern', `
+      <table class="detail-table" id="orderHistoryTable">
+        <thead><tr><th>Month</th><th>Store / Member ID</th><th>Product</th><th>Quantity Ordered</th><th>Amount</th><th>Payment Status</th><th>Action</th></tr></thead>
+        <tbody id="orderHistoryTableBody">${rows}
+          <tr class="table-input-row">
+            <td><input type="text" id="oh-month" placeholder="e.g. Aug"></td>
+            <td><input type="text" id="oh-store" placeholder="Store (Member ID)"></td>
+            <td><input type="text" id="oh-product" placeholder="Product"></td>
+            <td><input type="text" id="oh-qty" placeholder="e.g. 500 L"></td>
+            <td><input type="number" id="oh-amount" placeholder="Amount ₹"></td>
+            <td>
+              <select id="oh-payment">
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </td>
+            <td><button class="table-add-btn" onclick="addOrderHistoryRow()">+ Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `);
+  }
+
+  function addOrderHistoryRow(){
+    const val = id => document.getElementById(id).value.trim();
+    const month = val('oh-month') || '—';
+    const store = val('oh-store') || '—';
+    const product = val('oh-product') || '—';
+    const qty = val('oh-qty') || '—';
+    const amount = val('oh-amount') || '0';
+    const payment = document.getElementById('oh-payment').value;
+    const amountFmt = isNaN(Number(amount)) ? amount : Number(amount).toLocaleString('en-IN');
+    const rowHTML = `<tr class="member-row"><td>${month}</td><td>${store}</td><td>${product}</td><td>${qty}</td><td>₹ ${amountFmt}</td><td>${payment}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
+    document.querySelector('#orderHistoryTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
+    ['oh-month','oh-store','oh-product','oh-qty','oh-amount'].forEach(id => document.getElementById(id).value = '');
+  }
+
+</script>
+
+</body>
+</html>
