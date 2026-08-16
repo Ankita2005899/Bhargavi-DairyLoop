@@ -420,6 +420,25 @@
   table.op-table td{ padding:10px 14px; border-top:1px solid rgba(28,53,82,0.08); color:var(--ink); }
   table.op-table tr:nth-child(even) td{ background:var(--cream-2); }
   .op-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:30px 0; }
+
+  /* ---------- payments tab (paid / unpaid breakdown) ---------- */
+  .op-pay-summary{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
+  .op-pay-stat{ flex:1; min-width:150px; background:var(--white); border-radius:12px; border:1px solid rgba(28,53,82,0.1); padding:14px 16px; box-shadow:0 6px 16px rgba(28,53,82,0.05); }
+  .op-pay-stat .ops-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-soft); font-weight:700; }
+  .op-pay-stat .ops-value{ font-family:'Fraunces', serif; font-weight:700; font-size:22px; color:var(--navy); margin-top:4px; }
+  .op-pay-stat.ops-warn .ops-value{ color:var(--brick); }
+  .op-pay-block{ background:var(--white); border-radius:14px; border:1px solid rgba(28,53,82,0.1); box-shadow:0 6px 16px rgba(28,53,82,0.05); margin-bottom:24px; overflow:hidden; }
+  .op-pay-block-head{ padding:14px 18px; font-family:'Fraunces', serif; font-weight:700; font-size:15px; color:var(--navy); background:var(--cream-2); border-bottom:1px solid rgba(28,53,82,0.08); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .op-pay-block-head.alert{ background:#fdece3; color:var(--brick); }
+  .op-pay-subhead{ padding:12px 18px 4px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-soft); }
+  .op-pay-status{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+  .op-pay-status.paid{ background:rgba(31,138,59,0.14); color:#1f8a3b; }
+  .op-pay-status.pending{ background:rgba(224,79,50,0.14); color:var(--brick); }
+  .op-dl-btn{ display:inline-flex; align-items:center; gap:4px; background:var(--navy); color:var(--cream); border:none; padding:5px 10px; border-radius:999px; font-size:11px; font-weight:600; cursor:pointer; }
+  .op-dl-btn:hover{ background:var(--navy-2); }
+  .op-pay-tabs-inner{ display:flex; gap:8px; padding:12px 18px 0; flex-wrap:wrap; }
+  .op-pay-tabs-inner button{ font-size:12px; font-weight:600; padding:7px 14px; border-radius:999px; background:var(--cream-2); color:var(--navy); }
+  .op-pay-tabs-inner button.active{ background:var(--brick); color:#fff; }
   @media(max-width:700px){
     .owner-panel-body{ padding:16px; }
     .owner-panel-bar, .owner-panel-tabs{ padding-left:16px; padding-right:16px; }
@@ -508,6 +527,7 @@
     <button onclick="switchOwnerTab('procurement', this)">🚜 Procurement</button>
     <button onclick="switchOwnerTab('processing', this)">🧑‍🍳 Creators (Processing)</button>
     <button onclick="switchOwnerTab('distribution', this)">🏬 Distributors</button>
+    <button onclick="switchOwnerTab('payments', this)">💰 Payments</button>
   </div>
   <div class="owner-panel-body" id="ownerPanelBody"></div>
 </div>
@@ -1062,7 +1082,184 @@
           ${opTable(['ID','Store','Contact Person','Place','Phone','Alt Phone','Address','Weekly Qty','Rate','Delivery Day','Slot','Outstanding'], rows)}
         `;
       }).join('') : '<div class="op-empty">Nothing here yet.</div>';
+    } else if(tab === 'payments'){
+      body.innerHTML = renderPaymentsTabHTML();
     }
+  }
+
+  // ---- Payments tab: paid / unpaid, across Procurement, Processing & -----
+  // ---- Distribution, plus screenshot/receipt download on paid rows ------
+  const MONTHS_OP = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  function opCurrentMonth(){ return MONTHS_OP[new Date().getMonth()]; }
+
+  function opDlIconSVG(){
+    return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  function opDownloadDataUrl(dataUrl, filename){
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function opDownloadTextReceipt(lines, filename){
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    opDownloadDataUrl(url, filename);
+    URL.revokeObjectURL(url);
+  }
+
+  // Downloads the uploaded payment screenshot for a procurement/processing
+  // member's current-month payment if one was uploaded in Studio; otherwise
+  // falls back to a generated text receipt so the button always does something.
+  function opDownloadMemberPayment(kind, memberId){
+    const list = kind === 'members' ? ownerData.procurement : ownerData.processing;
+    const m = list.find(x => x.memberId === memberId);
+    if(!m) return;
+    const year = m.currentYear || 2026;
+    const mo = opCurrentMonth();
+    const shot = (m.screenshots || {})[year + '-' + mo];
+    const safeName = (m.name || 'member').replace(/\s+/g,'_');
+    if(shot && shot.dataUrl){
+      const ext = (shot.fileName && shot.fileName.match(/\.\w+$/)) ? shot.fileName.match(/\.\w+$/)[0] : '.png';
+      opDownloadDataUrl(shot.dataUrl, `Screenshot_${safeName}_${mo}${year}${ext}`);
+    } else {
+      const txnId = (m.txnIds || {})[year + '-' + mo] || '—';
+      opDownloadTextReceipt([
+        'PAYMENT RECEIPT', '',
+        `Member: ${m.name}`, `Member ID: ${m.memberId}`,
+        `${kind === 'members' ? 'Place' : 'Role'}: ${kind === 'members' ? (m.place || '—') : (m.post || '—')}`,
+        `Month: ${mo} ${year}`, `Amount: ${m.payment || '—'}`,
+        `Transaction ID: ${txnId}`, `Status: Paid`, '',
+        'Issued by Bhargavi DairyLoop — Owner Section.'
+      ], `Receipt_${safeName}_${mo}${year}.txt`);
+    }
+  }
+
+  // Downloads the most recent paid week's screenshot for a distributor, or a
+  // text receipt if no screenshot was uploaded for that week.
+  function opDownloadDistPayment(memberId){
+    const o = ownerData.distribution.find(x => x.memberId === memberId);
+    if(!o) return;
+    const weekly = o.weekly || [];
+    let idx = -1;
+    for(let i = weekly.length - 1; i >= 0; i--){ if(weekly[i].paid){ idx = i; break; } }
+    const safeName = (o.storeName || 'distributor').replace(/\s+/g,'_');
+    const shot = idx >= 0 ? (o.weeklyShots || {})[idx] : null;
+    if(shot && shot.dataUrl){
+      const ext = (shot.fileName && shot.fileName.match(/\.\w+$/)) ? shot.fileName.match(/\.\w+$/)[0] : '.png';
+      opDownloadDataUrl(shot.dataUrl, `Screenshot_${safeName}_${weekly[idx].week || ('Week'+(idx+1))}${ext}`);
+    } else {
+      opDownloadTextReceipt([
+        'PAYMENT RECEIPT', '',
+        `Store: ${o.storeName}`, `Member ID: ${o.memberId}`, `Contact: ${o.contactPerson || '—'}`,
+        `Place: ${o.place || '—'}`, `Rate: ₹${o.rate || '—'} / ${o.unit || 'L'}`,
+        `Status: ${o.monthlyPaid ? 'Fully Paid (this month)' : 'Partially Paid'}`, '',
+        'Issued by Bhargavi DairyLoop — Owner Section.'
+      ], `Receipt_${safeName}.txt`);
+    }
+  }
+
+  function opPayRow(cells, extra){ return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`; }
+
+  function renderPaymentsTabHTML(){
+    const mo = opCurrentMonth();
+
+    // --- Procurement (farmers): paid vs unpaid for the current month ------
+    const proc = ownerData.procurement.map(m => {
+      const year = m.currentYear || 2026;
+      const paid = !!(m.paymentYears && m.paymentYears[year] && m.paymentYears[year][mo]);
+      return { m, paid, year };
+    });
+    const procPaid = proc.filter(r => r.paid);
+    const procUnpaid = proc.filter(r => !r.paid);
+
+    // --- Processing (creators): paid vs unpaid for the current month ------
+    const proc2 = ownerData.processing.map(m => {
+      const year = m.currentYear || 2026;
+      const paid = !!(m.paymentYears && m.paymentYears[year] && m.paymentYears[year][mo]);
+      return { m, paid, year };
+    });
+    const proc2Paid = proc2.filter(r => r.paid);
+    const proc2Unpaid = proc2.filter(r => !r.paid);
+
+    // --- Distribution: paid vs delayed --------------------------------------
+    const distPaid = ownerData.distribution.filter(o => o.monthlyPaid);
+    const distUnpaid = ownerData.distribution.filter(o => !o.monthlyPaid);
+    const totalOutstanding = distUnpaid.reduce((s,o) => s + (o.outstandingDue || 0), 0);
+
+    const summary = `
+      <div class="op-pay-summary">
+        <div class="op-pay-stat"><div class="ops-label">Procurement Paid</div><div class="ops-value">${procPaid.length}/${proc.length}</div></div>
+        <div class="op-pay-stat ops-warn"><div class="ops-label">Procurement Pending</div><div class="ops-value">${procUnpaid.length}</div></div>
+        <div class="op-pay-stat"><div class="ops-label">Processing Paid</div><div class="ops-value">${proc2Paid.length}/${proc2.length}</div></div>
+        <div class="op-pay-stat ops-warn"><div class="ops-label">Processing Pending</div><div class="ops-value">${proc2Unpaid.length}</div></div>
+        <div class="op-pay-stat"><div class="ops-label">Distributors Paid</div><div class="ops-value">${distPaid.length}/${ownerData.distribution.length}</div></div>
+        <div class="op-pay-stat ops-warn"><div class="ops-label">Distributor Dues</div><div class="ops-value">₹${totalOutstanding.toLocaleString('en-IN')}</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-soft);margin:-10px 0 20px;">Paid / Pending status shown is for <b>${mo}</b> (the current month). Every "Paid" row has a download button for its receipt or uploaded payment screenshot.</div>
+    `;
+
+    // --- Procurement block --------------------------------------------------
+    const procBlock = `
+      <div class="op-pay-block">
+        <div class="op-pay-block-head">🚜 Procurement — Farmer Payments (${mo})</div>
+        <div class="op-pay-subhead">✅ Paid<span class="op-count-pill">${procPaid.length}</span></div>
+        ${opTable(['ID','Name','Place','Phone','Amount','Status','Receipt'], procPaid.map(r => [
+          r.m.memberId, r.m.name, r.m.place || '—', r.m.phone || '—', r.m.payment || '—',
+          '<span class="op-pay-status paid">Paid</span>',
+          `<button class="op-dl-btn" onclick="opDownloadMemberPayment('members','${r.m.memberId}')">${opDlIconSVG()} Download</button>`
+        ]))}
+        <div class="op-pay-subhead" style="color:var(--brick);">⚠️ Raw material taken — payment still pending<span class="op-count-pill">${procUnpaid.length}</span></div>
+        ${opTable(['ID','Name','Place','Phone','Daily Liter','Amount Due','Status'], procUnpaid.map(r => [
+          r.m.memberId, r.m.name, r.m.place || '—', r.m.phone || '—', r.m.liter || '—', r.m.payment || '—',
+          '<span class="op-pay-status pending">Pending</span>'
+        ]))}
+      </div>
+    `;
+
+    // --- Processing block -----------------------------------------------
+    const procesBlock = `
+      <div class="op-pay-block">
+        <div class="op-pay-block-head">🧑‍🍳 Processing — Creator Payments (${mo})</div>
+        <div class="op-pay-subhead">✅ Paid<span class="op-count-pill">${proc2Paid.length}</span></div>
+        ${opTable(['ID','Name','Role','Phone','Amount','Status','Receipt'], proc2Paid.map(r => [
+          r.m.memberId, r.m.name, r.m.post || '—', r.m.phone || '—', r.m.payment || '—',
+          '<span class="op-pay-status paid">Paid</span>',
+          `<button class="op-dl-btn" onclick="opDownloadMemberPayment('processingMembers','${r.m.memberId}')">${opDlIconSVG()} Download</button>`
+        ]))}
+        <div class="op-pay-subhead" style="color:var(--brick);">⏳ Payment pending<span class="op-count-pill">${proc2Unpaid.length}</span></div>
+        ${opTable(['ID','Name','Role','Phone','Amount Due','Status'], proc2Unpaid.map(r => [
+          r.m.memberId, r.m.name, r.m.post || '—', r.m.phone || '—', r.m.payment || '—',
+          '<span class="op-pay-status pending">Pending</span>'
+        ]))}
+      </div>
+    `;
+
+    // --- Distribution block (delayed = distributor hasn't paid Bhargavi yet) ---
+    const distBlock = `
+      <div class="op-pay-block">
+        <div class="op-pay-block-head">🏬 Distribution — Outlet Payments (this month)</div>
+        <div class="op-pay-subhead">✅ Paid in full<span class="op-count-pill">${distPaid.length}</span></div>
+        ${opTable(['ID','Store','Contact','Place','Rate','Status','Receipt'], distPaid.map(o => [
+          o.memberId, o.storeName, o.contactPerson || '—', o.place || '—', o.rate ? '₹'+o.rate+'/'+o.unit : '—',
+          '<span class="op-pay-status paid">Paid</span>',
+          `<button class="op-dl-btn" onclick="opDownloadDistPayment('${o.memberId}')">${opDlIconSVG()} Download</button>`
+        ]))}
+        <div class="op-pay-subhead" style="color:var(--brick);">⏳ Payment delayed to Bhargavi DairyLoop<span class="op-count-pill">${distUnpaid.length}</span></div>
+        ${opTable(['ID','Store','Contact','Place','Phone','Outstanding Due','Status'], distUnpaid.map(o => [
+          o.memberId, o.storeName, o.contactPerson || '—', o.place || '—', o.phone || '—',
+          o.outstandingDue ? '₹'+o.outstandingDue.toLocaleString('en-IN') : '₹0',
+          '<span class="op-pay-status pending">Delayed</span>'
+        ]))}
+      </div>
+    `;
+
+    return summary + procBlock + procesBlock + distBlock;
   }
 
   function getOrders(){ return ORDERS_CACHE; }
