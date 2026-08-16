@@ -647,6 +647,26 @@
   .dtrack-store-card .dsc-name{ font-size:15px; font-weight:700; color:#3E3324; }
   .dtrack-store-card .dsc-sub{ font-size:12.5px; color:#8a7a58; margin-top:2px; }
 
+  /* --- monthly per-day green-tick delivery tracker --- */
+  .month-cal-note{ font-size:12px; color:#8a7a58; margin-bottom:12px; font-style:italic; }
+  .month-cal{ background:#fff; border:1px solid #e2d9c4; border-radius:8px; padding:16px 18px 20px; }
+  .month-cal-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; }
+  .month-cal-headrow{ margin-bottom:8px; }
+  .month-cal-weekday-label{ text-align:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#8a7a58; }
+  .month-cal-day{ position:relative; aspect-ratio:1/1; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f7f3e8; border:1px solid #eee2c8; }
+  .month-cal-day.empty{ background:transparent; border:none; }
+  .month-cal-day.off{ opacity:0.45; }
+  .month-cal-day.pending-day{ background:#fbf6ea; border-color:#cbbf9e; }
+  .month-cal-day.tick{ background:#e4f5e8; border-color:#1f8a3b; }
+  .month-cal-day.today{ box-shadow:0 0 0 2px #6E9BE0; }
+  .month-cal-daynum{ font-size:11.5px; color:#3E3324; font-weight:600; }
+  .month-cal-tick{ color:#1f8a3b; font-size:15px; font-weight:700; line-height:1; margin-top:2px; }
+  .month-cal-summary{ font-size:12.5px; color:#3E3324; font-weight:700; margin-top:12px; }
+  @media (max-width: 860px){
+    .month-cal-daynum{ font-size:10px; }
+    .month-cal-tick{ font-size:12px; }
+  }
+
   @media (max-width: 860px){
     .delivery-chain{ flex-direction:column; align-items:stretch; padding-bottom:6px; }
     .chain-step{ flex-direction:row; text-align:left; align-items:flex-start; padding:14px 0; min-width:0; }
@@ -2205,6 +2225,67 @@ Issued by Processing Team.`;
     return { steps, totalMinutes: total };
   }
 
+  // Turns a delivery-day label like "Mon, Wed, Fri" or "Daily (Mon–Sat)" into
+  // a set of JS weekday numbers (0=Sun..6=Sat) so we know which calendar days
+  // are scheduled delivery days for that outlet.
+  function parseDeliveryDaySet(str){
+    const map = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+    if(str.startsWith('Daily')){
+      return str.includes('Sun') ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6];
+    }
+    return str.split(',').map(s => map[s.trim()]).filter(v => v !== undefined);
+  }
+
+  // Builds this calendar month's per-day tick data for one outlet, always
+  // computed off the real current date — so a day flips from "scheduled" to
+  // "delivered ✓" on its own each day, with no stored/manual state, and this
+  // runs the same way for whichever outlet/user is currently selected.
+  function buildMonthlyTickCalendar(o){
+    const daySet = parseDeliveryDaySet(o.deliveryDay);
+    const today = new Date();
+    const year = today.getFullYear(), month = today.getMonth(), todayDate = today.getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startWeekday = new Date(year, month, 1).getDay();
+
+    const cells = [];
+    for(let i = 0; i < startWeekday; i++) cells.push(null);
+    let deliveredCount = 0, scheduledCount = 0;
+    for(let d = 1; d <= daysInMonth; d++){
+      const weekday = new Date(year, month, d).getDay();
+      const scheduled = daySet.includes(weekday);
+      const delivered = scheduled && d <= todayDate;
+      if(scheduled) scheduledCount++;
+      if(delivered) deliveredCount++;
+      cells.push({ day: d, scheduled, delivered, isToday: d === todayDate });
+    }
+    const monthLabel = today.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    return { cells, monthLabel, deliveredCount, scheduledCount };
+  }
+
+  function renderMonthTickCalendarHtml(o){
+    const cal = buildMonthlyTickCalendar(o);
+    const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+      .map(d => `<div class="month-cal-weekday-label">${d}</div>`).join('');
+    const dayCells = cal.cells.map(c => {
+      if(!c) return `<div class="month-cal-day empty"></div>`;
+      let cls = 'month-cal-day';
+      if(c.delivered) cls += ' tick';
+      else if(c.scheduled) cls += ' pending-day';
+      else cls += ' off';
+      if(c.isToday) cls += ' today';
+      return `<div class="${cls}"><span class="month-cal-daynum">${c.day}</span>${c.delivered ? '<span class="month-cal-tick">&#10004;</span>' : ''}</div>`;
+    }).join('');
+    return `
+      <div class="expand-title" style="margin-top:28px;">Monthly Delivery Tracker — ${cal.monthLabel}</div>
+      <div class="month-cal-note">One green tick per day this outlet was delivered to (schedule: ${o.deliveryDay}). Refreshes automatically every day — no manual update needed.</div>
+      <div class="month-cal">
+        <div class="month-cal-grid month-cal-headrow">${dayHeaders}</div>
+        <div class="month-cal-grid">${dayCells}</div>
+      </div>
+      <div class="month-cal-summary">${cal.deliveredCount} of ${cal.scheduledCount} scheduled deliveries ticked off so far this month</div>
+    `;
+  }
+
   function getAllDeliveryAssignments(personId){
     const result = [];
     Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
@@ -2632,6 +2713,7 @@ Issued by Processing Team.`;
       </div>
       <div class="expand-title">Delivery Journey</div>
       <div class="delivery-chain">${stepsHtml}</div>
+      ${renderMonthTickCalendarHtml(o)}
     `;
   }
 
