@@ -936,7 +936,7 @@
   async function submitOwnerPassword(){
     const input = document.getElementById('ownerPassInput');
     const msgEl = document.getElementById('ownerPassMsg');
-    const entered = input.value;
+    const entered = input.value.trim();
 
     if(entered === OWNER_PASSWORD){
       msgEl.classList.add('ok');
