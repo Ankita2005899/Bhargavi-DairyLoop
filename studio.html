@@ -3018,6 +3018,47 @@ Issued by Processing Team.`;
     return null;
   }
 
+  // Same idea as studioFindPersonById but partial / as-you-type: matches
+  // anywhere in the ID or name and returns every match (capped), so the
+  // Manage Studio bar can show a live dropdown of candidates.
+  function studioFindPeopleByQuery(idRaw, limit){
+    const q = (idRaw || '').trim().toLowerCase();
+    const out = [];
+    if(!q) return out;
+    const cap = limit || 8;
+
+    members.forEach((m, procIdx) => {
+      if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
+        out.push({ name: m.name, sub: `${m.memberId} — Procurement Member`, tag: 'Procurement', action: () => goToProcMemberDetail(procIdx) });
+      }
+    });
+
+    Object.keys(processingMembers).forEach(cat => {
+      processingMembers[cat].forEach((m, idx) => {
+        if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
+          const slug = cat.replace(/\s+/g, '-').toLowerCase();
+          out.push({ name: m.name, sub: `${m.memberId} — Processing (${cat})`, tag: 'Processing', action: () => goToProcessingMemberDetail(slug, idx) });
+        }
+      });
+    });
+
+    Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
+      DISTRIBUTION_OUTLETS[cat].forEach((o, idx) => {
+        if((o.memberId || '').toLowerCase().includes(q) || (o.contactPerson || '').toLowerCase().includes(q) || (o.storeName || '').toLowerCase().includes(q)){
+          out.push({ name: o.contactPerson || o.storeName, sub: `${o.memberId} — ${o.storeName}`, tag: 'Distributor', action: () => goToDistMemberDetail(cat, idx) });
+        }
+      });
+    });
+
+    DELIVERY_PERSONS.forEach(p => {
+      if((p.id || '').toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q)){
+        out.push({ name: p.name, sub: `${p.id} — ${p.vehicle}`, tag: 'Delivery', action: () => goToDeliveryTracking(p.id) });
+      }
+    });
+
+    return out.slice(0, cap);
+  }
+
   let _studioSearchAction = null;
   function runStudioSearch(providedVal){
     const inputEl = document.getElementById('studioSearchInput');

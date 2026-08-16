@@ -116,12 +116,12 @@
   .float-badge .dot{ width:9px; height:9px; border-radius:50%; background:#4CAF6D; box-shadow:0 0 0 4px rgba(76,175,109,0.2); }
 
   /* ---------- category marquee ---------- */
-  .cat-section{ padding:64px 0 10px; }
+  .cat-section{ padding:64px 0; }
   .cat-head{ text-align:center; margin-bottom:34px; }
   .cat-head h2{ font-size:clamp(26px,3vw,36px); color:var(--navy); margin-top:10px; }
   .cat-head p{ color:var(--ink-soft); margin-top:10px; max-width:52ch; margin-inline:auto; }
   .marquee-mask{ overflow:hidden; -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
-  .marquee-track{ display:flex; gap:22px; width:max-content; animation:scrollCats 26s linear infinite; padding:6px 0 30px; }
+  .marquee-track{ display:flex; gap:22px; width:max-content; animation:scrollCats 26s linear infinite; padding:14px 0; }
   .marquee-track:hover{ animation-play-state:paused; }
   @keyframes scrollCats{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
   .cat-chip{
@@ -298,7 +298,7 @@
   .studio-bar .st-title{ font-family:'Fraunces', serif; font-weight:700; font-size:15px; display:flex; align-items:center; gap:10px; }
   .studio-bar button{ background:var(--brick); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; }
   .studio-bar button:hover{ background:var(--brick-2); }
-  .studio-bar-search{ display:flex; align-items:center; gap:8px; flex:1 1 260px; max-width:380px; }
+  .studio-bar-search{ display:flex; align-items:center; gap:8px; flex:1 1 260px; max-width:380px; position:relative; }
   .studio-bar-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-left:auto; }
   .studio-bar-actions button{ background:rgba(244,239,230,0.12); padding:8px 14px; font-size:12.5px; }
   .studio-bar-actions button:hover{ background:rgba(244,239,230,0.22); }
@@ -424,6 +424,8 @@
 
   .op-bar-search{ display:flex; align-items:center; gap:8px; flex:1 1 260px; max-width:380px; }
   .op-bar-actions{ display:flex; align-items:center; gap:10px; margin-left:auto; flex-wrap:wrap; }
+  .op-search-inputwrap, .studio-search-inputwrap{ position:relative; flex:1 1 200px; min-width:160px; }
+  .op-search-inputwrap .op-search-input, .studio-search-inputwrap .op-search-input{ width:100%; }
   .op-search-input{
     flex:1 1 200px; min-width:160px; padding:10px 14px; border-radius:999px; border:none; font-size:13.5px;
     background:rgba(244,239,230,0.14); color:var(--cream); font-family:inherit;
@@ -432,6 +434,22 @@
   .op-search-input:focus{ outline:none; background:rgba(244,239,230,0.22); }
   .op-search-btn{ background:var(--gold); color:var(--navy-3); font-weight:700; font-size:13px; padding:10px 18px; border-radius:999px; white-space:nowrap; }
   .op-search-btn:hover{ filter:brightness(1.06); }
+  .op-search-dropdown{
+    position:absolute; top:calc(100% + 8px); left:0; right:0; background:var(--white); border-radius:14px;
+    box-shadow:var(--shadow); overflow-y:auto; max-height:340px; z-index:20; display:none;
+  }
+  .op-search-dropdown.open{ display:block; }
+  .op-search-dropdown-item{
+    display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer;
+    border-bottom:1px solid rgba(28,53,82,0.07); text-align:left;
+  }
+  .op-search-dropdown-item:last-child{ border-bottom:none; }
+  .op-search-dropdown-item:hover, .op-search-dropdown-item.active{ background:rgba(28,53,82,0.06); }
+  .op-search-dropdown-avatar{ width:38px; height:38px; font-size:13px; flex-shrink:0; }
+  .op-search-dropdown-name{ font-family:'Fraunces', serif; font-weight:700; font-size:13.5px; color:var(--navy); }
+  .op-search-dropdown-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .op-search-dropdown-tag{ margin-left:auto; font-size:10.5px; font-weight:700; color:var(--gold-2,var(--gold)); text-transform:uppercase; letter-spacing:0.03em; flex-shrink:0; }
+  .op-search-dropdown-empty{ padding:14px 16px; font-size:13px; color:var(--ink-soft); font-style:italic; }
   #ownerSearchResult{ padding:0 26px; background:var(--cream); }
   #ownerSearchResult:empty{ padding:0; }
   .op-search-card{
@@ -596,7 +614,10 @@
   <div class="owner-panel-bar">
     <div class="op-bar-title">👑 Owner Section — Everyone, at a glance</div>
     <div class="op-bar-search">
-      <input type="text" id="ownerSearchInput" class="op-search-input" placeholder="Search by ID (e.g. MEM003, PRC002, DSTS004) or email" onkeydown="if(event.key==='Enter') runOwnerSearch()">
+      <div class="op-search-inputwrap">
+        <input type="text" id="ownerSearchInput" class="op-search-input" placeholder="Search by ID, name or email" autocomplete="off" oninput="renderOwnerSearchDropdown()" onkeydown="if(event.key==='Enter') runOwnerSearch(); if(event.key==='Escape') closeOwnerSearchDropdown();">
+        <div class="op-search-dropdown" id="ownerSearchDropdown"></div>
+      </div>
       <button class="op-search-btn" onclick="runOwnerSearch()">🔍 Search</button>
     </div>
     <div class="op-bar-actions">
@@ -799,7 +820,10 @@
   <div class="studio-bar">
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
     <div class="studio-bar-search">
-      <input type="text" id="studioBarSearchInput" class="op-search-input" placeholder="Search by Member ID (e.g. MEM003, PRC002, DSTS004, DLV001)" onkeydown="if(event.key==='Enter') runStudioBarSearch()">
+      <div class="studio-search-inputwrap">
+        <input type="text" id="studioBarSearchInput" class="op-search-input" placeholder="Search by member ID or name" autocomplete="off" oninput="renderStudioBarSearchDropdown()" onkeydown="if(event.key==='Enter') runStudioBarSearch(); if(event.key==='Escape') closeStudioBarSearchDropdown();">
+        <div class="op-search-dropdown" id="studioBarSearchDropdown"></div>
+      </div>
       <button class="op-search-btn" onclick="runStudioBarSearch()">🔍 Search</button>
     </div>
     <div class="studio-bar-actions">
@@ -1227,6 +1251,7 @@
     document.getElementById('ownerPanelOverlay').classList.remove('show');
     document.getElementById('ownerSearchInput').value = '';
     document.getElementById('ownerSearchResult').innerHTML = '';
+    closeOwnerSearchDropdown();
   }
 
   function initials(name){ return (name || '?').trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase(); }
@@ -1254,10 +1279,91 @@
     return null;
   }
 
+  // Same lookup as opFindPersonById but partial / as-you-type: matches
+  // anywhere in the ID, name or email, and returns every match (capped)
+  // instead of stopping at the first, so the dropdown can list them all.
+  function opFindPeopleByQuery(idRaw, limit){
+    const q = (idRaw || '').trim().toLowerCase();
+    const out = [];
+    if(!q) return out;
+    const cap = limit || 8;
+
+    ownerData.accounts.forEach(a => {
+      if((a.email || '').toLowerCase().includes(q) || (a.name || '').toLowerCase().includes(q)){
+        out.push({ type: 'accounts', name: a.name || a.email, sub: a.email, tabLabel: 'Site Accounts', tag: 'Account' });
+      }
+    });
+    ownerData.procurement.forEach(m => {
+      if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
+        out.push({ type: 'procurement', name: m.name, sub: `${m.memberId} — Procurement Member`, tabLabel: 'Procurement', tag: 'Procurement' });
+      }
+    });
+    ownerData.processing.forEach(m => {
+      if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
+        out.push({ type: 'processing', name: m.name, sub: `${m.memberId} — Processing (${m.category})`, tabLabel: 'Creators (Processing)', tag: 'Processing' });
+      }
+    });
+    ownerData.distribution.forEach(o => {
+      if((o.memberId || '').toLowerCase().includes(q) || (o.contactPerson || '').toLowerCase().includes(q) || (o.storeName || '').toLowerCase().includes(q)){
+        out.push({ type: 'distribution', name: o.contactPerson || o.storeName, sub: `${o.memberId} — ${o.storeName}`, tabLabel: 'Distributors', tag: 'Distributor' });
+      }
+    });
+
+    return out.slice(0, cap);
+  }
+
+  // Renders the live "as you type" dropdown under the Owner Section
+  // search box. Each row shows the person's avatar, name and ID/email so
+  // the owner can spot the right match before pressing Search.
+  function renderOwnerSearchDropdown(){
+    const input = document.getElementById('ownerSearchInput');
+    const dd = document.getElementById('ownerSearchDropdown');
+    const q = input.value;
+    if(!q.trim()){ dd.classList.remove('open'); dd.innerHTML = ''; return; }
+
+    const matches = opFindPeopleByQuery(q);
+    if(!matches.length){
+      dd.innerHTML = `<div class="op-search-dropdown-empty">No user found for "${opEsc(q.trim())}".</div>`;
+      dd.classList.add('open');
+      return;
+    }
+    dd.innerHTML = matches.map((r, i) => `
+      <button type="button" class="op-search-dropdown-item" onclick="opPickSearchResult(${i})">
+        <div class="avatar op-search-dropdown-avatar">${initials(r.name)}</div>
+        <div>
+          <div class="op-search-dropdown-name">${opEsc(r.name)}</div>
+          <div class="op-search-dropdown-sub">${opEsc(r.sub)}</div>
+        </div>
+        <div class="op-search-dropdown-tag">${opEsc(r.tag)}</div>
+      </button>
+    `).join('');
+    dd.classList.add('open');
+    window._ownerSearchMatches = matches;
+  }
+
+  function opPickSearchResult(i){
+    const r = (window._ownerSearchMatches || [])[i];
+    if(!r) return;
+    document.getElementById('ownerSearchInput').value = r.name;
+    closeOwnerSearchDropdown();
+    opJumpToOwnerTab(r.type);
+  }
+
+  function closeOwnerSearchDropdown(){
+    const dd = document.getElementById('ownerSearchDropdown');
+    if(dd){ dd.classList.remove('open'); }
+  }
+
+  document.addEventListener('click', e => {
+    const wrap = document.querySelector('.op-search-inputwrap');
+    if(wrap && !wrap.contains(e.target)) closeOwnerSearchDropdown();
+  });
+
   function runOwnerSearch(){
     const val = document.getElementById('ownerSearchInput').value;
     const area = document.getElementById('ownerSearchResult');
     const result = opFindPersonById(val);
+    closeOwnerSearchDropdown();
     if(!result){
       area.innerHTML = val.trim() ? `<div class="op-search-empty">No user found for ID "${opEsc(val.trim())}".</div>` : '';
       return;
@@ -2177,7 +2283,64 @@
     }catch(err){
       console.error('Could not reach the studio search box:', err);
     }
+    closeStudioBarSearchDropdown();
   }
+
+  // Live "as you type" dropdown for the Manage Studio bar, mirroring
+  // the Owner Section dropdown but sourced from studio.html's data via
+  // the iframe (studioFindPeopleByQuery), since Manage Studio's member
+  // records live inside studio.html, not in this page.
+  function renderStudioBarSearchDropdown(){
+    const input = document.getElementById('studioBarSearchInput');
+    const dd = document.getElementById('studioBarSearchDropdown');
+    const q = input.value;
+    if(!q.trim()){ dd.classList.remove('open'); dd.innerHTML = ''; return; }
+
+    const frame = document.getElementById('studioFrame');
+    let matches = [];
+    try{
+      const fWin = frame && frame.contentWindow;
+      if(fWin && typeof fWin.studioFindPeopleByQuery === 'function'){
+        matches = fWin.studioFindPeopleByQuery(q);
+      }
+    }catch(err){ console.error('Could not search inside Manage Studio:', err); }
+
+    if(!matches.length){
+      dd.innerHTML = `<div class="op-search-dropdown-empty">No member found for "${opEsc(q.trim())}".</div>`;
+      dd.classList.add('open');
+      return;
+    }
+    dd.innerHTML = matches.map((r, i) => `
+      <button type="button" class="op-search-dropdown-item" onclick="studioPickSearchResult(${i})">
+        <div class="avatar op-search-dropdown-avatar">${initials(r.name)}</div>
+        <div>
+          <div class="op-search-dropdown-name">${opEsc(r.name)}</div>
+          <div class="op-search-dropdown-sub">${opEsc(r.sub)}</div>
+        </div>
+        <div class="op-search-dropdown-tag">${opEsc(r.tag)}</div>
+      </button>
+    `).join('');
+    dd.classList.add('open');
+    window._studioSearchMatches = matches;
+  }
+
+  function studioPickSearchResult(i){
+    const r = (window._studioSearchMatches || [])[i];
+    if(!r) return;
+    document.getElementById('studioBarSearchInput').value = r.name;
+    closeStudioBarSearchDropdown();
+    if(typeof r.action === 'function') r.action();
+  }
+
+  function closeStudioBarSearchDropdown(){
+    const dd = document.getElementById('studioBarSearchDropdown');
+    if(dd){ dd.classList.remove('open'); }
+  }
+
+  document.addEventListener('click', e => {
+    const wrap = document.querySelector('.studio-search-inputwrap');
+    if(wrap && !wrap.contains(e.target)) closeStudioBarSearchDropdown();
+  });
   window.addEventListener('message', e => { if(e.data === 'closeStudio') closeStudio(); });
 
   function setupReveal(){
