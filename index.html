@@ -486,7 +486,10 @@
     <div class="op-icon">👑</div>
     <div class="op-title">Owner Section</div>
     <div class="op-sub" id="ownerPassSub">Enter the owner password to continue</div>
-    <input type="password" id="ownerPassInput" placeholder="Owner password" autocomplete="off" onkeydown="if(event.key==='Enter') submitOwnerPassword()">
+    <div style="position:relative;">
+      <input type="password" id="ownerPassInput" placeholder="Owner password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="padding-right:38px;" onkeydown="if(event.key==='Enter') submitOwnerPassword()">
+      <button type="button" onclick="toggleOwnerPassVisibility()" id="ownerPassToggle" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; font-size:15px; cursor:pointer; color:var(--ink-soft); padding:4px;">👁</button>
+    </div>
     <div class="owner-pass-msg" id="ownerPassMsg"></div>
     <div class="owner-pass-actions">
       <button class="op-cancel" onclick="closeOwnerPasswordModal()">Cancel</button>
@@ -920,10 +923,18 @@
   }
 
   // ---- Owner Section: password-gated, 3 attempts -------------------------
+  function toggleOwnerPassVisibility(){
+    const input = document.getElementById('ownerPassInput');
+    const btn = document.getElementById('ownerPassToggle');
+    if(input.type === 'password'){ input.type = 'text'; btn.textContent = '🙈'; }
+    else{ input.type = 'password'; btn.textContent = '👁'; }
+  }
   function openOwnerSection(){
     if(!currentAccount){ openInfoModal('Owner Section', '<div class="info-empty">Please log in first.</div>'); return; }
     ownerAttemptsLeft = OWNER_MAX_ATTEMPTS;
     document.getElementById('ownerPassInput').value = '';
+    document.getElementById('ownerPassInput').type = 'password';
+    document.getElementById('ownerPassToggle').textContent = '👁';
     document.getElementById('ownerPassMsg').textContent = '';
     document.getElementById('ownerPassMsg').classList.remove('ok');
     document.getElementById('ownerPassSub').textContent = 'Enter the owner password to continue';
