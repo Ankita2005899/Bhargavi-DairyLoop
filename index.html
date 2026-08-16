@@ -502,8 +502,13 @@
     { name:'Cream & Specialty', icon:'🍦', desc:'Thick fresh cream for desserts and coffee.' }
   ];
 
+  // The Razorpay Key ID is never written into this file — it's fetched from
+  // the server, which reads it from the RAZORPAY_KEY_ID environment
+  // variable. Until that fetch resolves, RAZORPAY_KEY stays empty and
+  // buyNow() will politely say the gateway isn't ready yet.
   const ORDERS_KEY = 'bhargaviDairyOrders';
-  const RAZORPAY_KEY = 'rzp_test_1DP5mmOlF5G5ag';
+  let RAZORPAY_KEY = '';
+  fetch('/api/config').then(r => r.json()).then(cfg => { RAZORPAY_KEY = cfg.razorpayKeyId || ''; }).catch(() => {});
 
   // ---- Backend-synced order storage -------------------------------------
   // The server persists every order to data/orders.xml. localStorage is kept
@@ -644,6 +649,10 @@
     if(!p) return;
     if(typeof Razorpay === 'undefined'){
       showToast('Payment gateway failed to load. Check your connection.', false);
+      return;
+    }
+    if(!RAZORPAY_KEY){
+      showToast('Payment gateway is still starting up — please try again in a second.', false);
       return;
     }
     const amount = p.price * qty;

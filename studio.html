@@ -1353,7 +1353,10 @@ Issued by Procurement Side.`;
     `;
   }
 
-  const RAZORPAY_KEY = 'rzp_test_1DP5mmOlF5G5ag'; // Razorpay sandbox/test key — replace with your live key_id
+  // The Razorpay Key ID is never written into this file — it's fetched from
+  // the server (RAZORPAY_KEY_ID environment variable) once at load time.
+  let RAZORPAY_KEY = '';
+  fetch('/api/config').then(r => r.json()).then(cfg => { RAZORPAY_KEY = cfg.razorpayKeyId || ''; }).catch(() => {});
 
   function renderPayment(){
     detailInner.innerHTML = `
@@ -1496,6 +1499,10 @@ Issued by Procurement Side.`;
 
     if(typeof Razorpay === 'undefined'){
       alert('Razorpay checkout could not load (no network access to checkout.razorpay.com). Reference ID generated: ' + txnId);
+      return;
+    }
+    if(!RAZORPAY_KEY){
+      alert('Payment gateway is still starting up — please try again in a second.');
       return;
     }
 
@@ -3187,6 +3194,10 @@ Issued by Distribution Side.`;
 
     if(typeof Razorpay === 'undefined'){
       statusEl.innerHTML = `<div class="dist-payment-msg error">Razorpay checkout could not load (check your connection). Try Cash/Bank Transfer, or retry.</div>`;
+      return;
+    }
+    if(!RAZORPAY_KEY){
+      statusEl.innerHTML = `<div class="dist-payment-msg error">Payment gateway is still starting up — please try again in a second.</div>`;
       return;
     }
 

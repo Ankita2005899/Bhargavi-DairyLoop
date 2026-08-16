@@ -159,6 +159,22 @@ def delete_item(collection, item_id):
 # "unverified" instead of failing, so the test flow still works end to end.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Public config for the frontend
+#
+# Only the Key ID (never the secret) is exposed here — it's what Razorpay's
+# checkout.js needs in the browser to open the payment widget. Reading it
+# from an environment variable at request time means it never has to be
+# typed into index.html or studio.html.
+# ---------------------------------------------------------------------------
+
+@app.route("/api/config", methods=["GET"])
+def public_config():
+    return jsonify({
+        "razorpayKeyId": os.environ.get("RAZORPAY_KEY_ID", "")
+    })
+
+
 @app.route("/api/razorpay/verify", methods=["POST"])
 def razorpay_verify():
     data = request.get_json(force=True, silent=True) or {}
