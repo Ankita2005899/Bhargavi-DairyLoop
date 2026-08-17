@@ -295,21 +295,21 @@
   .studio-bar-actions button.close-studio-btn{ background:var(--brick); }
   .studio-bar-actions button.close-studio-btn:hover{ background:var(--brick-2); }
   /* ---------- Member ID search (top bar + Owner Section bar) ---------- */
-  .mstudio-search{ position:relative; display:flex; align-items:center; gap:6px; }
-  .mstudio-search input{ background:rgba(244,239,230,0.12); border:1px solid rgba(244,239,230,0.28); color:var(--cream); font-size:12.5px; padding:8px 12px; border-radius:999px; width:150px; outline:none; }
-  .mstudio-search input::placeholder{ color:rgba(244,239,230,0.55); }
-  .mstudio-search input:focus{ background:rgba(244,239,230,0.2); border-color:rgba(244,239,230,0.5); }
-  .mstudio-search button.mstudio-search-btn{ background:rgba(244,239,230,0.12); color:var(--cream); font-size:12.5px; padding:8px 14px; }
-  .mstudio-search button.mstudio-search-btn:hover{ background:rgba(244,239,230,0.22); }
-  .mstudio-search-result{ display:none; position:absolute; top:calc(100% + 8px); left:0; min-width:240px; max-width:290px; background:var(--white); color:var(--ink); border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,0.28); padding:12px; z-index:60; }
+  .mstudio-search{ position:relative; display:flex; align-items:center; gap:0; background:rgba(217,164,65,0.14); border:1px solid rgba(217,164,65,0.55); border-radius:999px; padding:3px; }
+  .mstudio-search input{ background:transparent; border:none; color:var(--cream); font-size:13.5px; padding:9px 6px 9px 14px; border-radius:999px; width:220px; outline:none; }
+  .mstudio-search input::placeholder{ color:rgba(244,239,230,0.6); }
+  .mstudio-search button.mstudio-search-btn{ background:var(--gold); color:var(--navy-3); font-size:13px; font-weight:700; padding:9px 18px; border-radius:999px; white-space:nowrap; }
+  .mstudio-search button.mstudio-search-btn:hover{ background:var(--gold-2); }
+  .mstudio-search-result{ display:none; position:absolute; top:calc(100% + 10px); left:0; min-width:260px; max-width:310px; background:var(--white); color:var(--ink); border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,0.3); padding:14px; z-index:60; }
   .mstudio-search-result.show{ display:block; }
-  .mstudio-search-empty{ font-size:12.5px; color:var(--ink-soft); padding:2px; }
-  .mstudio-search-hit{ display:flex; align-items:center; gap:10px; }
-  .mstudio-search-hit .avatar{ width:44px; height:44px; font-size:14px; flex-shrink:0; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .mstudio-search-empty{ font-size:13px; color:var(--ink-soft); padding:2px; }
+  .mstudio-search-hit{ display:flex; align-items:center; gap:12px; }
+  .mstudio-search-hit .avatar{ width:50px; height:50px; font-size:15px; flex-shrink:0; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; }
   .mstudio-search-hit-info{ min-width:0; }
-  .mstudio-search-hit-name{ font-weight:700; font-size:13.5px; color:var(--navy-3); white-space:normal; }
-  .mstudio-search-hit-role{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; white-space:normal; }
-  @media (max-width:600px){ .mstudio-search input{ width:110px; } }
+  .mstudio-search-hit-name{ font-weight:700; font-size:14.5px; color:var(--navy-3); white-space:normal; }
+  .mstudio-search-hit-role{ font-size:12px; color:var(--ink-soft); margin-top:3px; white-space:normal; }
+  .mstudio-search-hint{ font-size:11px; color:var(--gold-2); margin-top:8px; font-weight:600; }
+  @media (max-width:700px){ .mstudio-search input{ width:140px; } }
   .studio-overlay iframe{ flex:1; border:none; width:100%; }
 
   /* ---------- mobile ---------- */
@@ -435,6 +435,9 @@
   table.op-table th{ text-align:left; padding:10px 14px; background:var(--navy); color:var(--cream); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em; position:sticky; top:0; }
   table.op-table td{ padding:10px 14px; border-top:1px solid rgba(28,53,82,0.08); color:var(--ink); }
   table.op-table tr:nth-child(even) td{ background:var(--cream-2); }
+  .op-row-pinned td{ background:rgba(217,164,65,0.32) !important; font-weight:700; }
+  @keyframes opPinFlash{ 0%{ background:rgba(217,164,65,0.75); } 100%{ background:rgba(217,164,65,0.32); } }
+  .op-row-pinned td{ animation:opPinFlash 1.2s ease; }
   .op-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:30px 0; }
 
   /* ---------- payments tab (paid / unpaid breakdown) ---------- */
@@ -778,12 +781,12 @@
   <div class="studio-bar">
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
     <div class="studio-bar-actions">
-      <button onclick="openAccountDetail()">👤 Account Detail</button>
       <div class="mstudio-search">
         <input type="text" id="studioUserSearch" placeholder="🔎 Search Member ID" autocomplete="off" onkeydown="if(event.key==='Enter') searchStudioUserById()">
         <button class="mstudio-search-btn" onclick="searchStudioUserById()">Search</button>
         <div class="mstudio-search-result" id="studioUserSearchResult"></div>
       </div>
+      <button onclick="openAccountDetail()">👤 Account Detail</button>
       <button onclick="openLoginDetail()">🔑 Login Detail</button>
       <button onclick="handleLogoutClick()">🚪 Log Out</button>
       <button onclick="openOwnerSection()">👑 Owner Section</button>
@@ -876,13 +879,13 @@
       dbGetOne('processingMembers', id),
       dbGetOne('distributionOutlets', id)
     ]);
-    if(proc) return { record: proc, name: proc.name, role: `Procurement — Farmer Member${proc.place ? ' · ' + proc.place : ''}` };
-    if(processing) return { record: processing, name: processing.name, role: `Processing — ${processing.category || 'Team'}${processing.post ? ' · ' + processing.post : ''}` };
-    if(dist) return { record: dist, name: dist.contactPerson || dist.storeName, role: `Distribution — ${dist.category === 'big' ? 'Bulk Buyer' : 'Retail Outlet'}${dist.storeName ? ' · ' + dist.storeName : ''}` };
+    if(proc) return { record: proc, name: proc.name, type: 'procurement', role: `Procurement — Farmer Member${proc.place ? ' · ' + proc.place : ''}` };
+    if(processing) return { record: processing, name: processing.name, type: 'processing', role: `Processing — ${processing.category || 'Team'}${processing.post ? ' · ' + processing.post : ''}` };
+    if(dist) return { record: dist, name: dist.contactPerson || dist.storeName, type: 'distribution', role: `Distribution — ${dist.category === 'big' ? 'Bulk Buyer' : 'Retail Outlet'}${dist.storeName ? ' · ' + dist.storeName : ''}` };
     return null;
   }
 
-  function renderMemberSearchResult(container, id, result){
+  function renderMemberSearchResult(container, id, result, pinnedHint){
     if(!result){
       container.innerHTML = `<div class="mstudio-search-empty">No member found for ID "${opEsc(id)}".</div>`;
       container.classList.add('show');
@@ -898,6 +901,7 @@
           <div class="mstudio-search-hit-role">ID: ${result.record.memberId}</div>
         </div>
       </div>
+      ${pinnedHint ? `<div class="mstudio-search-hint">${pinnedHint}</div>` : ''}
     `;
     container.classList.add('show');
   }
@@ -906,15 +910,48 @@
     const input = document.getElementById(inputId);
     const container = document.getElementById(resultId);
     const id = input.value.trim();
-    if(!id){ container.classList.remove('show'); return; }
+    if(!id){ container.classList.remove('show'); return null; }
     container.innerHTML = '<div class="mstudio-search-empty">Searching…</div>';
     container.classList.add('show');
     const result = await lookupMemberById(id);
-    renderMemberSearchResult(container, id, result);
+    return { id, result, container };
   }
 
-  function searchStudioUserById(){ runMemberSearch('studioUserSearch', 'studioUserSearchResult'); }
-  function searchOwnerUserById(){ runMemberSearch('ownerUserSearch', 'ownerUserSearchResult'); }
+  // Manage Studio bar search: the tables it can pin into (Procurement /
+  // Processing / Distribution "Member Detail" pages) live inside the
+  // studioFrame iframe, so the hit is handed off to a same-origin function
+  // exposed there once it's loaded.
+  async function searchStudioUserById(){
+    const outcome = await runMemberSearch('studioUserSearch', 'studioUserSearchResult');
+    if(!outcome) return;
+    const { id, result, container } = outcome;
+    let hint = null;
+    const frameWin = document.getElementById('studioFrame') && document.getElementById('studioFrame').contentWindow;
+    if(result && frameWin && typeof frameWin.pinMemberToTop === 'function'){
+      const pinned = frameWin.pinMemberToTop(result.record.memberId, result.type);
+      if(pinned) hint = 'Moved to the top of the open page.';
+    }
+    renderMemberSearchResult(container, id, result, hint);
+  }
+
+  // Owner Section bar search: the tables it can pin into are rendered right
+  // here in ownerData, keyed to whichever tab is currently active.
+  let ownerActiveTab = 'accounts';
+  let ownerPinnedMemberId = null;
+  async function searchOwnerUserById(){
+    const outcome = await runMemberSearch('ownerUserSearch', 'ownerUserSearchResult');
+    if(!outcome) return;
+    const { id, result, container } = outcome;
+    let hint = null;
+    if(result && result.type === ownerActiveTab){
+      ownerPinnedMemberId = result.record.memberId;
+      renderOwnerTab(ownerActiveTab);
+      const body = document.getElementById('ownerPanelBody');
+      if(body) body.scrollTop = 0;
+      hint = 'Moved to the top of the open tab.';
+    }
+    renderMemberSearchResult(container, id, result, hint);
+  }
 
   document.addEventListener('click', (e) => {
     if(!e.target.closest('.mstudio-search')){
@@ -1258,6 +1295,8 @@
       processing: Array.isArray(processing) ? processing : [],
       distribution: Array.isArray(distribution) ? distribution : []
     };
+    ownerActiveTab = 'accounts';
+    ownerPinnedMemberId = null;
     document.getElementById('ownerPanelOverlay').classList.add('show');
     renderOwnerTab('accounts');
   }
@@ -1269,15 +1308,17 @@
   function switchOwnerTab(tab, btn){
     document.querySelectorAll('#ownerPanelTabs button').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
+    ownerActiveTab = tab;
+    ownerPinnedMemberId = null;
     renderOwnerTab(tab);
   }
 
   function opEsc(v){ return (v === undefined || v === null || v === '') ? '—' : String(v); }
 
-  function opTable(headers, rows){
+  function opTable(headers, rows, pinnedIndex){
     if(!rows.length) return '<div class="op-empty">Nothing here yet.</div>';
     const head = headers.map(h => `<th>${h}</th>`).join('');
-    const body = rows.map(r => `<tr>${r.map(c => `<td>${opEsc(c)}</td>`).join('')}</tr>`).join('');
+    const body = rows.map((r, i) => `<tr class="${i === pinnedIndex ? 'op-row-pinned' : ''}">${r.map(c => `<td>${opEsc(c)}</td>`).join('')}</tr>`).join('');
     return `<div class="op-table-wrap"><table class="op-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
 
@@ -1305,18 +1346,37 @@
         ${opTable(['Name','Email','Phone','Joined','Owner Password Entered','Times Entered'], rows)}
       `;
     } else if(tab === 'procurement'){
-      const rows = ownerData.procurement.map(m => [
+      const list = ownerData.procurement.slice();
+      let pinnedIndex = null;
+      if(ownerPinnedMemberId){
+        const idx = list.findIndex(m => m.memberId === ownerPinnedMemberId);
+        if(idx > 0){ const [hit] = list.splice(idx, 1); list.unshift(hit); pinnedIndex = 0; }
+        else if(idx === 0) pinnedIndex = 0;
+      }
+      const rows = list.map(m => [
         m.memberId || '—', m.name, m.place || '—', m.phone || '—', m.altPhone || '—',
         m.address || '—', m.altAddress || '—', m.liter || '—', m.payment || '—'
       ]);
       body.innerHTML = `
-        <div class="op-section-head">Procurement — Farmer Members<span class="op-count-pill">${ownerData.procurement.length}</span></div>
-        ${opTable(['ID','Name','Place','Phone','Alt Phone','Address','Alt Address','Daily Liter','Monthly Payment'], rows)}
+        <div class="op-section-head">Procurement — Farmer Members<span class="op-count-pill">${list.length}</span></div>
+        ${opTable(['ID','Name','Place','Phone','Alt Phone','Address','Alt Address','Daily Liter','Monthly Payment'], rows, pinnedIndex)}
       `;
     } else if(tab === 'processing'){
       const byCategory = {};
       ownerData.processing.forEach(m => { (byCategory[m.category || 'Other'] = byCategory[m.category || 'Other'] || []).push(m); });
-      const cats = Object.keys(byCategory).sort();
+      let cats = Object.keys(byCategory).sort();
+      let pinnedCat = null;
+      if(ownerPinnedMemberId){
+        for(const cat of cats){
+          const idx = byCategory[cat].findIndex(m => m.memberId === ownerPinnedMemberId);
+          if(idx !== -1){
+            if(idx > 0){ const [hit] = byCategory[cat].splice(idx, 1); byCategory[cat].unshift(hit); }
+            pinnedCat = cat;
+            break;
+          }
+        }
+        if(pinnedCat) cats = [pinnedCat, ...cats.filter(c => c !== pinnedCat)];
+      }
       body.innerHTML = cats.length ? cats.map(cat => {
         const rows = byCategory[cat].map(m => [
           m.memberId || '—', m.name, m.post || '—', m.phone || '—', m.altPhone || '—',
@@ -1324,14 +1384,26 @@
         ]);
         return `
           <div class="op-section-head">${cat} Team<span class="op-count-pill">${byCategory[cat].length}</span></div>
-          ${opTable(['ID','Name','Role','Phone','Alt Phone','Address','Alt Address','Monthly Payment'], rows)}
+          ${opTable(['ID','Name','Role','Phone','Alt Phone','Address','Alt Address','Monthly Payment'], rows, cat === pinnedCat ? 0 : null)}
         `;
       }).join('') : '<div class="op-empty">Nothing here yet.</div>';
     } else if(tab === 'distribution'){
       const byCategory = {};
       ownerData.distribution.forEach(o => { (byCategory[o.category || 'Other'] = byCategory[o.category || 'Other'] || []).push(o); });
       const labels = { small: 'Small Retail Outlets', big: 'Large / Bulk Buyers' };
-      const cats = Object.keys(byCategory).sort();
+      let cats = Object.keys(byCategory).sort();
+      let pinnedCat = null;
+      if(ownerPinnedMemberId){
+        for(const cat of cats){
+          const idx = byCategory[cat].findIndex(o => o.memberId === ownerPinnedMemberId);
+          if(idx !== -1){
+            if(idx > 0){ const [hit] = byCategory[cat].splice(idx, 1); byCategory[cat].unshift(hit); }
+            pinnedCat = cat;
+            break;
+          }
+        }
+        if(pinnedCat) cats = [pinnedCat, ...cats.filter(c => c !== pinnedCat)];
+      }
       body.innerHTML = cats.length ? cats.map(cat => {
         const rows = byCategory[cat].map(o => [
           o.memberId || '—', o.storeName, o.contactPerson || '—', o.place || '—', o.phone || '—', o.altPhone || '—',
@@ -1340,7 +1412,7 @@
         ]);
         return `
           <div class="op-section-head">${labels[cat] || cat}<span class="op-count-pill">${byCategory[cat].length}</span></div>
-          ${opTable(['ID','Store','Contact Person','Place','Phone','Alt Phone','Address','Weekly Qty','Rate','Delivery Day','Slot','Outstanding'], rows)}
+          ${opTable(['ID','Store','Contact Person','Place','Phone','Alt Phone','Address','Weekly Qty','Rate','Delivery Day','Slot','Outstanding'], rows, cat === pinnedCat ? 0 : null)}
         `;
       }).join('') : '<div class="op-empty">Nothing here yet.</div>';
     } else if(tab === 'payments'){

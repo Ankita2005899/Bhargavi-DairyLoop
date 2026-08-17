@@ -253,6 +253,9 @@
   table.detail-table th{ background:#3E3324; color:#F7F3EA; text-align:left; padding:12px 10px; font-weight:700; letter-spacing:0.03em; white-space:nowrap; }
   table.detail-table td{ padding:10px; border-bottom:1px solid #eee2cc; color:#3E3324; vertical-align:middle; }
   table.detail-table tr.member-row:nth-child(even) td{ background:#FBF8F0; }
+  tr.pinned-hit-row td{ background:rgba(217,164,65,0.34) !important; font-weight:700; }
+  @keyframes pinnedHitFlash{ 0%{ background:rgba(217,164,65,0.8); } 100%{ background:rgba(217,164,65,0.34); } }
+  tr.pinned-hit-row td{ animation:pinnedHitFlash 1.4s ease; }
 
   tr.new-member-row td{ background:#F1EAD8 !important; border-top:2px solid #C89B4C; padding:8px 6px; }
   .new-input{
@@ -1294,6 +1297,7 @@
   const stages = [procurement, processing, distribution];
   const detailInner = document.getElementById('detailInner');
   const optionBtns = document.querySelectorAll('.option-btn');
+  let currentOpenDetailType = null;
 
   stages.forEach(stage => {
     stage.addEventListener('mouseenter', () => {
@@ -2128,6 +2132,7 @@ Issued by Procurement Side.`;
   Object.keys(processingMembersRaw).forEach(cat => {
     processingMembers[cat] = processingMembersRaw[cat].map(m => buildProcessingMember(m, procSeed++, cat));
   });
+  let processingCategoryOrder = Object.keys(processingMembersRaw);
 
   async function hydrateProcessingMembersFromServer(){
     const server = await dbGetAll('processingMembers');
@@ -2162,7 +2167,7 @@ Issued by Procurement Side.`;
   }
 
   function renderProcessingMembers(){
-    const sections = Object.keys(processingMembersRaw).map(cat => {
+    const sections = processingCategoryOrder.map(cat => {
       const meta = CATEGORY_META[cat];
       const list = processingMembers[cat];
       const slug = cat.replace(/\s+/g, '-').toLowerCase();
@@ -2571,6 +2576,7 @@ Issued by Processing Team.`;
         else { s.classList.add('blurred'); s.classList.remove('shrink'); }
       });
       const type = btn.dataset.detail;
+      currentOpenDetailType = type;
       if(type === 'members') renderMembers();
       else if(type === 'collection') renderCollection();
       else if(type === 'payment') renderPayment();
@@ -2973,6 +2979,61 @@ Issued by Processing Team.`;
       </div>
     `;
   }
+
+  // ---- Search pin: bring a searched member to the top of whichever
+  // detail page is currently open, if that member actually belongs to it.
+  // Called from the parent window (index.html) after a Member ID search.
+  function flashPinnedRow(rowEl){
+    if(!rowEl) return;
+    rowEl.classList.add('pinned-hit-row');
+    rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => rowEl.classList.remove('pinned-hit-row'), 1600);
+  }
+
+  function pinMemberToTop(memberId, kind){
+    if(kind === 'procurement' && currentOpenDetailType === 'members'){
+      const idx = members.findIndex(m => m.memberId === memberId);
+      if(idx === -1) return false;
+      if(idx > 0){ const [hit] = members.splice(idx, 1); members.unshift(hit); }
+      renderMembers();
+      flashPinnedRow(document.getElementById('member-row-0'));
+      return true;
+    }
+    if(kind === 'processing' && currentOpenDetailType === 'proc-members'){
+      let foundCat = null, slug = null;
+      for(const cat of processingCategoryOrder){
+        const idx = processingMembers[cat].findIndex(m => m.memberId === memberId);
+        if(idx !== -1){
+          if(idx > 0){ const [hit] = processingMembers[cat].splice(idx, 1); processingMembers[cat].unshift(hit); }
+          foundCat = cat;
+          break;
+        }
+      }
+      if(!foundCat) return false;
+      processingCategoryOrder = [foundCat, ...processingCategoryOrder.filter(c => c !== foundCat)];
+      slug = foundCat.replace(/\s+/g, '-').toLowerCase();
+      renderProcessingMembers();
+      flashPinnedRow(document.getElementById(`proc-row-${slug}-0`));
+      return true;
+    }
+    if(kind === 'distribution' && currentOpenDetailType === 'dist-members'){
+      let foundCat = null;
+      for(const cat of Object.keys(DISTRIBUTION_OUTLETS)){
+        const idx = DISTRIBUTION_OUTLETS[cat].findIndex(o => o.memberId === memberId);
+        if(idx !== -1){
+          if(idx > 0){ const [hit] = DISTRIBUTION_OUTLETS[cat].splice(idx, 1); DISTRIBUTION_OUTLETS[cat].unshift(hit); }
+          foundCat = cat;
+          break;
+        }
+      }
+      if(!foundCat) return false;
+      showDistCategory(foundCat);
+      flashPinnedRow(document.getElementById(`dist-row-${foundCat}-0`));
+      return true;
+    }
+    return false;
+  }
+  window.pinMemberToTop = pinMemberToTop;
 
   function addDistMemberRow(cat){
     const val = id => document.getElementById(id).value.trim();
