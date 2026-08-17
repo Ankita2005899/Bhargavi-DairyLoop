@@ -312,6 +312,51 @@
   @media (max-width:700px){ .mstudio-search input{ width:140px; } }
   .studio-overlay iframe{ flex:1; border:none; width:100%; }
 
+  /* ---------- "+ Add New Product" launcher card (top of Manage Studio) ---------- */
+  .ap-launcher-card{
+    display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, var(--gold), var(--gold-2));
+    color:var(--navy-3); border-radius:14px; padding:9px 16px 9px 12px; font-size:13px; font-weight:700;
+    box-shadow:0 8px 18px rgba(217,164,65,0.35); border:1px solid rgba(255,255,255,0.4);
+    transition:transform 0.2s ease, box-shadow 0.2s ease; cursor:pointer;
+  }
+  .ap-launcher-card:hover{ transform:translateY(-2px) scale(1.02); box-shadow:0 12px 24px rgba(217,164,65,0.5); background:linear-gradient(135deg, var(--gold-2), var(--gold)); }
+  .ap-launcher-icon{ width:26px; height:26px; border-radius:50%; background:var(--navy-3); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+
+  /* ---------- Add New Product — full page form ---------- */
+  .ap-overlay{ position:fixed; inset:0; background:var(--navy-3); z-index:590; display:none; flex-direction:column; }
+  .ap-overlay.show{ display:flex; }
+  .ap-bar{ display:flex; align-items:center; justify-content:space-between; padding:16px 26px; background:var(--navy-3); color:var(--cream); flex-shrink:0; flex-wrap:wrap; gap:10px; border-bottom:1px solid rgba(244,239,230,0.12); }
+  .ap-bar .ap-bar-title{ font-family:'Fraunces', serif; font-weight:700; font-size:16px; display:flex; align-items:center; gap:10px; }
+  .ap-bar button.ap-close{ background:var(--brick); color:#fff; font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; }
+  .ap-bar button.ap-close:hover{ background:var(--brick-2); }
+  .ap-body{ flex:1; overflow-y:auto; padding:30px 26px 60px; background:var(--cream); }
+  .ap-wrap{ max-width:960px; margin:0 auto; display:grid; grid-template-columns:1.1fr 0.9fr; gap:30px; align-items:start; }
+  @media (max-width:860px){ .ap-wrap{ grid-template-columns:1fr; } }
+  .ap-form-card{ background:var(--white); border-radius:var(--radius); border:1px solid rgba(28,53,82,0.1); box-shadow:0 6px 16px rgba(28,53,82,0.06); padding:24px; }
+  .ap-section-title{ font-family:'Fraunces', serif; font-weight:700; font-size:15px; color:var(--navy); margin:18px 0 10px; }
+  .ap-section-title:first-child{ margin-top:0; }
+  .ap-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:480px){ .ap-grid2{ grid-template-columns:1fr; } }
+  .ap-field{ margin-bottom:12px; }
+  .ap-field label{ display:block; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.03em; }
+  .ap-field input, .ap-field select, .ap-field textarea{
+    width:100%; border:1px solid rgba(28,53,82,0.18); border-radius:10px; padding:10px 12px; font-size:13.5px;
+    font-family:'Inter', sans-serif; color:var(--ink); background:var(--cream-2); outline:none; transition:border-color 0.2s ease;
+  }
+  .ap-field input:focus, .ap-field select:focus, .ap-field textarea:focus{ border-color:var(--gold-2); background:var(--white); }
+  .ap-field textarea{ resize:vertical; min-height:64px; }
+  .ap-image-drop{
+    border:2px dashed rgba(28,53,82,0.25); border-radius:14px; padding:18px; text-align:center; cursor:pointer;
+    background:var(--cream-2); transition:border-color 0.2s ease, background 0.2s ease;
+  }
+  .ap-image-drop:hover{ border-color:var(--gold-2); background:rgba(217,164,65,0.08); }
+  .ap-image-drop img{ max-width:100%; max-height:150px; border-radius:10px; margin-top:10px; }
+  .ap-submit-btn{ width:100%; margin-top:16px; background:var(--brick); color:#fff; font-weight:700; font-size:14px; padding:14px; border-radius:12px; transition:all 0.2s ease; }
+  .ap-submit-btn:hover{ background:var(--brick-2); transform:translateY(-1px); }
+  .ap-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; }
+  .ap-preview-label{ font-family:'Fraunces', serif; font-weight:700; font-size:14px; color:var(--cream); margin:0 0 12px; opacity:0.85; }
+  .ap-preview-holder{ position:sticky; top:0; }
+
   /* ---------- mobile ---------- */
   .mobile-nav-hint{ display:none; }
   @media(max-width:900px){
@@ -780,6 +825,9 @@
 <div class="studio-overlay" id="studioOverlay">
   <div class="studio-bar">
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
+    <div class="ap-launcher-card" onclick="openAddProductForm()" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openAddProductForm()">
+      <span class="ap-launcher-icon">➕</span> Add New Product
+    </div>
     <div class="studio-bar-actions">
       <div class="mstudio-search">
         <input type="text" id="studioUserSearch" placeholder="🔎 Search Member ID" autocomplete="off" onkeydown="if(event.key==='Enter') searchStudioUserById()">
@@ -794,6 +842,67 @@
     </div>
   </div>
   <iframe id="studioFrame" title="Manage Studio"></iframe>
+</div>
+
+<div class="ap-overlay" id="apOverlay">
+  <div class="ap-bar">
+    <div class="ap-bar-title">➕ Add New Product</div>
+    <button class="ap-close" onclick="closeAddProductForm()">✕ Close</button>
+  </div>
+  <div class="ap-body">
+    <div class="ap-wrap">
+      <div class="ap-form-card">
+        <div class="ap-section-title">Product Details</div>
+        <div class="ap-grid2">
+          <div class="ap-field"><label>Product Name *</label><input type="text" id="apName" placeholder="e.g. A2 Cow Milk" oninput="apUpdatePreview()"></div>
+          <div class="ap-field"><label>Category *</label>
+            <input type="text" id="apCategory" list="apCategoryList" placeholder="e.g. Milk & Beverages" oninput="apUpdatePreview()">
+            <datalist id="apCategoryList"></datalist>
+          </div>
+        </div>
+        <div class="ap-grid2">
+          <div class="ap-field"><label>Unit / Pack Size *</label><input type="text" id="apUnit" placeholder="e.g. 500 ml Pouch" oninput="apUpdatePreview()"></div>
+          <div class="ap-field"><label>Price (₹) *</label><input type="number" id="apPrice" min="0" step="1" placeholder="e.g. 34" oninput="apUpdatePreview()"></div>
+        </div>
+        <div class="ap-grid2">
+          <div class="ap-field"><label>Packed On</label><input type="text" id="apPackedOn" placeholder="e.g. 17 Aug 2026, 6:00 AM" oninput="apUpdatePreview()"></div>
+          <div class="ap-field"><label>Best Before</label><input type="text" id="apBestBefore" placeholder="e.g. 19 Aug 2026" oninput="apUpdatePreview()"></div>
+        </div>
+        <div class="ap-field"><label>Short Description (shown on card) *</label><textarea id="apShort" placeholder="One or two lines that appear on the product card" oninput="apUpdatePreview()"></textarea></div>
+        <div class="ap-field"><label>Full Description (shown in details)</label><textarea id="apDesc" placeholder="The longer story of this product" oninput="apUpdatePreview()"></textarea></div>
+
+        <div class="ap-section-title">Photo</div>
+        <div class="ap-field">
+          <div class="ap-image-drop" onclick="document.getElementById('apImageInput').click()">
+            <div id="apImageDropText">📷 Click to upload a product photo</div>
+            <img id="apImagePreviewImg" style="display:none;">
+          </div>
+          <input type="file" id="apImageInput" accept="image/*" style="display:none;" onchange="apHandleImage(event)">
+          <div class="ap-hint">No photo? An emoji icon is used instead — set one below.</div>
+        </div>
+        <div class="ap-field"><label>Emoji Icon (fallback if no photo)</label><input type="text" id="apIcon" placeholder="🥛" maxlength="4" oninput="apUpdatePreview()"></div>
+
+        <div class="ap-section-title">Nutrition (per serving)</div>
+        <div class="ap-grid2">
+          <div class="ap-field"><label>Energy</label><input type="text" id="apNutriEnergy" placeholder="e.g. 67 kcal"></div>
+          <div class="ap-field"><label>Fat</label><input type="text" id="apNutriFat" placeholder="e.g. 6.0 g"></div>
+        </div>
+        <div class="ap-grid2">
+          <div class="ap-field"><label>Protein</label><input type="text" id="apNutriProtein" placeholder="e.g. 3.2 g"></div>
+          <div class="ap-field"><label>Carbs</label><input type="text" id="apNutriCarbs" placeholder="e.g. 4.7 g"></div>
+        </div>
+
+        <button class="ap-submit-btn" onclick="submitAddProduct()">➕ Add Product to Website</button>
+      </div>
+
+      <div class="ap-preview-holder">
+        <div class="ap-preview-label">Live preview — this is exactly how it will look on the website</div>
+        <div class="prod-grid" style="margin-top:0;">
+          <div class="card reveal in" id="apPreviewCard"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
@@ -1957,7 +2066,7 @@
       <div class="card reveal in">
         <div class="card-media">
           <div class="cat-tag">${p.category}</div>
-          <div class="emoji">${p.icon}</div>
+          ${p.image ? `<img src="${p.image}" alt="${p.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">` : `<div class="emoji">${p.icon}</div>`}
         </div>
         <div class="card-body">
           <h3>${p.name}</h3>
@@ -1987,7 +2096,7 @@
       <div class="modal-grid">
         <div class="modal-media">
           <button class="modal-close" onclick="closeModal()">✕</button>
-          <div class="emoji">${p.icon}</div>
+          ${p.image ? `<img src="${p.image}" alt="${p.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">` : `<div class="emoji">${p.icon}</div>`}
         </div>
         <div class="modal-content">
           <div class="cat-tag">${p.category}</div>
@@ -2148,6 +2257,138 @@
     document.getElementById('drawerBody').innerHTML = body;
   }
 
+  // ---- Add New Product (Manage Studio → ➕ Add New Product) --------------
+  // New products are saved to the 'customProducts' collection on the
+  // server (same store the rest of the app already uses), so once added
+  // they are live for every visitor — not just this browser — exactly
+  // like the built-in PRODUCTS list, and work with See Detail / Buy Now /
+  // Razorpay the same way because they simply get pushed into PRODUCTS.
+  let apImageData = '';
+
+  function apPopulateCategoryList(){
+    const dl = document.getElementById('apCategoryList');
+    if(dl) dl.innerHTML = [...new Set(PRODUCTS.map(p => p.category))].map(c => `<option value="${c}">`).join('');
+  }
+
+  function openAddProductForm(){
+    apPopulateCategoryList();
+    document.getElementById('apOverlay').classList.add('show');
+    apUpdatePreview();
+  }
+  function closeAddProductForm(){
+    document.getElementById('apOverlay').classList.remove('show');
+  }
+
+  function apHandleImage(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      apImageData = reader.result;
+      const img = document.getElementById('apImagePreviewImg');
+      img.src = apImageData;
+      img.style.display = 'block';
+      document.getElementById('apImageDropText').textContent = '📷 Click to change photo';
+      apUpdatePreview();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function apUpdatePreview(){
+    const p = {
+      category: document.getElementById('apCategory').value.trim() || 'Category',
+      name: document.getElementById('apName').value.trim() || 'Product Name',
+      unit: document.getElementById('apUnit').value.trim() || 'Unit',
+      short: document.getElementById('apShort').value.trim() || 'Short description appears here.',
+      packedOn: document.getElementById('apPackedOn').value.trim() || '—',
+      bestBefore: document.getElementById('apBestBefore').value.trim() || '—',
+      price: Number(document.getElementById('apPrice').value) || 0,
+      icon: document.getElementById('apIcon').value.trim() || '🥛',
+      image: apImageData
+    };
+    document.getElementById('apPreviewCard').innerHTML = `
+      <div class="card-media">
+        <div class="cat-tag">${p.category}</div>
+        ${p.image ? `<img src="${p.image}" alt="${p.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">` : `<div class="emoji">${p.icon}</div>`}
+      </div>
+      <div class="card-body">
+        <h3>${p.name}</h3>
+        <div class="card-unit">${p.unit}</div>
+        <div class="card-short">${p.short}</div>
+        <div class="card-dates">
+          <div class="date-box"><div class="dlabel">Packed On</div><div class="dval">${p.packedOn}</div></div>
+          <div class="date-box"><div class="dlabel">Best Before</div><div class="dval">${p.bestBefore}</div></div>
+        </div>
+        <div class="card-foot"><div class="price">₹${p.price}<sup>.00</sup></div></div>
+        <div class="card-btns">
+          <button class="btn-detail" onclick="return false;">See Detail</button>
+          <button class="btn-buy" onclick="return false;">Buy Now</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function submitAddProduct(){
+    const name = document.getElementById('apName').value.trim();
+    const category = document.getElementById('apCategory').value.trim();
+    const unit = document.getElementById('apUnit').value.trim();
+    const price = Number(document.getElementById('apPrice').value);
+    const short = document.getElementById('apShort').value.trim();
+
+    if(!name || !category || !unit || !price || price <= 0 || !short){
+      showToast('Please fill Name, Category, Unit, Price and Short Description', false);
+      return;
+    }
+
+    const id = 'c' + Date.now();
+    const newProduct = {
+      id, name, category, unit, price,
+      packedOn: document.getElementById('apPackedOn').value.trim() || new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }),
+      bestBefore: document.getElementById('apBestBefore').value.trim() || '—',
+      icon: document.getElementById('apIcon').value.trim() || '🥛',
+      image: apImageData,
+      short,
+      desc: document.getElementById('apDesc').value.trim() || short,
+      nutrition: {
+        Energy: document.getElementById('apNutriEnergy').value.trim() || '—',
+        Fat: document.getElementById('apNutriFat').value.trim() || '—',
+        Protein: document.getElementById('apNutriProtein').value.trim() || '—',
+        Carbs: document.getElementById('apNutriCarbs').value.trim() || '—'
+      }
+    };
+
+    PRODUCTS.push(newProduct);
+    dbPut('customProducts', id, newProduct);   // persisted to the server — live for every visitor
+
+    renderFilters();
+    renderProducts();
+    apResetForm();
+    closeAddProductForm();
+    showToast(`${name} added — now live on the website`, true);
+  }
+
+  function apResetForm(){
+    ['apName','apCategory','apUnit','apPrice','apPackedOn','apBestBefore','apShort','apDesc','apIcon','apNutriEnergy','apNutriFat','apNutriProtein','apNutriCarbs'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+    apImageData = '';
+    const img = document.getElementById('apImagePreviewImg');
+    img.style.display = 'none';
+    img.src = '';
+    document.getElementById('apImageDropText').textContent = '📷 Click to upload a product photo';
+    document.getElementById('apImageInput').value = '';
+  }
+
+  async function hydrateCustomProducts(){
+    const list = await dbGetAll('customProducts');
+    if(list && list.length){
+      list.forEach(p => { if(p && p.id && !PRODUCTS.find(x => x.id === p.id)) PRODUCTS.push(p); });
+      renderFilters();
+      renderProducts();
+    }
+  }
+
   function openStudio(){
     const frame = document.getElementById('studioFrame');
     if(!frame.src || frame.src === 'about:blank') frame.src = 'studio.html';
@@ -2172,9 +2413,10 @@
   renderProducts();
   updateOrderCount();
   hydrateOrdersFromServer();
+  hydrateCustomProducts();
   setupReveal();
   tryRestoreSession();
-  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); closeInfoModal(); closeOwnerPasswordModal(); closeOwnerPanel(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); closeInfoModal(); closeOwnerPasswordModal(); closeOwnerPanel(); closeAddProductForm(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
 </script>
 
 </body>
