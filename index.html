@@ -243,6 +243,8 @@
   .order-status{ margin-left:auto; font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:5px 10px; border-radius:999px; background:rgba(76,175,109,0.14); color:#2E7D4F; white-space:nowrap; }
   .order-bottom{ display:flex; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(28,53,82,0.14); font-size:11.5px; color:var(--ink-soft); }
   .order-bottom b{ color:var(--navy); }
+  .order-rider{ margin-top:8px; font-size:11.5px; color:var(--ink-soft); }
+  .order-rider b{ color:var(--navy); }
 
   /* ---------- product modal ---------- */
   .modal-back{ position:fixed; inset:0; background:rgba(13,27,43,0.6); z-index:110; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
@@ -464,6 +466,10 @@
   .profile-required-banner{ background:#FBEFEA; border:1px solid #E8B4A0; color:#9A3B1F; border-radius:10px; padding:12px 14px; font-size:12.5px; font-weight:600; margin-bottom:16px; line-height:1.5; }
   .pf-subtext{ font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; line-height:1.5; }
   #pfError{ color:#c0392b; font-size:12.5px; margin:6px 0 0; min-height:1px; }
+  .pf-priority-tag{ display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:0.02em; padding:2px 7px; border-radius:20px; margin-right:6px; text-transform:none; vertical-align:middle; }
+  .pf-priority-main{ background:#E7F3EA; color:#1E7A3D; }
+  .pf-priority-emergency{ background:#FBEFEA; color:#9A3B1F; }
+  .pf-hint{ font-size:11px; color:var(--ink-soft); margin-top:4px; line-height:1.4; }
   .info-list-item:last-child{ border-bottom:none; }
   .info-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:20px 0; }
 
@@ -1310,7 +1316,13 @@
   // sends the shopper straight here instead, with pendingBuyAfterProfile
   // remembering what they were trying to buy so the purchase resumes the
   // moment they hit Save.
-  const PROFILE_REQUIRED_FIELDS = ['fullName','phone1','phone2','addressLine1','addressLine2','city','state','pincode'];
+  //
+  // Priority: the PRIMARY phone/address is what's used for every normal
+  // delivery and for matching a delivery person by allotted location. The
+  // EMERGENCY phone/address is only ever used as a fallback — e.g. if the
+  // delivery person can't reach the customer on the primary number or at
+  // the primary address.
+  const PROFILE_REQUIRED_FIELDS = ['fullName','primaryPhone','emergencyPhone','primaryAddressLine1','city','state','pincode','emergencyAddress'];
   let pendingBuyAfterProfile = null;
 
   function isProfileComplete(account){
@@ -1333,18 +1345,28 @@
     openInfoModal('👤 My Profile — Delivery Details', `
       ${banner}
       <div class="pf-subtext">These details are used to deliver every order to your doorstep. Fields marked * are required. You can come back and update them anytime.</div>
+
       <div class="ap-section-title">Contact Details</div>
       <div class="ap-grid2">
         <div class="ap-field"><label>Full Name *</label><input type="text" id="pfName" value="${pfEsc(d.fullName || currentAccount.name || '')}"></div>
         <div class="ap-field"><label>Email</label><input type="text" value="${pfEsc(currentAccount.email)}" disabled></div>
       </div>
       <div class="ap-grid2">
-        <div class="ap-field"><label>Primary Phone Number *</label><input type="tel" id="pfPhone1" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc(d.phone1 || currentAccount.phone || '')}"></div>
-        <div class="ap-field"><label>Alternate Phone Number *</label><input type="tel" id="pfPhone2" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc(d.phone2 || '')}"></div>
+        <div class="ap-field">
+          <label><span class="pf-priority-tag pf-priority-main">⭐ Primary</span> Phone Number *</label>
+          <input type="tel" id="pfPrimaryPhone" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc(d.primaryPhone || currentAccount.phone || '')}">
+          <div class="pf-hint">Main contact number — always used first.</div>
+        </div>
+        <div class="ap-field">
+          <label><span class="pf-priority-tag pf-priority-emergency">🚨 Emergency</span> Phone Number *</label>
+          <input type="tel" id="pfEmergencyPhone" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc(d.emergencyPhone || '')}">
+          <div class="pf-hint">Used only if you can't be reached on the primary number.</div>
+        </div>
       </div>
-      <div class="ap-section-title">Delivery Address</div>
-      <div class="ap-field"><label>Address Line 1 (House / Flat / Street) *</label><input type="text" id="pfAddr1" placeholder="e.g. Flat 4B, Shree Krupa Apartments" value="${pfEsc(d.addressLine1 || '')}"></div>
-      <div class="ap-field"><label>Address Line 2 (Locality / Area) *</label><input type="text" id="pfAddr2" placeholder="e.g. Near Ganesh Mandir, Kothrud" value="${pfEsc(d.addressLine2 || '')}"></div>
+
+      <div class="ap-section-title"><span class="pf-priority-tag pf-priority-main">⭐ Primary</span> Delivery Address</div>
+      <div class="pf-hint" style="margin-top:-6px;margin-bottom:10px;">This is where every order is delivered, and is matched to the nearest delivery person for your area.</div>
+      <div class="ap-field"><label>Address Line (House / Flat / Street / Locality) *</label><input type="text" id="pfPrimaryAddr" placeholder="e.g. Flat 4B, Shree Krupa Apartments, Near Ganesh Mandir" value="${pfEsc(d.primaryAddressLine1 || '')}"></div>
       <div class="ap-field"><label>Landmark (optional)</label><input type="text" id="pfLandmark" placeholder="e.g. Opposite HDFC Bank" value="${pfEsc(d.landmark || '')}"></div>
       <div class="ap-grid2">
         <div class="ap-field"><label>City *</label><input type="text" id="pfCity" value="${pfEsc(d.city || '')}"></div>
@@ -1354,6 +1376,11 @@
         <div class="ap-field"><label>Pincode *</label><input type="text" id="pfPincode" maxlength="6" placeholder="6-digit PIN code" value="${pfEsc(d.pincode || '')}"></div>
         <div class="ap-field"><label>Delivery Instructions (optional)</label><input type="text" id="pfInstructions" placeholder="e.g. Leave with the security guard" value="${pfEsc(d.instructions || '')}"></div>
       </div>
+
+      <div class="ap-section-title"><span class="pf-priority-tag pf-priority-emergency">🚨 Emergency</span> Address</div>
+      <div class="pf-hint" style="margin-top:-6px;margin-bottom:10px;">A backup address, used only if the delivery person cannot reach you at the primary address above.</div>
+      <div class="ap-field"><label>Emergency Address *</label><textarea id="pfEmergencyAddr" placeholder="A different address where the parcel/contact can reach in an emergency">${pfEsc(d.emergencyAddress || '')}</textarea></div>
+
       <div id="pfError"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveMyProfile()">💾 Save Delivery Details</button>
     `);
@@ -1365,26 +1392,26 @@
     const get = id => document.getElementById(id).value.trim();
     const details = {
       fullName: get('pfName'),
-      phone1: get('pfPhone1'),
-      phone2: get('pfPhone2'),
-      addressLine1: get('pfAddr1'),
-      addressLine2: get('pfAddr2'),
+      primaryPhone: get('pfPrimaryPhone'),
+      emergencyPhone: get('pfEmergencyPhone'),
+      primaryAddressLine1: get('pfPrimaryAddr'),
       landmark: get('pfLandmark'),
       city: get('pfCity'),
       state: get('pfState'),
       pincode: get('pfPincode'),
+      emergencyAddress: get('pfEmergencyAddr'),
       instructions: get('pfInstructions'),
       updatedAt: new Date().toISOString()
     };
     const missing = PROFILE_REQUIRED_FIELDS.filter(f => !details[f]);
     if(missing.length){ errEl.textContent = 'Please fill in all the required fields marked with *.'; return; }
-    if(!/^\d{10}$/.test(details.phone1)){ errEl.textContent = 'Primary phone number must be a valid 10-digit number.'; return; }
-    if(!/^\d{10}$/.test(details.phone2)){ errEl.textContent = 'Alternate phone number must be a valid 10-digit number.'; return; }
+    if(!/^\d{10}$/.test(details.primaryPhone)){ errEl.textContent = 'Primary phone number must be a valid 10-digit number.'; return; }
+    if(!/^\d{10}$/.test(details.emergencyPhone)){ errEl.textContent = 'Emergency phone number must be a valid 10-digit number.'; return; }
     if(!/^\d{6}$/.test(details.pincode)){ errEl.textContent = 'Pincode must be a valid 6-digit PIN code.'; return; }
 
     currentAccount.deliveryDetails = details;
     if(!currentAccount.name) currentAccount.name = details.fullName;
-    if(!currentAccount.phone) currentAccount.phone = details.phone1;
+    if(!currentAccount.phone) currentAccount.phone = details.primaryPhone;
     await dbPut(AUTH_COLLECTION, currentAccount.email, currentAccount);
     closeInfoModal();
     showToast('Delivery details saved', true);
@@ -1394,6 +1421,26 @@
       pendingBuyAfterProfile = null;
       buyNow(productId, qty);
     }
+  }
+
+  // ---- Auto-assign a delivery person by allotted location ---------------
+  // Delivery persons and the location(s) they're allotted to are managed in
+  // Manage Studio → Distribution → Delivery Person Detail, and persisted in
+  // the 'deliveryPersons' collection (same store this page already talks
+  // to). If the customer's primary-address city matches a delivery
+  // person's allotted location, that parcel is assigned directly to them —
+  // no manual assignment needed in Manage Studio.
+  async function findDeliveryPersonForCity(cityName){
+    if(!cityName) return null;
+    const persons = await dbGetAll('deliveryPersons');
+    if(!persons || !persons.length) return null;
+    const target = cityName.trim().toLowerCase();
+    if(!target) return null;
+    const match = persons.find(p => (p.locations || []).some(loc => {
+      const l = (loc || '').trim().toLowerCase();
+      return l && (l === target || target.includes(l) || l.includes(target));
+    }));
+    return match || null;
   }
 
   // The "🚪 Log Out" button: for an owner, this now opens the full-screen
@@ -2336,8 +2383,16 @@
       description: `${qty} × ${p.name} (${p.unit})`,
       image: 'logo.png',
       theme: { color: '#1C3552' },
-      handler: function(response){
+      handler: async function(response){
         const orders = getOrders();
+        // Auto-assign a delivery person whose allotted location matches the
+        // customer's primary-address city — set up in Manage Studio →
+        // Distribution → Delivery Person Detail. Falls back to unassigned
+        // (null) if nobody covers that city yet; the owner can assign one
+        // manually from Manage Studio in that case.
+        const matchedPerson = await findDeliveryPersonForCity(
+          currentAccount && currentAccount.deliveryDetails ? currentAccount.deliveryDetails.city : ''
+        );
         const newOrder = {
           id: 'ORD-' + Date.now().toString().slice(-8),
           ts: Date.now(),
@@ -2352,6 +2407,9 @@
           status: 'Confirmed',
           email: currentAccount ? currentAccount.email : null,   // ties this order to the account that placed it
           deliveryDetails: currentAccount ? currentAccount.deliveryDetails : null,   // snapshot of the address it should reach
+          deliveryPersonId: matchedPerson ? matchedPerson.id : null,
+          deliveryPersonName: matchedPerson ? matchedPerson.name : null,
+          deliveryPersonPhone: matchedPerson ? matchedPerson.phone : null,
           stage: null   // set by the owner in Manage Studio → Customer Order Tracking; null = just Confirmed
         };
         orders.unshift(newOrder);
@@ -2359,7 +2417,12 @@
         dbPut('orders', newOrder.id, newOrder);   // persisted to data/orders.xml on the server
         updateOrderCount();
         closeModal();
-        showToast(`Payment successful — ${p.name} added to My Deliveries`, true);
+        showToast(
+          matchedPerson
+            ? `Payment successful — ${p.name} added to My Deliveries and assigned to ${matchedPerson.name}`
+            : `Payment successful — ${p.name} added to My Deliveries`,
+          true
+        );
         setTimeout(() => openDrawer('delivery'), 700);
       },
       modal: {
@@ -2437,6 +2500,7 @@
             <span>${o.id} · ${o.date}</span>
             <span><b>₹${o.amount}</b></span>
           </div>
+          ${o.deliveryPersonId ? `<div class="order-rider">🚴 Assigned to <b>${o.deliveryPersonName || o.deliveryPersonId}</b>${o.deliveryPersonPhone ? ' · 📞 ' + o.deliveryPersonPhone : ''}</div>` : ''}
         </div>
       `).join('');
     }

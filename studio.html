@@ -594,6 +594,15 @@
 
   /* --- distribution: delivery person detail table --- */
   .dperson-avatar{ width:44px; height:44px; font-size:14px; background:#26407a; }
+  .dp-loc-edit{ display:flex; align-items:center; gap:6px; }
+  .dp-loc-edit input{
+    width:130px; font-family:'Times New Roman', Times, serif; font-size:12.5px; padding:5px 8px;
+    border:1px solid #d8cba3; border-radius:3px; background:#fffdf8; color:#3E3324; transition:border-color 0.2s;
+  }
+  .dp-loc-save-btn{
+    background:#26407a; color:#fff; border:none; border-radius:3px; padding:5px 8px; cursor:pointer; font-size:12px; flex-shrink:0;
+  }
+  .dp-loc-save-btn:hover{ background:#1c2f5c; }
   .track-btn{
     font-family:'Times New Roman', Times, serif; background:#26407a; color:#fff; border:none;
     padding:6px 14px; border-radius:3px; cursor:pointer; font-size:13px;
@@ -2631,16 +2640,36 @@ Issued by Processing Team.`;
     { name: 'Curd', unit: 'kg' }, { name: 'Butter', unit: 'kg' }, { name: 'Buttermilk', unit: 'L' }
   ];
 
+  // Each delivery person's `locations` array is their allotted delivery
+  // area(s) — matched (case-insensitively) against a customer's primary
+  // address city on index.html to auto-assign their order directly to
+  // this person, with no manual step needed in Manage Studio.
   const DELIVERY_PERSONS = [
-    { id: 'DLV001', name: 'Ramesh Pawar', phone: '98221 10011', vehicle: 'Two-Wheeler Milk Carrier', route: 'Karad — Wai Route' },
-    { id: 'DLV002', name: 'Suresh Jagtap', phone: '98221 10022', vehicle: 'Insulated Delivery Van', route: 'Phaltan — Koregaon Route' },
-    { id: 'DLV003', name: 'Vitthal More', phone: '98221 10033', vehicle: 'Mini Tempo (Chiller)', route: 'Pune City Route' },
-    { id: 'DLV004', name: 'Ganesh Kadam', phone: '98221 10044', vehicle: 'Insulated Delivery Van', route: 'Mumbai City Route' },
-    { id: 'DLV005', name: 'Prakash Chavan', phone: '98221 10055', vehicle: 'Mini Tempo (Chiller)', route: 'Nashik City Route' },
-    { id: 'DLV006', name: 'Santosh Deshmukh', phone: '98221 10066', vehicle: 'Insulated Delivery Van', route: 'Kolhapur City Route' },
-    { id: 'DLV007', name: 'Dattatray Salunkhe', phone: '98221 10077', vehicle: 'Auto-Rickshaw (Cans)', route: 'Karad — Phaltan Route' },
-    { id: 'DLV008', name: 'Balaji Shelar', phone: '98221 10088', vehicle: 'Two-Wheeler Milk Carrier', route: 'Wai — Koregaon Route' },
+    { id: 'DLV001', name: 'Ramesh Pawar', phone: '98221 10011', vehicle: 'Two-Wheeler Milk Carrier', route: 'Karad — Wai Route', locations: ['Karad', 'Wai'] },
+    { id: 'DLV002', name: 'Suresh Jagtap', phone: '98221 10022', vehicle: 'Insulated Delivery Van', route: 'Phaltan — Koregaon Route', locations: ['Phaltan', 'Koregaon'] },
+    { id: 'DLV003', name: 'Vitthal More', phone: '98221 10033', vehicle: 'Mini Tempo (Chiller)', route: 'Pune City Route', locations: ['Pune'] },
+    { id: 'DLV004', name: 'Ganesh Kadam', phone: '98221 10044', vehicle: 'Insulated Delivery Van', route: 'Mumbai City Route', locations: ['Mumbai'] },
+    { id: 'DLV005', name: 'Prakash Chavan', phone: '98221 10055', vehicle: 'Mini Tempo (Chiller)', route: 'Nashik City Route', locations: ['Nashik'] },
+    { id: 'DLV006', name: 'Santosh Deshmukh', phone: '98221 10066', vehicle: 'Insulated Delivery Van', route: 'Kolhapur City Route', locations: ['Kolhapur'] },
+    { id: 'DLV007', name: 'Dattatray Salunkhe', phone: '98221 10077', vehicle: 'Auto-Rickshaw (Cans)', route: 'Karad — Phaltan Route', locations: ['Karad', 'Phaltan'] },
+    { id: 'DLV008', name: 'Balaji Shelar', phone: '98221 10088', vehicle: 'Two-Wheeler Milk Carrier', route: 'Wai — Koregaon Route', locations: ['Wai', 'Koregaon'] },
   ];
+
+  // Persisted in the 'deliveryPersons' collection (same generic store
+  // everything else uses) so the list — and each person's allotted
+  // location(s) — survives reloads and redeploys instead of resetting to
+  // the hardcoded seed above every time. Seeds the server once, then every
+  // future load pulls from there.
+  async function hydrateDeliveryPersonsFromServer(){
+    const server = await dbGetAll('deliveryPersons');
+    if(server === null) return;
+    if(server.length === 0){
+      dbBulkSeed('deliveryPersons', DELIVERY_PERSONS);
+      return;
+    }
+    DELIVERY_PERSONS.length = 0;
+    server.forEach(p => DELIVERY_PERSONS.push(p));
+  }
 
   function formatDuration(min){
     if(min < 60) return `${min} min`;
@@ -3129,6 +3158,12 @@ Issued by Processing Team.`;
           <td>${p.phone}</td>
           <td>${p.vehicle}</td>
           <td>${p.route}</td>
+          <td>
+            <div class="dp-loc-edit">
+              <input type="text" id="dp-loc-${p.id}" value="${(p.locations || []).join(', ')}" placeholder="e.g. Karad, Wai">
+              <button class="dp-loc-save-btn" onclick="saveDeliveryPersonLocations('${p.id}')" title="Save allotted location(s)">💾</button>
+            </div>
+          </td>
           <td>${assigned.length} store${assigned.length !== 1 ? 's' : ''}</td>
           <td><button class="track-btn" onclick="showDeliveryTrackDetail('${p.id}')">Track Deliveries</button></td>
         </tr>
@@ -3140,7 +3175,7 @@ Issued by Processing Team.`;
           <thead>
             <tr>
               <th>Delivery Boy ID</th><th>Photo</th><th>Name</th><th>Phone</th><th>Vehicle</th>
-              <th>Assigned Route</th><th>Stores Covered</th><th>Track</th>
+              <th>Assigned Route</th><th>Allotted Location(s)</th><th>Stores Covered</th><th>Track</th>
             </tr>
           </thead>
           <tbody id="dpersonTableBody">${rows}
@@ -3151,6 +3186,7 @@ Issued by Processing Team.`;
               <td><input type="text" id="dp-phone" placeholder="Phone"></td>
               <td><input type="text" id="dp-vehicle" placeholder="Vehicle"></td>
               <td><input type="text" id="dp-route" placeholder="Route"></td>
+              <td><input type="text" id="dp-locations" placeholder="e.g. Karad, Wai"></td>
               <td>0 stores</td>
               <td><button class="table-add-btn" onclick="addDeliveryPersonRow()">+ Add</button></td>
             </tr>
@@ -3160,13 +3196,31 @@ Issued by Processing Team.`;
     `;
   }
 
-  function addDeliveryPersonRow(){
+  async function saveDeliveryPersonLocations(personId){
+    const input = document.getElementById(`dp-loc-${personId}`);
+    if(!input) return;
+    const locations = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
+    if(!p) return;
+    p.locations = locations;
+    await dbPut('deliveryPersons', personId, p);
+    input.style.borderColor = 'var(--success, #2E7D4F)';
+    setTimeout(() => { input.style.borderColor = ''; }, 900);
+  }
+
+  async function addDeliveryPersonRow(){
     const val = id => document.getElementById(id).value.trim();
-    const id_ = val('dp-id') || '—';
+    const id_ = val('dp-id');
+    if(!id_){ document.getElementById('dp-id').focus(); return; }
     const name = val('dp-name') || '—';
     const phone = val('dp-phone') || '—';
     const vehicle = val('dp-vehicle') || '—';
     const route = val('dp-route') || '—';
+    const locations = val('dp-locations').split(',').map(s => s.trim()).filter(Boolean);
+    const person = { id: id_, name, phone, vehicle, route, locations };
+    DELIVERY_PERSONS.push(person);
+    await dbPut('deliveryPersons', id_, person);
+
     const rowHTML = `<tr class="member-row">
         <td>${id_}</td>
         <td><div class="avatar dperson-avatar">${initials(name)}</div></td>
@@ -3174,11 +3228,17 @@ Issued by Processing Team.`;
         <td>${phone}</td>
         <td>${vehicle}</td>
         <td>${route}</td>
+        <td>
+          <div class="dp-loc-edit">
+            <input type="text" id="dp-loc-${id_}" value="${locations.join(', ')}" placeholder="e.g. Karad, Wai">
+            <button class="dp-loc-save-btn" onclick="saveDeliveryPersonLocations('${id_}')" title="Save allotted location(s)">💾</button>
+          </div>
+        </td>
         <td>0 stores</td>
         <td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td>
       </tr>`;
     document.querySelector('#dpersonTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
-    ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route'].forEach(id => document.getElementById(id).value = '');
+    ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route','dp-locations'].forEach(id => document.getElementById(id).value = '');
   }
 
   function showDeliveryTrackDetail(personId, outletKey){
@@ -4579,6 +4639,7 @@ Issued by Distribution Side.`;
     hydrateMembersFromServer(),
     hydrateProcessingMembersFromServer(),
     hydrateDistributionOutletsFromServer(),
+    hydrateDeliveryPersonsFromServer(),
     hydratePaymentHistoryFromServer()
   ]);
 </script>
