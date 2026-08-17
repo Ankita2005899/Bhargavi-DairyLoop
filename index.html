@@ -357,6 +357,33 @@
   .ap-preview-label{ font-family:'Fraunces', serif; font-weight:700; font-size:14px; color:var(--cream); margin:0 0 12px; opacity:0.85; }
   .ap-preview-holder{ position:sticky; top:0; }
 
+  /* ---------- Manage Products tab (list / edit / delete / show-hide / sold count) ---------- */
+  .ap-tabs{ display:flex; gap:8px; padding:14px 26px 0; background:var(--navy-2); flex-wrap:wrap; }
+  .ap-tab-btn{ font-size:13px; font-weight:600; padding:10px 18px; border-radius:12px 12px 0 0; color:var(--cream); background:rgba(244,239,230,0.1); }
+  .ap-tab-btn:hover{ background:rgba(244,239,230,0.2); }
+  .ap-tab-btn.active{ background:var(--cream); color:var(--navy); }
+  .ap-manage-toolbar{ display:flex; align-items:center; justify-content:space-between; max-width:1100px; margin:0 auto 18px; }
+  .ap-manage-count{ font-size:13px; color:var(--ink-soft); }
+  .ap-new-btn{ background:var(--brick); color:#fff; font-weight:700; font-size:13px; padding:10px 18px; border-radius:999px; }
+  .ap-new-btn:hover{ background:var(--brick-2); }
+  .ap-manage-grid{ max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:18px; }
+  .ap-manage-card{ background:var(--white); border-radius:14px; border:1px solid rgba(28,53,82,0.1); box-shadow:0 6px 16px rgba(28,53,82,0.06); overflow:hidden; display:flex; flex-direction:column; transition:opacity 0.2s ease; }
+  .ap-manage-card.is-hidden{ opacity:0.55; }
+  .ap-manage-media{ position:relative; height:110px; background:var(--cream-2); display:flex; align-items:center; justify-content:center; }
+  .ap-manage-media img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .ap-manage-media .emoji{ font-size:38px; }
+  .ap-manage-hidden-badge{ position:absolute; top:8px; left:8px; background:rgba(13,27,43,0.82); color:var(--cream); font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:0.03em; }
+  .ap-manage-sold-badge{ position:absolute; top:8px; right:8px; background:var(--gold); color:var(--navy-3); font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  .ap-manage-info{ padding:12px 14px 4px; flex:1; }
+  .ap-manage-name{ font-weight:700; font-size:14px; color:var(--navy); }
+  .ap-manage-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+  .ap-manage-actions{ display:flex; gap:6px; padding:10px 12px 14px; flex-wrap:wrap; }
+  .ap-manage-actions button{ flex:1; font-size:11.5px; font-weight:600; padding:8px 6px; border-radius:8px; background:var(--cream-2); color:var(--navy); white-space:nowrap; }
+  .ap-manage-actions button:hover{ background:rgba(28,53,82,0.14); }
+  .ap-manage-actions button.ap-act-delete{ color:var(--brick); }
+  .ap-manage-actions button.ap-act-delete:hover{ background:rgba(178,58,46,0.14); }
+  .ap-manage-actions button.ap-act-visible.is-hidden-state{ color:var(--ink-soft); }
+
   /* ---------- mobile ---------- */
   .mobile-nav-hint{ display:none; }
   @media(max-width:900px){
@@ -826,7 +853,7 @@
   <div class="studio-bar">
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
     <div class="ap-launcher-card" onclick="openAddProductForm()" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openAddProductForm()">
-      <span class="ap-launcher-icon">➕</span> Add New Product
+      <span class="ap-launcher-icon">🗂️</span> Manage Products
     </div>
     <div class="studio-bar-actions">
       <div class="mstudio-search">
@@ -846,10 +873,22 @@
 
 <div class="ap-overlay" id="apOverlay">
   <div class="ap-bar">
-    <div class="ap-bar-title">➕ Add New Product</div>
+    <div class="ap-bar-title">➕ Manage Products</div>
     <button class="ap-close" onclick="closeAddProductForm()">✕ Close</button>
   </div>
-  <div class="ap-body">
+  <div class="ap-tabs">
+    <button class="ap-tab-btn active" id="apTabBtnManage" onclick="apSwitchTab('manage')">📋 All Products</button>
+    <button class="ap-tab-btn" id="apTabBtnAdd" onclick="apSwitchTab('add')">➕ Add New Product</button>
+  </div>
+  <div class="ap-body" id="apBody">
+    <div id="apTabManage">
+      <div class="ap-manage-toolbar">
+        <div class="ap-manage-count" id="apManageCount"></div>
+        <button class="ap-new-btn" onclick="apStartNewProduct()">➕ Add New Product</button>
+      </div>
+      <div class="ap-manage-grid" id="apManageGrid"></div>
+    </div>
+    <div id="apTabAdd" style="display:none;">
     <div class="ap-wrap">
       <div class="ap-form-card">
         <div class="ap-section-title">Product Details</div>
@@ -892,7 +931,8 @@
           <div class="ap-field"><label>Carbs</label><input type="text" id="apNutriCarbs" placeholder="e.g. 4.7 g"></div>
         </div>
 
-        <button class="ap-submit-btn" onclick="submitAddProduct()">➕ Add Product to Website</button>
+        <button class="ap-submit-btn" id="apSubmitBtn" onclick="submitAddProduct()">➕ Add Product to Website</button>
+        <button class="ap-submit-btn" id="apCancelEditBtn" style="display:none; background:rgba(28,53,82,0.1); color:var(--navy); margin-top:8px;" onclick="apSwitchTab('manage')">Cancel</button>
       </div>
 
       <div class="ap-preview-holder">
@@ -901,6 +941,7 @@
           <div class="card reveal in" id="apPreviewCard"></div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>
@@ -923,6 +964,15 @@
     { id:'p9', name:'Gulab Flavoured Milk', category:'Milk & Beverages', unit:'200 ml Bottle', price:25, packedOn:'16 Aug 2026', bestBefore:'20 Aug 2026', icon:'🌹', short:'Chilled milk infused with real rose syrup.', desc:'Full cream milk lightly sweetened and infused with real rose syrup for a nostalgic, fragrant treat the whole family enjoys chilled.', nutrition:{Energy:'98 kcal', Fat:'4.0 g', Protein:'3.0 g', Carbs:'13 g'} },
     { id:'p10', name:'Artisan Cheese Block', category:'Paneer & Cheese', unit:'250 g Block', price:180, packedOn:'20 Jun 2026', bestBefore:'19 Oct 2026', icon:'🧀', short:'Aged, semi-hard cheese crafted in small artisan batches.', desc:'Aged for weeks in our dairy for a firm, semi-hard bite and a savoury depth — ideal for grating, slicing or melting into your favourite dishes.', nutrition:{Energy:'350 kcal', Fat:'27 g', Protein:'23 g', Carbs:'2.5 g'} }
   ];
+
+  // The IDs of the ten built-in products, captured before anything from
+  // Manage Products is ever pushed in. Used to decide where an edit or a
+  // delete gets persisted: a built-in product's changes are saved as an
+  // "override" (it can't be removed from this file's source, only hidden/
+  // overridden), while a Manage-Products-created product lives fully in
+  // its own server record and can be deleted outright.
+  const BUILTIN_IDS = new Set(PRODUCTS.map(p => p.id));
+
 
   const CATEGORIES = [
     { name:'Milk & Beverages', icon:'🥛', desc:'Full cream, toned & flavoured milk, chilled daily.' },
@@ -969,6 +1019,10 @@
       if(!res.ok) return null;
       return await res.json();
     }catch(e){ return null; }
+  }
+  async function dbDelete(collection, id){
+    try{ await fetch(`/api/store/${collection}/${encodeURIComponent(id)}`, { method:'DELETE' }); }
+    catch(e){ /* offline — server still has it, will retry not implemented for v1 */ }
   }
 
   // ---- Member ID search (Manage Studio bar + Owner Section bar) ---------
@@ -2038,6 +2092,7 @@
       updateOrderCount();
       const drawer = document.getElementById('drawer');
       if(drawer && drawer.classList.contains('open')) renderDeliveryView();
+      if(document.getElementById('apOverlay').classList.contains('show')) apRenderManageList();
     }
   }
 
@@ -2061,7 +2116,8 @@
   function setFilter(cat){ activeFilter = cat; renderFilters(); renderProducts(); }
 
   function renderProducts(){
-    const list = activeFilter === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === activeFilter);
+    const base = activeFilter === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === activeFilter);
+    const list = base.filter(p => !p.hidden);   // hidden products stay in Manage Products but not on the live site
     document.getElementById('prodGrid').innerHTML = list.map(p => `
       <div class="card reveal in">
         <div class="card-media">
@@ -2257,13 +2313,16 @@
     document.getElementById('drawerBody').innerHTML = body;
   }
 
-  // ---- Add New Product (Manage Studio → ➕ Add New Product) --------------
-  // New products are saved to the 'customProducts' collection on the
-  // server (same store the rest of the app already uses), so once added
-  // they are live for every visitor — not just this browser — exactly
-  // like the built-in PRODUCTS list, and work with See Detail / Buy Now /
-  // Razorpay the same way because they simply get pushed into PRODUCTS.
+  // ---- Manage Products (Manage Studio → 🗂️ Manage Products) --------------
+  // "All Products" lists every product — built-in and Manage-Products-
+  // created — as a manageable card: edit re-opens the same form pre-filled,
+  // save updates the live website, the eye button shows/hides a product on
+  // the site without deleting it, delete removes it for good, and the gold
+  // badge shows how many people have bought that product (from orders).
+  // New products, edits and hide/show state are all saved to the server,
+  // so every visitor sees the same catalogue — not just this browser.
   let apImageData = '';
+  let apEditingId = null;   // null = Add New mode; a product id = Editing that product
 
   function apPopulateCategoryList(){
     const dl = document.getElementById('apCategoryList');
@@ -2271,12 +2330,117 @@
   }
 
   function openAddProductForm(){
-    apPopulateCategoryList();
+    apSwitchTab('manage');
     document.getElementById('apOverlay').classList.add('show');
-    apUpdatePreview();
   }
   function closeAddProductForm(){
     document.getElementById('apOverlay').classList.remove('show');
+  }
+
+  function apSwitchTab(tab){
+    const isAdd = tab === 'add';
+    document.getElementById('apTabAdd').style.display = isAdd ? '' : 'none';
+    document.getElementById('apTabManage').style.display = isAdd ? 'none' : '';
+    document.getElementById('apTabBtnAdd').classList.toggle('active', isAdd);
+    document.getElementById('apTabBtnManage').classList.toggle('active', !isAdd);
+    if(isAdd){ apPopulateCategoryList(); apUpdatePreview(); }
+    else{ apRenderManageList(); }
+  }
+
+  function apStartNewProduct(){
+    apEditingId = null;
+    apResetForm();
+    document.getElementById('apSubmitBtn').textContent = '➕ Add Product to Website';
+    document.getElementById('apCancelEditBtn').style.display = 'none';
+    apSwitchTab('add');
+  }
+
+  function apOrderCount(productId){
+    return getOrders().filter(o => o.productId === productId).length;
+  }
+
+  function apRenderManageList(){
+    document.getElementById('apManageCount').textContent = `${PRODUCTS.length} product${PRODUCTS.length===1?'':'s'} · ${PRODUCTS.filter(p=>p.hidden).length} hidden from the website`;
+    document.getElementById('apManageGrid').innerHTML = PRODUCTS.map(p => {
+      const sold = apOrderCount(p.id);
+      return `
+      <div class="ap-manage-card ${p.hidden ? 'is-hidden' : ''}">
+        <div class="ap-manage-media">
+          ${p.hidden ? `<div class="ap-manage-hidden-badge">Hidden</div>` : ''}
+          <div class="ap-manage-sold-badge">🛒 ${sold} sold</div>
+          ${p.image ? `<img src="${p.image}" alt="${p.name}">` : `<div class="emoji">${p.icon}</div>`}
+        </div>
+        <div class="ap-manage-info">
+          <div class="ap-manage-name">${p.name}</div>
+          <div class="ap-manage-meta">${p.category} · ₹${p.price} · ${p.unit}</div>
+        </div>
+        <div class="ap-manage-actions">
+          <button class="ap-act-visible ${p.hidden ? 'is-hidden-state' : ''}" onclick="apToggleVisibility('${p.id}')">${p.hidden ? '🙈 Show' : '👁 Visible'}</button>
+          <button onclick="apOpenEditProduct('${p.id}')">✏️ Edit</button>
+          <button class="ap-act-delete" onclick="apDeleteProduct('${p.id}')">🗑 Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function apPersistProduct(p){
+    // Built-in products can't be removed from this file's source array, so
+    // edits/visibility for them are saved as a full-record "override" that
+    // gets merged back on top of the built-in entry on every page load.
+    // Manage-Products-created products are saved in their own collection.
+    if(BUILTIN_IDS.has(p.id)) dbPut('productOverrides', p.id, p);
+    else dbPut('customProducts', p.id, p);
+  }
+
+  function apToggleVisibility(id){
+    const p = PRODUCTS.find(x => x.id === id);
+    if(!p) return;
+    p.hidden = !p.hidden;
+    apPersistProduct(p);
+    renderFilters();
+    renderProducts();
+    apRenderManageList();
+    showToast(`${p.name} is now ${p.hidden ? 'hidden from' : 'visible on'} the website`, true);
+  }
+
+  function apOpenEditProduct(id){
+    const p = PRODUCTS.find(x => x.id === id);
+    if(!p) return;
+    apEditingId = id;
+    apPopulateCategoryList();
+    document.getElementById('apName').value = p.name || '';
+    document.getElementById('apCategory').value = p.category || '';
+    document.getElementById('apUnit').value = p.unit || '';
+    document.getElementById('apPrice').value = p.price || '';
+    document.getElementById('apPackedOn').value = p.packedOn || '';
+    document.getElementById('apBestBefore').value = p.bestBefore || '';
+    document.getElementById('apShort').value = p.short || '';
+    document.getElementById('apDesc').value = p.desc || '';
+    document.getElementById('apIcon').value = p.icon || '';
+    document.getElementById('apNutriEnergy').value = (p.nutrition && p.nutrition.Energy) || '';
+    document.getElementById('apNutriFat').value = (p.nutrition && p.nutrition.Fat) || '';
+    document.getElementById('apNutriProtein').value = (p.nutrition && p.nutrition.Protein) || '';
+    document.getElementById('apNutriCarbs').value = (p.nutrition && p.nutrition.Carbs) || '';
+    apImageData = p.image || '';
+    const img = document.getElementById('apImagePreviewImg');
+    if(apImageData){ img.src = apImageData; img.style.display = 'block'; document.getElementById('apImageDropText').textContent = '📷 Click to change photo'; }
+    else{ img.style.display = 'none'; img.src = ''; document.getElementById('apImageDropText').textContent = '📷 Click to upload a product photo'; }
+    document.getElementById('apSubmitBtn').textContent = '💾 Save Changes';
+    document.getElementById('apCancelEditBtn').style.display = '';
+    apSwitchTab('add');
+  }
+
+  function apDeleteProduct(id){
+    const p = PRODUCTS.find(x => x.id === id);
+    if(!p) return;
+    if(!confirm(`Delete "${p.name}"? This removes it from the website for everyone.`)) return;
+    PRODUCTS.splice(PRODUCTS.indexOf(p), 1);
+    if(BUILTIN_IDS.has(id)) dbPut('productOverrides', id, { id, deleted:true });
+    else dbDelete('customProducts', id);
+    renderFilters();
+    renderProducts();
+    apRenderManageList();
+    showToast(`${p.name} deleted`, true);
   }
 
   function apHandleImage(e){
@@ -2340,9 +2504,8 @@
       return;
     }
 
-    const id = 'c' + Date.now();
-    const newProduct = {
-      id, name, category, unit, price,
+    const fields = {
+      name, category, unit, price,
       packedOn: document.getElementById('apPackedOn').value.trim() || new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }),
       bestBefore: document.getElementById('apBestBefore').value.trim() || '—',
       icon: document.getElementById('apIcon').value.trim() || '🥛',
@@ -2357,14 +2520,28 @@
       }
     };
 
-    PRODUCTS.push(newProduct);
-    dbPut('customProducts', id, newProduct);   // persisted to the server — live for every visitor
+    if(apEditingId){
+      const p = PRODUCTS.find(x => x.id === apEditingId);
+      if(p){
+        Object.assign(p, fields);
+        apPersistProduct(p);
+        showToast(`${p.name} updated — changes are live on the website`, true);
+      }
+    }else{
+      const id = 'c' + Date.now();
+      const newProduct = { id, ...fields };
+      PRODUCTS.push(newProduct);
+      apPersistProduct(newProduct);   // persisted to the server — live for every visitor
+      showToast(`${name} added — now live on the website`, true);
+    }
 
     renderFilters();
     renderProducts();
     apResetForm();
-    closeAddProductForm();
-    showToast(`${name} added — now live on the website`, true);
+    apEditingId = null;
+    document.getElementById('apSubmitBtn').textContent = '➕ Add Product to Website';
+    document.getElementById('apCancelEditBtn').style.display = 'none';
+    apSwitchTab('manage');
   }
 
   function apResetForm(){
@@ -2380,13 +2557,23 @@
     document.getElementById('apImageInput').value = '';
   }
 
-  async function hydrateCustomProducts(){
-    const list = await dbGetAll('customProducts');
-    if(list && list.length){
-      list.forEach(p => { if(p && p.id && !PRODUCTS.find(x => x.id === p.id)) PRODUCTS.push(p); });
-      renderFilters();
-      renderProducts();
+  async function hydrateProductManagement(){
+    const [custom, overrides] = await Promise.all([dbGetAll('customProducts'), dbGetAll('productOverrides')]);
+    if(custom && custom.length){
+      custom.forEach(p => { if(p && p.id && !PRODUCTS.find(x => x.id === p.id)) PRODUCTS.push(p); });
     }
+    if(overrides && overrides.length){
+      overrides.forEach(ov => {
+        if(!ov || !ov.id) return;
+        const target = PRODUCTS.find(x => x.id === ov.id);
+        if(!target) return;
+        if(ov.deleted) PRODUCTS.splice(PRODUCTS.indexOf(target), 1);
+        else Object.assign(target, ov);
+      });
+    }
+    renderFilters();
+    renderProducts();
+    if(document.getElementById('apOverlay').classList.contains('show')) apRenderManageList();
   }
 
   function openStudio(){
@@ -2413,7 +2600,7 @@
   renderProducts();
   updateOrderCount();
   hydrateOrdersFromServer();
-  hydrateCustomProducts();
+  hydrateProductManagement();
   setupReveal();
   tryRestoreSession();
   document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); closeInfoModal(); closeOwnerPasswordModal(); closeOwnerPanel(); closeAddProductForm(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
