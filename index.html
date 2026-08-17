@@ -460,6 +460,10 @@
   .info-row .ir-label{ color:var(--ink-soft); font-weight:700; }
   .info-row .ir-value{ color:var(--ink); text-align:right; }
   .info-list-item{ padding:10px 0; border-bottom:1px solid rgba(28,53,82,0.1); font-size:13px; color:var(--ink); line-height:1.5; }
+  .mi-alert-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#c0392b; margin-left:6px; vertical-align:middle; }
+  .profile-required-banner{ background:#FBEFEA; border:1px solid #E8B4A0; color:#9A3B1F; border-radius:10px; padding:12px 14px; font-size:12.5px; font-weight:600; margin-bottom:16px; line-height:1.5; }
+  .pf-subtext{ font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; line-height:1.5; }
+  #pfError{ color:#c0392b; font-size:12.5px; margin:6px 0 0; min-height:1px; }
   .info-list-item:last-child{ border-bottom:none; }
   .info-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:20px 0; }
 
@@ -1296,6 +1300,100 @@
       ? hist.map(h => `<div class="info-list-item"><b>${h.type === 'signup' ? 'Account Created' : h.type === 'logout' ? 'Logged Out' : 'Logged In'}</b> — ${new Date(h.at).toLocaleString('en-IN')}</div>`).join('')
       : '<div class="info-empty">No login history yet.</div>';
     openInfoModal('Login Detail', `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">History for ${currentAccount.email}</div>${rows}`);
+  }
+
+  // ---- My Profile / delivery details ------------------------------------
+  // Stored right on the account record (currentAccount.deliveryDetails) so
+  // it rides along with the same studioAccounts row and is persisted with
+  // the same dbPut() the rest of the account already uses. "Buy Now" checks
+  // isProfileComplete() before ever opening Razorpay — an incomplete profile
+  // sends the shopper straight here instead, with pendingBuyAfterProfile
+  // remembering what they were trying to buy so the purchase resumes the
+  // moment they hit Save.
+  const PROFILE_REQUIRED_FIELDS = ['fullName','phone1','phone2','addressLine1','addressLine2','city','state','pincode'];
+  let pendingBuyAfterProfile = null;
+
+  function isProfileComplete(account){
+    if(!account) return false;
+    const d = account.deliveryDetails;
+    if(!d) return false;
+    return PROFILE_REQUIRED_FIELDS.every(f => (d[f] || '').toString().trim().length > 0);
+  }
+
+  function pfEsc(v){
+    return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function openMyProfile(fromBuyAttempt){
+    if(!currentAccount){ openInfoModal('My Profile', '<div class="info-empty">Please log in first.</div>'); return; }
+    const d = currentAccount.deliveryDetails || {};
+    const banner = fromBuyAttempt
+      ? `<div class="profile-required-banner">📦 Before you can place an order, please fill in your delivery details below — this is compulsory so we know where to deliver your product.</div>`
+      : '';
+    openInfoModal('👤 My Profile — Delivery Details', `
+      ${banner}
+      <div class="pf-subtext">These details are used to deliver every order to your doorstep. Fields marked * are required. You can come back and update them anytime.</div>
+      <div class="ap-section-title">Contact Details</div>
+      <div class="ap-grid2">
+        <div class="ap-field"><label>Full Name *</label><input type="text" id="pfName" value="${pfEsc(d.fullName || currentAccount.name || '')}"></div>
+        <div class="ap-field"><label>Email</label><input type="text" value="${pfEsc(currentAccount.email)}" disabled></div>
+      </div>
+      <div class="ap-grid2">
+        <div class="ap-field"><label>Primary Phone Number *</label><input type="tel" id="pfPhone1" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc(d.phone1 || currentAccount.phone || '')}"></div>
+        <div class="ap-field"><label>Alternate Phone Number *</label><input type="tel" id="pfPhone2" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc(d.phone2 || '')}"></div>
+      </div>
+      <div class="ap-section-title">Delivery Address</div>
+      <div class="ap-field"><label>Address Line 1 (House / Flat / Street) *</label><input type="text" id="pfAddr1" placeholder="e.g. Flat 4B, Shree Krupa Apartments" value="${pfEsc(d.addressLine1 || '')}"></div>
+      <div class="ap-field"><label>Address Line 2 (Locality / Area) *</label><input type="text" id="pfAddr2" placeholder="e.g. Near Ganesh Mandir, Kothrud" value="${pfEsc(d.addressLine2 || '')}"></div>
+      <div class="ap-field"><label>Landmark (optional)</label><input type="text" id="pfLandmark" placeholder="e.g. Opposite HDFC Bank" value="${pfEsc(d.landmark || '')}"></div>
+      <div class="ap-grid2">
+        <div class="ap-field"><label>City *</label><input type="text" id="pfCity" value="${pfEsc(d.city || '')}"></div>
+        <div class="ap-field"><label>State *</label><input type="text" id="pfState" value="${pfEsc(d.state || '')}"></div>
+      </div>
+      <div class="ap-grid2">
+        <div class="ap-field"><label>Pincode *</label><input type="text" id="pfPincode" maxlength="6" placeholder="6-digit PIN code" value="${pfEsc(d.pincode || '')}"></div>
+        <div class="ap-field"><label>Delivery Instructions (optional)</label><input type="text" id="pfInstructions" placeholder="e.g. Leave with the security guard" value="${pfEsc(d.instructions || '')}"></div>
+      </div>
+      <div id="pfError"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveMyProfile()">💾 Save Delivery Details</button>
+    `);
+  }
+
+  async function saveMyProfile(){
+    const errEl = document.getElementById('pfError');
+    errEl.textContent = '';
+    const get = id => document.getElementById(id).value.trim();
+    const details = {
+      fullName: get('pfName'),
+      phone1: get('pfPhone1'),
+      phone2: get('pfPhone2'),
+      addressLine1: get('pfAddr1'),
+      addressLine2: get('pfAddr2'),
+      landmark: get('pfLandmark'),
+      city: get('pfCity'),
+      state: get('pfState'),
+      pincode: get('pfPincode'),
+      instructions: get('pfInstructions'),
+      updatedAt: new Date().toISOString()
+    };
+    const missing = PROFILE_REQUIRED_FIELDS.filter(f => !details[f]);
+    if(missing.length){ errEl.textContent = 'Please fill in all the required fields marked with *.'; return; }
+    if(!/^\d{10}$/.test(details.phone1)){ errEl.textContent = 'Primary phone number must be a valid 10-digit number.'; return; }
+    if(!/^\d{10}$/.test(details.phone2)){ errEl.textContent = 'Alternate phone number must be a valid 10-digit number.'; return; }
+    if(!/^\d{6}$/.test(details.pincode)){ errEl.textContent = 'Pincode must be a valid 6-digit PIN code.'; return; }
+
+    currentAccount.deliveryDetails = details;
+    if(!currentAccount.name) currentAccount.name = details.fullName;
+    if(!currentAccount.phone) currentAccount.phone = details.phone1;
+    await dbPut(AUTH_COLLECTION, currentAccount.email, currentAccount);
+    closeInfoModal();
+    showToast('Delivery details saved', true);
+
+    if(pendingBuyAfterProfile){
+      const { productId, qty } = pendingBuyAfterProfile;
+      pendingBuyAfterProfile = null;
+      buyNow(productId, qty);
+    }
   }
 
   // The "🚪 Log Out" button: for an owner, this now opens the full-screen
@@ -2213,6 +2311,14 @@
   function buyNow(productId, qty){
     const p = PRODUCTS.find(x => x.id === productId);
     if(!p) return;
+    if(!currentAccount){ showToast('Please log in to place an order', false); return; }
+    if(!isProfileComplete(currentAccount)){
+      closeModal();
+      pendingBuyAfterProfile = { productId, qty };
+      showToast('Please complete your delivery details before ordering', false);
+      openMyProfile(true);
+      return;
+    }
     if(typeof Razorpay === 'undefined'){
       showToast('Payment gateway failed to load. Check your connection.', false);
       return;
@@ -2245,6 +2351,7 @@
           date: new Date().toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
           status: 'Confirmed',
           email: currentAccount ? currentAccount.email : null,   // ties this order to the account that placed it
+          deliveryDetails: currentAccount ? currentAccount.deliveryDetails : null,   // snapshot of the address it should reach
           stage: null   // set by the owner in Manage Studio → Customer Order Tracking; null = just Confirmed
         };
         orders.unshift(newOrder);
@@ -2298,6 +2405,7 @@
       <a class="menu-item" href="#contact" onclick="closeDrawer()"><span class="mi-icon">✉️</span>Contact</a>
       <div class="menu-divider"></div>
       <div class="menu-sub">Account</div>
+      <button class="menu-item" onclick="closeDrawer(); openMyProfile(false)"><span class="mi-icon">👤</span>My Profile${isProfileComplete(currentAccount) ? '' : ' <span class="mi-alert-dot" title="Delivery details missing"></span>'}</button>
       <button class="menu-item" onclick="renderDeliveryView()"><span class="mi-icon">📦</span>View Your Delivery</button>
       <button class="menu-item" onclick="openStudio()"><span class="mi-icon">🛠</span>Manage Studio</button>
     `;
