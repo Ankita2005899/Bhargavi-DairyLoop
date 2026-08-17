@@ -882,6 +882,7 @@
     <div class="stage-options" id="distribution-options">
       <button class="option-btn" data-detail="dist-members">Member Detail <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-delivery">Delivery Related Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="dist-customer-orders">Customer Order Tracking <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-returns">Returns / Complaints Log <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-expiry">Expiry / Shelf-Life Tracking <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-orderhistory">Order History (Past Months) <span class="arrow">›</span></button>
@@ -2593,6 +2594,7 @@ Issued by Processing Team.`;
       else if(type === 'dist-returns') renderReturnsDetail();
       else if(type === 'dist-expiry') renderExpiryDetail();
       else if(type === 'dist-orderhistory') renderOrderHistoryDetail();
+      else if(type === 'dist-customer-orders') renderCustomerOrderTracking();
     });
   });
 
@@ -4469,6 +4471,108 @@ Issued by Distribution Side.`;
     const rowHTML = `<tr class="member-row"><td>${month}</td><td>${store}</td><td>${product}</td><td>${qty}</td><td>₹ ${amountFmt}</td><td>${payment}</td><td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td></tr>`;
     document.querySelector('#orderHistoryTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
     ['oh-month','oh-store','oh-product','oh-qty','oh-amount'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- Customer Order Tracking (online storefront orders) ----------------
+  // Looks up a single online order (placed via Buy Now on the storefront) by
+  // its Order ID, and lets the owner move it through the same 6-stage
+  // delivery journey used for outlet distribution. The saved stage is
+  // written back to the shared `orders` collection, so the customer's own
+  // "My Deliveries" view on the storefront (matched by their account email)
+  // picks it up on its next refresh — no separate sync needed.
+  async function renderCustomerOrderTracking(){
+    detailShell(
+      'Customer Order Tracking',
+      'Look up an online customer order by Order ID and move it through the delivery stages — the customer sees the same update in their own "My Deliveries".',
+      `
+      <div class="collection-grid">
+        <div class="collection-col id-col">
+          <div class="col-title">Order ID</div>
+          <input type="text" id="custOrderIdInput" placeholder="e.g. ORD-87650187" onkeydown="if(event.key==='Enter') searchCustomerOrder()" />
+          <button onclick="searchCustomerOrder()">Search</button>
+        </div>
+        <div class="result-col-wrap">
+          <div class="collection-col result-col" id="custOrderResultCol">
+            <div class="col-title">Order Detail</div>
+            <div class="result-placeholder">Enter an Order ID above to view and update its delivery stage.</div>
+          </div>
+        </div>
+      </div>
+      <div class="expand-title" style="margin-top:22px;">Recent Online Orders</div>
+      <div id="custOrderRecentList" class="result-placeholder">Loading…</div>
+    `);
+    renderRecentCustomerOrders();
+  }
+
+  async function renderRecentCustomerOrders(){
+    const all = await dbGetAll('orders');
+    const wrap = document.getElementById('custOrderRecentList');
+    if(!wrap) return;
+    if(!all || !all.length){ wrap.innerHTML = '<div class="result-placeholder">No online orders yet.</div>'; return; }
+    const sorted = all.slice().sort((a,b) => (b.ts||0) - (a.ts||0)).slice(0, 12);
+    wrap.innerHTML = `<table class="detail-table"><thead><tr><th>Order ID</th><th>Product</th><th>Customer Email</th><th>Date</th><th>Current Stage</th></tr></thead><tbody>
+      ${sorted.map(o => `<tr class="member-row" style="cursor:pointer;" onclick="loadCustomerOrder('${o.id}')">
+        <td>${o.id}</td><td>${o.icon || ''} ${o.name}</td><td>${o.email || '— (guest / older order)'}</td><td>${o.date}</td>
+        <td>${DELIVERY_STEP_LABELS[o.stage ?? 0]}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  function searchCustomerOrder(){
+    const id = document.getElementById('custOrderIdInput').value.trim();
+    if(!id) return;
+    loadCustomerOrder(id);
+  }
+
+  async function loadCustomerOrder(orderId){
+    const idInput = document.getElementById('custOrderIdInput');
+    if(idInput) idInput.value = orderId;
+    const col = document.getElementById('custOrderResultCol');
+    col.innerHTML = `<div class="col-title">Order Detail</div><div class="result-placeholder">Searching…</div>`;
+    const order = await dbGetOne('orders', orderId);
+    if(!order){
+      col.innerHTML = `<div class="col-title">Order Detail</div><div class="result-placeholder">No order found for ID "${orderId}".</div>`;
+      return;
+    }
+    renderCustomerOrderCard(order);
+  }
+
+  function renderCustomerOrderCard(order){
+    const col = document.getElementById('custOrderResultCol');
+    if(!col) return;
+    const stage = order.stage ?? 0;
+    const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
+      <div class="chain-step ${i > stage ? 'pending' : ''}" style="cursor:pointer;" onclick="setCustomerOrderStage('${order.id}', ${i})">
+        <div class="chain-line"></div>
+        <div class="chain-node">${i <= stage ? '✓' : (i + 1)}</div>
+        <div class="chain-label">${label}</div>
+      </div>
+    `).join('');
+    col.innerHTML = `
+      <div class="col-title">Order Detail</div>
+      <div class="dtrack-store-card">
+        <div class="avatar">${(order.email || '?').slice(0, 2).toUpperCase()}</div>
+        <div>
+          <div class="dsc-name">${order.icon || ''} ${order.name} — ${order.qty} × ${order.unit}</div>
+          <div class="dsc-sub">${order.email || 'No account email on this order'} · ${order.date} · ₹${order.amount}</div>
+        </div>
+      </div>
+      <div class="expand-title">Delivery Stage — tap a step to mark it reached</div>
+      <div class="delivery-chain">${stepsHtml}</div>
+      <div class="result-placeholder" id="custOrderSaveMsg" style="margin-top:8px;"></div>
+    `;
+  }
+
+  async function setCustomerOrderStage(orderId, stageIdx){
+    const order = await dbGetOne('orders', orderId);
+    if(!order) return;
+    order.stage = stageIdx;
+    order.status = DELIVERY_STEP_LABELS[stageIdx];
+    await dbPut('orders', orderId, order);
+    renderCustomerOrderCard(order);
+    const msg = document.getElementById('custOrderSaveMsg');
+    if(msg) msg.textContent = `Saved — customer will now see "${DELIVERY_STEP_LABELS[stageIdx]}" in their My Deliveries.`;
+    renderRecentCustomerOrders();
   }
 
   const studioDataReady = Promise.all([
