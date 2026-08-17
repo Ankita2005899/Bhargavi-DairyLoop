@@ -3148,10 +3148,17 @@ Issued by Processing Team.`;
     `;
   }
 
-  function showDeliveryPersonDetail(){
+  async function showDeliveryPersonDetail(){
     setActiveDistTab('dist-tab-dperson');
+    const allOrders = await dbGetAll('orders') || [];
     const rows = DELIVERY_PERSONS.map(p => {
       const assigned = getAllDeliveryAssignments(p.id);
+      // "Deliveries Covered" now counts BOTH the B2B outlets this person is
+      // routed to AND every online customer order auto-matched to them by
+      // allotted location — previously this only counted outlets, so a
+      // delivery person handling online orders always showed 0.
+      const onlineCount = allOrders.filter(o => o.deliveryPersonId === p.id).length;
+      const totalCovered = assigned.length + onlineCount;
       return `
         <tr class="member-row">
           <td>${p.id}</td>
@@ -3166,8 +3173,11 @@ Issued by Processing Team.`;
               <button class="dp-loc-save-btn" onclick="saveDeliveryPersonLocations('${p.id}')" title="Save allotted location(s)">💾</button>
             </div>
           </td>
-          <td>${assigned.length} store${assigned.length !== 1 ? 's' : ''}</td>
-          <td><button class="track-btn" onclick="showDeliveryTrackDetail('${p.id}')">Track Deliveries</button></td>
+          <td>${totalCovered} ${totalCovered === 1 ? 'delivery' : 'deliveries'}</td>
+          <td><button class="track-btn" onclick="toggleDeliveryLog('${p.id}')">📅 Daily Log</button></td>
+        </tr>
+        <tr class="expand-row" id="dp-log-row-${p.id}" style="display:none;">
+          <td colspan="9"><div id="dp-log-content-${p.id}"></div></td>
         </tr>
       `;
     }).join('');
@@ -3177,7 +3187,7 @@ Issued by Processing Team.`;
           <thead>
             <tr>
               <th>Delivery Boy ID</th><th>Photo</th><th>Name</th><th>Phone</th><th>Vehicle</th>
-              <th>Assigned Route</th><th>Allotted Location(s)</th><th>Stores Covered</th><th>Track</th>
+              <th>Assigned Route</th><th>Allotted Location(s)</th><th>Deliveries Covered</th><th>Daily Log</th>
             </tr>
           </thead>
           <tbody id="dpersonTableBody">${rows}
@@ -3189,7 +3199,7 @@ Issued by Processing Team.`;
               <td><input type="text" id="dp-vehicle" placeholder="Vehicle"></td>
               <td><input type="text" id="dp-route" placeholder="Route"></td>
               <td><input type="text" id="dp-locations" placeholder="e.g. Karad, Wai"></td>
-              <td>0 stores</td>
+              <td>0 deliveries</td>
               <td><button class="table-add-btn" onclick="addDeliveryPersonRow()">+ Add</button></td>
             </tr>
           </tbody>
@@ -3236,11 +3246,84 @@ Issued by Processing Team.`;
             <button class="dp-loc-save-btn" onclick="saveDeliveryPersonLocations('${id_}')" title="Save allotted location(s)">💾</button>
           </div>
         </td>
-        <td>0 stores</td>
-        <td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td>
+        <td>0 deliveries</td>
+        <td><button class="track-btn" onclick="toggleDeliveryLog('${id_}')">📅 Daily Log</button></td>
+      </tr>
+      <tr class="expand-row" id="dp-log-row-${id_}" style="display:none;">
+        <td colspan="9"><div id="dp-log-content-${id_}"></div></td>
       </tr>`;
     document.querySelector('#dpersonTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
     ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route','dp-locations'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ---- Daily Delivery Log --------------------------------------------------
+  // Lets each delivery person (via the owner, from this table) record how
+  // many deliveries they completed on a given day. Saved per person in the
+  // 'deliveryDailyLog' collection as { personId, entries: [{date, count}] },
+  // one entry per calendar day (re-saving the same date overwrites that
+  // day's count rather than duplicating it). Surfaced to the owner both
+  // here (inline) and in the storefront's Owner Section -> Delivery tab.
+  async function toggleDeliveryLog(personId){
+    const row = document.getElementById(`dp-log-row-${personId}`);
+    if(!row) return;
+    if(row.style.display !== 'none'){ row.style.display = 'none'; return; }
+    row.style.display = 'table-row';
+    const content = document.getElementById(`dp-log-content-${personId}`);
+    content.innerHTML = '<div class="result-placeholder">Loading…</div>';
+    const record = await dbGetOne('deliveryDailyLog', personId);
+    renderDeliveryLogPanel(personId, (record && record.entries) || []);
+  }
+
+  function renderDeliveryLogPanel(personId, entries){
+    const content = document.getElementById(`dp-log-content-${personId}`);
+    if(!content) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const sorted = entries.slice().sort((a, b) => b.date.localeCompare(a.date));
+    const rows = sorted.length
+      ? sorted.map(e => `<tr><td>${new Date(e.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td>${e.count}</td></tr>`).join('')
+      : `<tr><td colspan="2" style="color:#8a7a58;font-style:italic;">No deliveries logged yet.</td></tr>`;
+    const totalCount = entries.reduce((s, e) => s + (e.count || 0), 0);
+    content.innerHTML = `
+      <div class="expand-title">Daily Delivery Log</div>
+      <div class="dtrack-select-bar" style="margin-top:0;">
+        <div class="dtrack-select-field">
+          <label>Date</label>
+          <input type="date" id="dp-log-date-${personId}" value="${today}" max="${today}">
+        </div>
+        <div class="dtrack-select-field" style="flex:0 0 150px;">
+          <label>Deliveries Done</label>
+          <input type="number" min="0" id="dp-log-count-${personId}" placeholder="e.g. 12">
+        </div>
+        <button class="track-btn" style="align-self:flex-end;" onclick="saveDeliveryLogEntry('${personId}')">💾 Save</button>
+      </div>
+      <div class="result-placeholder" id="dp-log-msg-${personId}" style="margin:8px 0 14px;"></div>
+      <table class="mini-table">
+        <thead><tr><th>Date</th><th>Deliveries Done</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:10px;font-size:12.5px;color:#8a7a58;">Total logged: <b style="color:#3E3324;">${totalCount}</b> deliveries across ${entries.length} day${entries.length !== 1 ? 's' : ''}</div>
+    `;
+  }
+
+  async function saveDeliveryLogEntry(personId){
+    const dateInput = document.getElementById(`dp-log-date-${personId}`);
+    const countInput = document.getElementById(`dp-log-count-${personId}`);
+    const msg = document.getElementById(`dp-log-msg-${personId}`);
+    const date = dateInput.value;
+    const count = parseInt(countInput.value, 10);
+    if(!date){ msg.textContent = 'Pick a date first.'; return; }
+    if(isNaN(count) || count < 0){ msg.textContent = 'Enter a valid number of deliveries.'; return; }
+
+    const record = (await dbGetOne('deliveryDailyLog', personId)) || { personId, entries: [] };
+    record.entries = record.entries || [];
+    const existingIdx = record.entries.findIndex(e => e.date === date);
+    if(existingIdx !== -1) record.entries[existingIdx].count = count;
+    else record.entries.push({ date, count });
+    await dbPut('deliveryDailyLog', personId, record);
+
+    countInput.value = '';
+    msg.textContent = `Saved — ${count} deliveries logged for ${new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.`;
+    renderDeliveryLogPanel(personId, record.entries);
   }
 
   function showDeliveryTrackDetail(personId, outletKey){

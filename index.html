@@ -696,6 +696,7 @@
     <button onclick="switchOwnerTab('procurement', this)">🚜 Procurement</button>
     <button onclick="switchOwnerTab('processing', this)">🧑‍🍳 Creators (Processing)</button>
     <button onclick="switchOwnerTab('distribution', this)">🏬 Distributors</button>
+    <button onclick="switchOwnerTab('delivery', this)">🚴 Delivery</button>
     <button onclick="switchOwnerTab('payments', this)">💰 Payments</button>
   </div>
   <div class="owner-panel-body" id="ownerPanelBody"></div>
@@ -1626,14 +1627,18 @@
     }
   }
   async function showOwnerPanel(){
-    const [accounts, procurement, processing, distribution] = await Promise.all([
-      dbGetAll(AUTH_COLLECTION), dbGetAll('members'), dbGetAll('processingMembers'), dbGetAll('distributionOutlets')
+    const [accounts, procurement, processing, distribution, deliveryPersons, deliveryDailyLogs, orders] = await Promise.all([
+      dbGetAll(AUTH_COLLECTION), dbGetAll('members'), dbGetAll('processingMembers'), dbGetAll('distributionOutlets'),
+      dbGetAll('deliveryPersons'), dbGetAll('deliveryDailyLog'), dbGetAll('orders')
     ]);
     ownerData = {
       accounts: Array.isArray(accounts) ? accounts : [],
       procurement: Array.isArray(procurement) ? procurement : [],
       processing: Array.isArray(processing) ? processing : [],
-      distribution: Array.isArray(distribution) ? distribution : []
+      distribution: Array.isArray(distribution) ? distribution : [],
+      deliveryPersons: Array.isArray(deliveryPersons) ? deliveryPersons : [],
+      deliveryDailyLogs: Array.isArray(deliveryDailyLogs) ? deliveryDailyLogs : [],
+      orders: Array.isArray(orders) ? orders : []
     };
     ownerActiveTab = 'accounts';
     ownerPinnedMemberId = null;
@@ -1757,6 +1762,24 @@
       }).join('') : '<div class="op-empty">Nothing here yet.</div>';
     } else if(tab === 'payments'){
       body.innerHTML = renderPaymentsTabHTML();
+    } else if(tab === 'delivery'){
+      const logByPerson = {};
+      ownerData.deliveryDailyLogs.forEach(r => { logByPerson[r.personId] = r.entries || []; });
+      const rows = ownerData.deliveryPersons.map(p => {
+        const entries = logByPerson[p.id] || [];
+        const total = entries.reduce((s, e) => s + (e.count || 0), 0);
+        const onlineCount = ownerData.orders.filter(o => o.deliveryPersonId === p.id).length;
+        const lastEntry = entries.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
+        return [
+          p.id, p.name, p.phone || '—', (p.locations || []).join(', ') || '—',
+          onlineCount, total,
+          lastEntry ? `${new Date(lastEntry.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} — ${lastEntry.count}` : '—'
+        ];
+      });
+      body.innerHTML = `
+        <div class="op-section-head">Delivery Persons — Daily Delivery Log<span class="op-count-pill">${rows.length}</span></div>
+        ${opTable(['ID', 'Name', 'Phone', 'Allotted Location(s)', 'Online Orders Assigned', 'Total Deliveries Logged', 'Most Recent Log'], rows)}
+      `;
     }
   }
 
