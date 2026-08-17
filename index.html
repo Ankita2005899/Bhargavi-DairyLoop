@@ -294,6 +294,22 @@
   .studio-bar-actions button:hover{ background:rgba(244,239,230,0.22); }
   .studio-bar-actions button.close-studio-btn{ background:var(--brick); }
   .studio-bar-actions button.close-studio-btn:hover{ background:var(--brick-2); }
+  /* ---------- Member ID search (top bar + Owner Section bar) ---------- */
+  .mstudio-search{ position:relative; display:flex; align-items:center; gap:6px; }
+  .mstudio-search input{ background:rgba(244,239,230,0.12); border:1px solid rgba(244,239,230,0.28); color:var(--cream); font-size:12.5px; padding:8px 12px; border-radius:999px; width:150px; outline:none; }
+  .mstudio-search input::placeholder{ color:rgba(244,239,230,0.55); }
+  .mstudio-search input:focus{ background:rgba(244,239,230,0.2); border-color:rgba(244,239,230,0.5); }
+  .mstudio-search button.mstudio-search-btn{ background:rgba(244,239,230,0.12); color:var(--cream); font-size:12.5px; padding:8px 14px; }
+  .mstudio-search button.mstudio-search-btn:hover{ background:rgba(244,239,230,0.22); }
+  .mstudio-search-result{ display:none; position:absolute; top:calc(100% + 8px); left:0; min-width:240px; max-width:290px; background:var(--white); color:var(--ink); border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,0.28); padding:12px; z-index:60; }
+  .mstudio-search-result.show{ display:block; }
+  .mstudio-search-empty{ font-size:12.5px; color:var(--ink-soft); padding:2px; }
+  .mstudio-search-hit{ display:flex; align-items:center; gap:10px; }
+  .mstudio-search-hit .avatar{ width:44px; height:44px; font-size:14px; flex-shrink:0; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .mstudio-search-hit-info{ min-width:0; }
+  .mstudio-search-hit-name{ font-weight:700; font-size:13.5px; color:var(--navy-3); white-space:normal; }
+  .mstudio-search-hit-role{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; white-space:normal; }
+  @media (max-width:600px){ .mstudio-search input{ width:110px; } }
   .studio-overlay iframe{ flex:1; border:none; width:100%; }
 
   /* ---------- mobile ---------- */
@@ -559,6 +575,11 @@
   <div class="owner-panel-bar">
     <div class="op-bar-title">👑 Owner Section — Everyone, at a glance</div>
     <div style="display:flex; align-items:center; gap:10px;">
+      <div class="mstudio-search">
+        <input type="text" id="ownerUserSearch" placeholder="🔎 Search Member ID" autocomplete="off" onkeydown="if(event.key==='Enter') searchOwnerUserById()">
+        <button class="mstudio-search-btn" onclick="searchOwnerUserById()">Search</button>
+        <div class="mstudio-search-result" id="ownerUserSearchResult"></div>
+      </div>
       <button class="op-emergency-btn" onclick="openEmergencyAdd()">🚨 Add Emergency Member</button>
       <button class="op-close" onclick="closeOwnerPanel()">✕ Close</button>
     </div>
@@ -758,6 +779,11 @@
     <div class="st-title">🛠 Bhargavi Dairy Loop — Manage Studio</div>
     <div class="studio-bar-actions">
       <button onclick="openAccountDetail()">👤 Account Detail</button>
+      <div class="mstudio-search">
+        <input type="text" id="studioUserSearch" placeholder="🔎 Search Member ID" autocomplete="off" onkeydown="if(event.key==='Enter') searchStudioUserById()">
+        <button class="mstudio-search-btn" onclick="searchStudioUserById()">Search</button>
+        <div class="mstudio-search-result" id="studioUserSearchResult"></div>
+      </div>
       <button onclick="openLoginDetail()">🔑 Login Detail</button>
       <button onclick="handleLogoutClick()">🚪 Log Out</button>
       <button onclick="openOwnerSection()">👑 Owner Section</button>
@@ -832,6 +858,69 @@
       return await res.json();
     }catch(e){ return null; }
   }
+
+  // ---- Member ID search (Manage Studio bar + Owner Section bar) ---------
+  // Looks a member up by their exact Member ID across every collection the
+  // ID could belong to (procurement, processing, distribution) and shows
+  // their name together with the same avatar already used everywhere else
+  // in the studio — it's built from the real name on that member's own
+  // record, not a placeholder, so it always matches whatever is actually
+  // stored for them.
+  function mSearchInitials(name){
+    return (name || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+  }
+
+  async function lookupMemberById(id){
+    const [proc, processing, dist] = await Promise.all([
+      dbGetOne('members', id),
+      dbGetOne('processingMembers', id),
+      dbGetOne('distributionOutlets', id)
+    ]);
+    if(proc) return { record: proc, name: proc.name, role: `Procurement — Farmer Member${proc.place ? ' · ' + proc.place : ''}` };
+    if(processing) return { record: processing, name: processing.name, role: `Processing — ${processing.category || 'Team'}${processing.post ? ' · ' + processing.post : ''}` };
+    if(dist) return { record: dist, name: dist.contactPerson || dist.storeName, role: `Distribution — ${dist.category === 'big' ? 'Bulk Buyer' : 'Retail Outlet'}${dist.storeName ? ' · ' + dist.storeName : ''}` };
+    return null;
+  }
+
+  function renderMemberSearchResult(container, id, result){
+    if(!result){
+      container.innerHTML = `<div class="mstudio-search-empty">No member found for ID "${opEsc(id)}".</div>`;
+      container.classList.add('show');
+      return;
+    }
+    const name = result.name || '—';
+    container.innerHTML = `
+      <div class="mstudio-search-hit">
+        <div class="avatar">${mSearchInitials(name)}</div>
+        <div class="mstudio-search-hit-info">
+          <div class="mstudio-search-hit-name">${name}</div>
+          <div class="mstudio-search-hit-role">${result.role}</div>
+          <div class="mstudio-search-hit-role">ID: ${result.record.memberId}</div>
+        </div>
+      </div>
+    `;
+    container.classList.add('show');
+  }
+
+  async function runMemberSearch(inputId, resultId){
+    const input = document.getElementById(inputId);
+    const container = document.getElementById(resultId);
+    const id = input.value.trim();
+    if(!id){ container.classList.remove('show'); return; }
+    container.innerHTML = '<div class="mstudio-search-empty">Searching…</div>';
+    container.classList.add('show');
+    const result = await lookupMemberById(id);
+    renderMemberSearchResult(container, id, result);
+  }
+
+  function searchStudioUserById(){ runMemberSearch('studioUserSearch', 'studioUserSearchResult'); }
+  function searchOwnerUserById(){ runMemberSearch('ownerUserSearch', 'ownerUserSearchResult'); }
+
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.mstudio-search')){
+      document.querySelectorAll('.mstudio-search-result.show').forEach(el => el.classList.remove('show'));
+    }
+  });
 
   // ---- Site auth gate (email + password) --------------------------------
   // One record per account in the 'studioAccounts' collection, keyed by
