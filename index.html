@@ -2281,7 +2281,10 @@
   function openDrawer(view){
     document.getElementById('drawer').classList.add('open');
     document.getElementById('backdrop').classList.add('show');
-    if(view === 'delivery') renderDeliveryView(); else renderMenuView();
+    if(view === 'delivery'){
+      renderDeliveryView();       // instant paint from whatever's cached
+      hydrateOrdersFromServer();  // then re-fetch so a stage update from Manage Studio always shows up
+    } else renderMenuView();
   }
   function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('backdrop').classList.remove('show'); }
   function closeAllOverlays(){ closeDrawer(); closeModal(); }
