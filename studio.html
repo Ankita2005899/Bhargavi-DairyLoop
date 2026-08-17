@@ -2749,96 +2749,14 @@ Issued by Processing Team.`;
     return str.split(',').map(s => map[s.trim()]).filter(v => v !== undefined);
   }
 
-  function pad2(n){ return String(n).padStart(2, '0'); }
-  function dateStrFor(year, month, day){ return `${year}-${pad2(month + 1)}-${pad2(day)}`; }
-  function todayDateStr(){ const d = new Date(); return dateStrFor(d.getFullYear(), d.getMonth(), d.getDate()); }
-
-  // Holds the calendar currently on screen so the click handlers below know
-  // which outlet/member to save a tick against.
-  let _dtrackCal = { memberId: null, ticks: {}, o: null };
-
-  // Builds this calendar month's per-day cell data for one outlet. The grid
-  // itself (today, days in month, weekday layout) is always computed off the
-  // real current date, so it moves forward on its own every day — but a day
-  // only shows a green tick once someone has actually confirmed that
-  // delivery with the button/click (manual tick, stored per outlet).
-  function buildMonthlyTickCalendar(o, ticks){
-    const daySet = parseDeliveryDaySet(o.deliveryDay);
-    const today = new Date();
-    const year = today.getFullYear(), month = today.getMonth(), todayDate = today.getDate();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startWeekday = new Date(year, month, 1).getDay();
-
-    const cells = [];
-    for(let i = 0; i < startWeekday; i++) cells.push(null);
-    let deliveredCount = 0, scheduledCount = 0;
-    for(let d = 1; d <= daysInMonth; d++){
-      const weekday = new Date(year, month, d).getDay();
-      const scheduled = daySet.includes(weekday);
-      const dateStr = dateStrFor(year, month, d);
-      const delivered = !!ticks[dateStr];
-      const isFuture = d > todayDate;
-      if(scheduled) scheduledCount++;
-      if(delivered) deliveredCount++;
-      cells.push({ day: d, dateStr, scheduled, delivered, isFuture, isToday: d === todayDate });
-    }
-    const monthLabel = today.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-    return { cells, monthLabel, deliveredCount, scheduledCount };
-  }
-
-  function renderMonthTickCalendarInner(o, ticks){
-    const cal = buildMonthlyTickCalendar(o, ticks);
-    const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-      .map(d => `<div class="month-cal-weekday-label">${d}</div>`).join('');
-    const dayCells = cal.cells.map(c => {
-      if(!c) return `<div class="month-cal-day empty"></div>`;
-      let cls = 'month-cal-day';
-      const clickable = !c.isFuture;
-      if(c.delivered) cls += ' tick';
-      else if(c.isFuture) cls += ' off future';
-      else if(c.scheduled) cls += ' pending-day';
-      else cls += ' off';
-      if(c.isToday) cls += ' today';
-      if(clickable) cls += ' clickable';
-      const title = clickable ? (c.delivered ? 'Click to undo' : 'Click to mark delivered') : 'Future date';
-      const onclick = clickable ? ` onclick="toggleDeliveryTick('${c.dateStr}')"` : '';
-      return `<div class="${cls}"${onclick} title="${title}"><span class="month-cal-daynum">${c.day}</span>${c.delivered ? '<span class="month-cal-tick">&#10004;</span>' : ''}</div>`;
-    }).join('');
-    return `
-      <div class="expand-title" style="margin-top:28px;">Monthly Delivery Tracker — ${cal.monthLabel}</div>
-      <div class="month-cal-note">Not automatic — click a day (or use the button) once the delivery is actually done. Schedule for this outlet: ${o.deliveryDay}.</div>
-      <div class="month-cal-actions"><button class="track-btn" onclick="markTodayDelivered()">&#10004; Mark Today Delivered</button></div>
-      <div class="month-cal">
-        <div class="month-cal-grid month-cal-headrow">${dayHeaders}</div>
-        <div class="month-cal-grid">${dayCells}</div>
-      </div>
-      <div class="month-cal-summary">${cal.deliveredCount} day(s) confirmed delivered this month</div>
-    `;
-  }
-
-  function renderMonthTickCalendarHtml(o, ticks){
-    return `<div id="month-cal-section">${renderMonthTickCalendarInner(o, ticks)}</div>`;
-  }
-
-  function refreshMonthTickCalendar(){
-    const el = document.getElementById('month-cal-section');
-    if(el && _dtrackCal.o) el.innerHTML = renderMonthTickCalendarInner(_dtrackCal.o, _dtrackCal.ticks);
-  }
-
-  async function toggleDeliveryTick(dateStr){
-    if(!_dtrackCal.o) return;
-    if(_dtrackCal.ticks[dateStr]) delete _dtrackCal.ticks[dateStr];
-    else _dtrackCal.ticks[dateStr] = true;
-    refreshMonthTickCalendar();
-    await dbPut('deliveryLog', _dtrackCal.memberId, { memberId: _dtrackCal.memberId, ticks: _dtrackCal.ticks });
-  }
-
-  async function markTodayDelivered(){
-    if(!_dtrackCal.o) return;
-    _dtrackCal.ticks[todayDateStr()] = true;
-    refreshMonthTickCalendar();
-    await dbPut('deliveryLog', _dtrackCal.memberId, { memberId: _dtrackCal.memberId, ticks: _dtrackCal.ticks });
-  }
+  // NOTE: the old "Monthly Delivery Tracker" tick-box calendar (per-outlet,
+  // stored in the 'deliveryLog' collection) was removed from the Delivery
+  // Detail screen at the user's request. parseDeliveryDaySet() above is
+  // kept because o.deliveryDay is still shown/used elsewhere; the
+  // calendar-building/rendering functions that used to sit here
+  // (buildMonthlyTickCalendar, renderMonthTickCalendarInner,
+  // toggleDeliveryTick, markTodayDelivered, etc.) were deleted along with
+  // the UI that called them, rather than left behind as dead code.
 
   function getAllDeliveryAssignments(personId){
     const result = [];
@@ -3458,9 +3376,48 @@ Issued by Processing Team.`;
     renderDeliveryLogPanel(personId, record.entries);
   }
 
+  // Full boy ⇄ product ⇄ user connection matrix — EVERY outlet this
+  // delivery person is assigned to, with EVERY product bought by each one,
+  // shown together in one table. Previously only the single store/outlet
+  // picked in the dropdown above was shown, which read as "incomplete"
+  // since a delivery boy usually carries products to several outlets.
+  // Online-customer orders (which are single-product each) are listed
+  // separately further down in "Assigned Online Customer Orders" — that
+  // list already names the product per order, so together the two
+  // sections cover 100% of what this person delivers, to whom.
+  function renderFullConnectionsTable(p, assignments){
+    if(!assignments.length){
+      return '<div class="result-placeholder">No outlets assigned to this delivery person yet.</div>';
+    }
+    const rows = assignments.map(a => {
+      const o = a.o;
+      const products = (o.productsPurchased || []).map(pp => `${pp.product} (${pp.qty} ${pp.unit}/mo)`).join(', ') || '—';
+      return `
+        <tr>
+          <td>${o.storeName}</td>
+          <td>${o.place}</td>
+          <td>${o.contactPerson}</td>
+          <td>📞 ${o.phone || '—'}</td>
+          <td>${products}</td>
+        </tr>
+      `;
+    }).join('');
+    return `
+      <div class="dist-table-scroll">
+        <table class="detail-table">
+          <thead>
+            <tr><th>Outlet / User</th><th>Place</th><th>Contact Person</th><th>Phone</th><th>Products Carried</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function showDeliveryTrackDetail(personId, outletKey){
     setActiveDistTab('dist-tab-track');
     const selPerson = personId || DELIVERY_PERSONS[0].id;
+    const p = DELIVERY_PERSONS.find(dp => dp.id === selPerson);
     const assignments = getAllDeliveryAssignments(selPerson);
     const selKey = (outletKey && assignments.some(a => `${a.cat}:${a.idx}` === outletKey))
       ? outletKey
@@ -3487,7 +3444,9 @@ Issued by Processing Team.`;
           </select>
         </div>
       </div>
-      <div id="dtrack-chain-area"></div>
+      <div class="expand-title" style="margin-top:22px;">🔗 Full Delivery Connections — every outlet &amp; product carried by ${p.name}</div>
+      <div id="dtrack-full-connections">${renderFullConnectionsTable(p, assignments)}</div>
+      <div id="dtrack-chain-area" style="margin-top:26px;"></div>
       <div class="expand-title" style="margin-top:24px;">📦 Assigned Online Customer Orders</div>
       <div style="font-size:12.5px;color:#8a7a58;margin:-6px 0 12px;line-height:1.5;">
         Auto-matched by this person's allotted location — tap an order to open it in Customer Order Tracking and update its delivery stage.
@@ -3544,13 +3503,6 @@ Issued by Processing Team.`;
   // isn't an "order", it's a recurring account.
   let _dtrackStage = { memberId: null, stage: 0, o: null };
 
-  function productLinkLine(p, o){
-    // The core connection this whole screen exists to show: which delivery
-    // boy carries which product(s) to which user/outlet.
-    const products = (o.productsPurchased || []).map(pp => pp.product).join(', ') || '—';
-    return `<b>${p.name}</b> (${p.id}) delivers <b>${products}</b> to <b>${o.storeName}</b> (${o.contactPerson}, ${o.place})`;
-  }
-
   function renderOutletStageSection(o, stageIdx){
     const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
       <div class="chain-step ${i > stageIdx ? 'pending' : ''}" style="cursor:pointer;" onclick="setOutletDeliveryStage(${i})" title="Mark stage reached">
@@ -3585,13 +3537,13 @@ Issued by Processing Team.`;
     const o = getDistOutlet(cat, idx);
     const products = (o.productsPurchased || []).map(pp => `${pp.product} (${pp.qty} ${pp.unit}/mo)`).join(', ') || '—';
 
-    // Show the summary + store card immediately; the monthly tick calendar
-    // and stage tracker load their saved state (per outlet, from the
-    // server) just after.
+    // Show the summary + store card immediately; the stage tracker loads
+    // its saved state (per outlet, from the server) just after. The
+    // boy→product→user link line lives once, up top, in the full
+    // connections table (renderFullConnectionsTable) instead of repeating
+    // here per outlet. The monthly tick calendar was removed from this
+    // view at the user's request.
     document.getElementById('dtrack-chain-area').innerHTML = `
-      <div class="dtrack-link-line" style="background:#fff;border:1px solid #e8dfc8;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;line-height:1.6;">
-        🔗 ${productLinkLine(p, o)}
-      </div>
       <div class="dtrack-summary-banner">
         <div class="avatar dsb-avatar">${initials(p.name)}</div>
         <div>
@@ -3622,17 +3574,9 @@ Issued by Processing Team.`;
         </div>
       </div>
       <div id="outlet-stage-section"><div class="month-cal-note">Loading delivery stage…</div></div>
-      <div id="month-cal-section"><div class="month-cal-note">Loading delivery tracker…</div></div>
     `;
 
-    const [logRecord, stageRecord] = await Promise.all([
-      dbGetOne('deliveryLog', o.memberId),
-      dbGetOne('outletDeliveryStage', o.memberId)
-    ]);
-    _dtrackCal = { memberId: o.memberId, ticks: (logRecord && logRecord.ticks) || {}, o };
-    const calSection = document.getElementById('month-cal-section');
-    if(calSection) calSection.innerHTML = renderMonthTickCalendarInner(o, _dtrackCal.ticks);
-
+    const stageRecord = await dbGetOne('outletDeliveryStage', o.memberId);
     _dtrackStage = { memberId: o.memberId, stage: (stageRecord && stageRecord.stage) || 0, o };
     const stageSection = document.getElementById('outlet-stage-section');
     if(stageSection) stageSection.innerHTML = renderOutletStageSection(o, _dtrackStage.stage);
