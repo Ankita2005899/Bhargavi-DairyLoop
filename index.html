@@ -245,6 +245,28 @@
   .order-bottom b{ color:var(--navy); }
   .order-rider{ margin-top:8px; font-size:11.5px; color:var(--ink-soft); }
   .order-rider b{ color:var(--navy); }
+  .order-track-toggle{
+    margin-top:10px; background:none; border:none; padding:0; font-size:11.5px; font-weight:700;
+    color:var(--gold-2); cursor:pointer; display:flex; align-items:center; gap:5px;
+  }
+  .order-track-toggle .ott-arrow{ transition:transform 0.2s ease; font-size:9px; }
+  .order-track-toggle.open .ott-arrow{ transform:rotate(180deg); }
+  .order-tracker{ display:none; margin-top:12px; padding-top:14px; border-top:1px dashed rgba(28,53,82,0.14); }
+  .order-tracker.show{ display:block; }
+  .ot-step{ display:flex; gap:12px; position:relative; padding-bottom:20px; }
+  .ot-step:last-child{ padding-bottom:0; }
+  .ot-step-line{ position:absolute; left:10px; top:22px; bottom:0; width:2px; background:rgba(28,53,82,0.14); }
+  .ot-step.done .ot-step-line{ background:var(--gold); }
+  .ot-step:last-child .ot-step-line{ display:none; }
+  .ot-node{
+    width:22px; height:22px; border-radius:50%; background:var(--cream-2); border:2px solid rgba(28,53,82,0.16);
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; z-index:1;
+  }
+  .ot-step.done .ot-node{ background:var(--gold); border-color:var(--gold); color:#fff; }
+  .ot-step.current .ot-node{ background:var(--navy); border-color:var(--navy); color:#fff; box-shadow:0 0 0 4px rgba(28,53,82,0.14); }
+  .ot-label{ font-size:12.5px; font-weight:600; color:var(--ink-soft); padding-top:2px; }
+  .ot-step.done .ot-label{ color:var(--navy); }
+  .ot-step.current .ot-label{ color:var(--navy); font-weight:800; }
 
   /* ---------- product modal ---------- */
   .modal-back{ position:fixed; inset:0; background:rgba(13,27,43,0.6); z-index:110; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
@@ -2501,10 +2523,43 @@
             <span><b>₹${o.amount}</b></span>
           </div>
           ${o.deliveryPersonId ? `<div class="order-rider">🚴 Assigned to <b>${o.deliveryPersonName || o.deliveryPersonId}</b>${o.deliveryPersonPhone ? ' · 📞 ' + o.deliveryPersonPhone : ''}</div>` : ''}
+          <button class="order-track-toggle" id="ott-${o.id}" onclick="toggleOrderTracker('${o.id}')">
+            <span>Track this order</span><span class="ott-arrow">▾</span>
+          </button>
+          <div class="order-tracker" id="ot-${o.id}">${buildOrderTrackerHtml(o.stage)}</div>
         </div>
       `).join('');
     }
     document.getElementById('drawerBody').innerHTML = body;
+  }
+
+  // Builds the same 6-stage journey the owner moves an order through in
+  // Manage Studio → Distribution → Customer Order Tracking. Every tick the
+  // owner saves there is written to the shared `orders` collection, and
+  // hydrateOrdersFromServer() (called whenever this drawer opens) picks it
+  // straight up here — so a customer sees exactly the stage the owner last
+  // marked complete, no separate sync step needed.
+  function buildOrderTrackerHtml(stage){
+    const s = (stage === null || stage === undefined) ? -1 : stage;
+    return DELIVERY_STEP_LABELS.map((label, i) => {
+      const cls = i < s ? 'done' : (i === s ? 'done current' : '');
+      const node = i <= s ? '✓' : (i + 1);
+      return `
+        <div class="ot-step ${cls}">
+          <div class="ot-step-line"></div>
+          <div class="ot-node">${node}</div>
+          <div class="ot-label">${label}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function toggleOrderTracker(orderId){
+    const btn = document.getElementById(`ott-${orderId}`);
+    const panel = document.getElementById(`ot-${orderId}`);
+    if(!btn || !panel) return;
+    const open = panel.classList.toggle('show');
+    btn.classList.toggle('open', open);
   }
 
   // ---- Manage Products (Manage Studio → 🗂️ Manage Products) --------------
