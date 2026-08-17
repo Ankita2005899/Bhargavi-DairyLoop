@@ -987,6 +987,13 @@
   // variable. Until that fetch resolves, RAZORPAY_KEY stays empty and
   // buyNow() will politely say the gateway isn't ready yet.
   const ORDERS_KEY = 'bhargaviDairyOrders';
+  // Same 6 stages the owner moves an order through in Manage Studio →
+  // Distribution → Customer Order Tracking. stage is null until the owner
+  // starts updating it, so a fresh order still just shows "Confirmed".
+  const DELIVERY_STEP_LABELS = [
+    'Order Packed at Plant', 'Picked Up for Delivery', 'In Transit',
+    'Reached Locality', 'Shifted to Store', 'Delivered'
+  ];
   let RAZORPAY_KEY = '';
   fetch('/api/config').then(r => r.json()).then(cfg => { RAZORPAY_KEY = cfg.razorpayKeyId || ''; }).catch(() => {});
 
@@ -1232,6 +1239,7 @@
     localStorage.setItem('siteSessionEmail', account.email);
     document.getElementById('authGate').classList.add('hidden');
     document.getElementById('siteRoot').style.display = '';
+    updateOrderCount();   // now that we know who's logged in, show their own order count
   }
 
   async function tryRestoreSession(){
@@ -1242,6 +1250,7 @@
       currentAccount = account;
       document.getElementById('authGate').classList.add('hidden');
       document.getElementById('siteRoot').style.display = '';
+      updateOrderCount();   // now that we know who's logged in, show their own order count
     } else {
       localStorage.removeItem('siteSessionEmail');
     }
@@ -1250,6 +1259,7 @@
   function showLoginForm(){
     currentAccount = null;
     localStorage.removeItem('siteSessionEmail');
+    updateOrderCount();   // logged out — badge shouldn't show the previous account's orders
     document.getElementById('siteRoot').style.display = 'none';
     document.getElementById('authEmail').value = '';
     document.getElementById('authPassword').value = '';
@@ -2081,7 +2091,14 @@
     return summary + procBlock + procesBlock + distBlock;
   }
 
-  function getOrders(){ return ORDERS_CACHE; }
+  // ORDERS_CACHE holds every order synced from the server. getOrders() only
+  // ever hands back the ones placed by whoever is currently logged in, so
+  // "My Deliveries" — and its badge count — is always this account's own
+  // orders, matched by the email they ordered with.
+  function getOrders(){
+    if(!currentAccount) return [];
+    return ORDERS_CACHE.filter(o => o.email === currentAccount.email);
+  }
   function saveOrders(list){ ORDERS_CACHE = list; localStorage.setItem(ORDERS_KEY, JSON.stringify(list)); }
 
   async function hydrateOrdersFromServer(){
@@ -2226,7 +2243,9 @@
           amount: amount,
           paymentId: response.razorpay_payment_id,
           date: new Date().toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
-          status: 'Confirmed'
+          status: 'Confirmed',
+          email: currentAccount ? currentAccount.email : null,   // ties this order to the account that placed it
+          stage: null   // set by the owner in Manage Studio → Customer Order Tracking; null = just Confirmed
         };
         orders.unshift(newOrder);
         saveOrders(orders);
@@ -2301,7 +2320,7 @@
               <div class="order-name">${o.name}</div>
               <div class="order-meta">${o.qty} × ${o.unit}</div>
             </div>
-            <div class="order-status">${o.status}</div>
+            <div class="order-status">${(o.stage === null || o.stage === undefined) ? o.status : DELIVERY_STEP_LABELS[o.stage]}</div>
           </div>
           <div class="order-bottom">
             <span>${o.id} · ${o.date}</span>
