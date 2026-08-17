@@ -3537,20 +3537,66 @@ Issued by Processing Team.`;
     setTimeout(() => loadCustomerOrder(orderId), 30);
   }
 
+  // Holds the outlet's current delivery-stage record on screen so the
+  // click handler below knows which outlet to save a stage change against.
+  // Persisted in the 'outletDeliveryStage' collection, keyed by memberId —
+  // separate from the online-order stage (order.stage) since a B2B outlet
+  // isn't an "order", it's a recurring account.
+  let _dtrackStage = { memberId: null, stage: 0, o: null };
+
+  function productLinkLine(p, o){
+    // The core connection this whole screen exists to show: which delivery
+    // boy carries which product(s) to which user/outlet.
+    const products = (o.productsPurchased || []).map(pp => pp.product).join(', ') || '—';
+    return `<b>${p.name}</b> (${p.id}) delivers <b>${products}</b> to <b>${o.storeName}</b> (${o.contactPerson}, ${o.place})`;
+  }
+
+  function renderOutletStageSection(o, stageIdx){
+    const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
+      <div class="chain-step ${i > stageIdx ? 'pending' : ''}" style="cursor:pointer;" onclick="setOutletDeliveryStage(${i})" title="Mark stage reached">
+        <div class="chain-line"></div>
+        <div class="chain-node">${i <= stageIdx ? '✓' : (i + 1)}</div>
+        <div class="chain-label">${label}</div>
+      </div>
+    `).join('');
+    const completed = stageIdx + 1;
+    const total = DELIVERY_STEP_LABELS.length;
+    return `
+      <div class="expand-title" style="margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span>Delivery Stage — tap a step to mark it reached</span>
+        <span class="dsb-metric-value" style="font-size:14px;">${completed} of ${total} stages completed</span>
+      </div>
+      <div class="delivery-chain">${stepsHtml}</div>
+    `;
+  }
+
+  async function setOutletDeliveryStage(stageIdx){
+    if(!_dtrackStage.o) return;
+    _dtrackStage.stage = stageIdx;
+    await dbPut('outletDeliveryStage', _dtrackStage.memberId, { memberId: _dtrackStage.memberId, stage: stageIdx, updatedAt: Date.now() });
+    const el = document.getElementById('outlet-stage-section');
+    if(el) el.innerHTML = renderOutletStageSection(_dtrackStage.o, stageIdx);
+  }
+
   async function renderDeliveryChainInto(personId, outletKey){
     const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
     const [cat, idxStr] = outletKey.split(':');
     const idx = parseInt(idxStr, 10);
     const o = getDistOutlet(cat, idx);
+    const products = (o.productsPurchased || []).map(pp => `${pp.product} (${pp.qty} ${pp.unit}/mo)`).join(', ') || '—';
 
     // Show the summary + store card immediately; the monthly tick calendar
-    // loads its saved ticks (per outlet, from the server) just after.
+    // and stage tracker load their saved state (per outlet, from the
+    // server) just after.
     document.getElementById('dtrack-chain-area').innerHTML = `
+      <div class="dtrack-link-line" style="background:#fff;border:1px solid #e8dfc8;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;line-height:1.6;">
+        🔗 ${productLinkLine(p, o)}
+      </div>
       <div class="dtrack-summary-banner">
         <div class="avatar dsb-avatar">${initials(p.name)}</div>
         <div>
           <div class="dsb-name">${p.name}</div>
-          <div class="dsb-sub">${p.id} — ${p.vehicle} — ${p.route} — 📞 ${p.phone}</div>
+          <div class="dsb-sub">${p.id} — ${p.vehicle} — ${p.route}</div>
         </div>
         <div class="dsb-metric">
           <div class="dsb-metric-label">Time to Deliver</div>
@@ -3562,15 +3608,34 @@ Issued by Processing Team.`;
         <div>
           <div class="dsc-name">${o.storeName} — ${o.place}</div>
           <div class="dsc-sub">${o.contactPerson} · ${o.address}</div>
+          <div class="dsc-sub">Products: ${products}</div>
         </div>
       </div>
+      <div class="dtrack-contacts" style="display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;">
+        <div style="flex:1;min-width:220px;background:#fff;border:1px solid #e8dfc8;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a7a58;">Delivery Boy Contact</div>
+          <div style="font-size:14.5px;font-weight:700;margin-top:2px;">${p.name} — 📞 ${p.phone}</div>
+        </div>
+        <div style="flex:1;min-width:220px;background:#fff;border:1px solid #e8dfc8;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a7a58;">User (Outlet) Contact</div>
+          <div style="font-size:14.5px;font-weight:700;margin-top:2px;">${o.contactPerson} — 📞 ${o.phone || '—'}</div>
+        </div>
+      </div>
+      <div id="outlet-stage-section"><div class="month-cal-note">Loading delivery stage…</div></div>
       <div id="month-cal-section"><div class="month-cal-note">Loading delivery tracker…</div></div>
     `;
 
-    const logRecord = await dbGetOne('deliveryLog', o.memberId);
+    const [logRecord, stageRecord] = await Promise.all([
+      dbGetOne('deliveryLog', o.memberId),
+      dbGetOne('outletDeliveryStage', o.memberId)
+    ]);
     _dtrackCal = { memberId: o.memberId, ticks: (logRecord && logRecord.ticks) || {}, o };
     const calSection = document.getElementById('month-cal-section');
     if(calSection) calSection.innerHTML = renderMonthTickCalendarInner(o, _dtrackCal.ticks);
+
+    _dtrackStage = { memberId: o.memberId, stage: (stageRecord && stageRecord.stage) || 0, o };
+    const stageSection = document.getElementById('outlet-stage-section');
+    if(stageSection) stageSection.innerHTML = renderOutletStageSection(o, _dtrackStage.stage);
   }
 
   function distProductsDetail(cat, i){
