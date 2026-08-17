@@ -594,6 +594,46 @@
 
   /* --- distribution: delivery person detail table --- */
   .dperson-avatar{ width:44px; height:44px; font-size:14px; background:#26407a; }
+  .dp-avatar-wrap{ position:relative; width:44px; height:44px; cursor:pointer; flex-shrink:0; }
+  .dp-avatar-wrap .avatar, .dp-avatar-img{ width:44px; height:44px; border-radius:50%; object-fit:cover; display:block; }
+  .dp-avatar-placeholder{ background:#e2d9c4 !important; color:#8a7a58 !important; font-size:18px; font-weight:400; border:1.5px dashed #b8a878; }
+  .dp-avatar-cam{
+    position:absolute; bottom:-2px; right:-2px; width:18px; height:18px; border-radius:50%; background:#26407a;
+    color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; border:2px solid #FBF6EA;
+    opacity:0; transition:opacity 0.15s; pointer-events:none;
+  }
+  .dp-avatar-wrap:hover .dp-avatar-cam{ opacity:1; }
+
+  /* --- daily delivery log panel --- */
+  .dlog-panel{ background:#fffdf8; border:1px solid #e2d9c4; border-radius:10px; padding:20px 22px; margin:6px 0 4px; }
+  .dlog-panel-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .dlog-panel-total{ font-size:12.5px; color:#8a7a58; }
+  .dlog-panel-total b{ color:#3E3324; font-size:14px; }
+  .dlog-form{ display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#fff; border:1px solid #ecdfc0; border-radius:8px; padding:16px; }
+  .dlog-field{ display:flex; flex-direction:column; gap:6px; }
+  .dlog-field label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#8a7a58; }
+  .dlog-field input{
+    font-family:'Times New Roman', Times, serif; font-size:14px; padding:9px 12px; border:1.5px solid #d8cba3;
+    border-radius:6px; background:#fffdf8; color:#3E3324; min-width:170px; transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  .dlog-field input:focus{ outline:none; border-color:#26407a; box-shadow:0 0 0 3px rgba(38,64,122,0.12); }
+  .dlog-field.dlog-count input{ min-width:110px; }
+  .dlog-today-btn{
+    background:none; border:1.5px solid #d8cba3; color:#6E5C3E; border-radius:6px; padding:8.5px 12px;
+    font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .dlog-today-btn:hover{ background:#f4efe0; }
+  .dlog-save-btn{
+    background:#26407a; color:#fff; border:none; border-radius:6px; padding:10.5px 24px; font-weight:700;
+    font-size:13px; cursor:pointer; letter-spacing:0.02em; transition:background 0.15s;
+  }
+  .dlog-save-btn:hover{ background:#1c2f5c; }
+  .dlog-msg{ font-size:12.5px; margin-top:10px; min-height:16px; }
+  .dlog-msg.ok{ color:#2E7D4F; font-weight:700; }
+  .dlog-msg.err{ color:#c0392b; font-weight:700; }
+  .dlog-history-wrap{ margin-top:20px; }
+  .dlog-history-title{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#8a7a58; margin-bottom:8px; }
+  .dlog-history-wrap table{ width:100%; }
   .dp-loc-edit{ display:flex; align-items:center; gap:6px; }
   .dp-loc-edit input{
     width:130px; font-family:'Times New Roman', Times, serif; font-size:12.5px; padding:5px 8px;
@@ -3148,8 +3188,86 @@ Issued by Processing Team.`;
     `;
   }
 
+  // Renders the avatar cell for a delivery person: their uploaded photo if
+  // they have one, otherwise the initials circle — either way, clicking it
+  // opens a file picker to add/replace the photo, saved straight to the
+  // deliveryPersons collection.
+  function dpAvatarCellHtml(p){
+    const inner = p.photo
+      ? `<img src="${p.photo}" class="dp-avatar-img">`
+      : `<div class="avatar dperson-avatar">${initials(p.name)}</div>`;
+    return `
+      <div class="dp-avatar-wrap" onclick="pickDeliveryPersonPhoto('${p.id}')" title="Click to add/change photo">
+        ${inner}
+        <div class="dp-avatar-cam">📷</div>
+        <input type="file" accept="image/*" id="dp-photo-file-${p.id}" style="display:none;" onchange="handleDeliveryPersonPhotoChange('${p.id}', this)">
+      </div>
+    `;
+  }
+
+  function pickDeliveryPersonPhoto(personId){
+    const input = document.getElementById(`dp-photo-file-${personId}`);
+    if(input) input.click();
+  }
+
+  function handleDeliveryPersonPhotoChange(personId, inputEl){
+    const file = inputEl.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
+      if(!p) return;
+      p.photo = e.target.result;
+      await dbPut('deliveryPersons', personId, p);
+      const wrap = inputEl.closest('.dp-avatar-wrap');
+      if(wrap) wrap.outerHTML = dpAvatarCellHtml(p);
+    };
+    reader.readAsDataURL(file);
+    inputEl.value = '';
+  }
+
+  // Photo picked for a not-yet-saved new person (the "+ Add" input row).
+  // Held here until addDeliveryPersonRow() actually creates the person.
+  let pendingNewPersonPhoto = null;
+
+  function pickNewDeliveryPersonPhoto(){
+    const input = document.getElementById('dp-photo-file-new');
+    if(input) input.click();
+  }
+
+  function handleNewDeliveryPersonPhotoChange(inputEl){
+    const file = inputEl.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      pendingNewPersonPhoto = e.target.result;
+      const cell = document.getElementById('dp-new-photo-cell');
+      if(cell){
+        cell.querySelector('.dp-avatar-wrap').innerHTML = `
+          <img src="${pendingNewPersonPhoto}" class="dp-avatar-img">
+          <div class="dp-avatar-cam">📷</div>
+          <input type="file" accept="image/*" id="dp-photo-file-new" style="display:none;" onchange="handleNewDeliveryPersonPhotoChange(this)">
+        `;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function dpNewPhotoCellHtml(){
+    return `
+      <td id="dp-new-photo-cell">
+        <div class="dp-avatar-wrap" onclick="pickNewDeliveryPersonPhoto()" title="Add a photo">
+          <div class="avatar dperson-avatar dp-avatar-placeholder">＋</div>
+          <div class="dp-avatar-cam">📷</div>
+          <input type="file" accept="image/*" id="dp-photo-file-new" style="display:none;" onchange="handleNewDeliveryPersonPhotoChange(this)">
+        </div>
+      </td>
+    `;
+  }
+
   async function showDeliveryPersonDetail(){
     setActiveDistTab('dist-tab-dperson');
+    pendingNewPersonPhoto = null;
     const allOrders = await dbGetAll('orders') || [];
     const rows = DELIVERY_PERSONS.map(p => {
       const assigned = getAllDeliveryAssignments(p.id);
@@ -3162,7 +3280,7 @@ Issued by Processing Team.`;
       return `
         <tr class="member-row">
           <td>${p.id}</td>
-          <td><div class="avatar dperson-avatar">${initials(p.name)}</div></td>
+          <td>${dpAvatarCellHtml(p)}</td>
           <td>${p.name}</td>
           <td>${p.phone}</td>
           <td>${p.vehicle}</td>
@@ -3193,7 +3311,7 @@ Issued by Processing Team.`;
           <tbody id="dpersonTableBody">${rows}
             <tr class="table-input-row">
               <td><input type="text" id="dp-id" placeholder="e.g. DLV009"></td>
-              <td>—</td>
+              ${dpNewPhotoCellHtml()}
               <td><input type="text" id="dp-name" placeholder="Name"></td>
               <td><input type="text" id="dp-phone" placeholder="Phone"></td>
               <td><input type="text" id="dp-vehicle" placeholder="Vehicle"></td>
@@ -3229,13 +3347,14 @@ Issued by Processing Team.`;
     const vehicle = val('dp-vehicle') || '—';
     const route = val('dp-route') || '—';
     const locations = val('dp-locations').split(',').map(s => s.trim()).filter(Boolean);
-    const person = { id: id_, name, phone, vehicle, route, locations };
+    const photo = pendingNewPersonPhoto || null;
+    const person = { id: id_, name, phone, vehicle, route, locations, photo };
     DELIVERY_PERSONS.push(person);
     await dbPut('deliveryPersons', id_, person);
 
     const rowHTML = `<tr class="member-row">
         <td>${id_}</td>
-        <td><div class="avatar dperson-avatar">${initials(name)}</div></td>
+        <td>${dpAvatarCellHtml(person)}</td>
         <td>${name}</td>
         <td>${phone}</td>
         <td>${vehicle}</td>
@@ -3254,6 +3373,9 @@ Issued by Processing Team.`;
       </tr>`;
     document.querySelector('#dpersonTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
     ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route','dp-locations'].forEach(id => document.getElementById(id).value = '');
+    pendingNewPersonPhoto = null;
+    const photoCell = document.getElementById('dp-new-photo-cell');
+    if(photoCell) photoCell.outerHTML = dpNewPhotoCellHtml();
   }
 
   // ---- Daily Delivery Log --------------------------------------------------
@@ -3284,24 +3406,32 @@ Issued by Processing Team.`;
       : `<tr><td colspan="2" style="color:#8a7a58;font-style:italic;">No deliveries logged yet.</td></tr>`;
     const totalCount = entries.reduce((s, e) => s + (e.count || 0), 0);
     content.innerHTML = `
-      <div class="expand-title">Daily Delivery Log</div>
-      <div class="dtrack-select-bar" style="margin-top:0;">
-        <div class="dtrack-select-field">
-          <label>Date</label>
-          <input type="date" id="dp-log-date-${personId}" value="${today}" max="${today}">
+      <div class="dlog-panel">
+        <div class="dlog-panel-head">
+          <div class="expand-title" style="margin-bottom:0;">📅 Daily Delivery Log</div>
+          <div class="dlog-panel-total">Total logged: <b>${totalCount}</b> ${totalCount === 1 ? 'delivery' : 'deliveries'} across ${entries.length} day${entries.length !== 1 ? 's' : ''}</div>
         </div>
-        <div class="dtrack-select-field" style="flex:0 0 150px;">
-          <label>Deliveries Done</label>
-          <input type="number" min="0" id="dp-log-count-${personId}" placeholder="e.g. 12">
+        <div class="dlog-form">
+          <div class="dlog-field">
+            <label>Date</label>
+            <input type="date" id="dp-log-date-${personId}" value="${today}" max="${today}">
+          </div>
+          <button type="button" class="dlog-today-btn" onclick="document.getElementById('dp-log-date-${personId}').value='${today}'">Today</button>
+          <div class="dlog-field dlog-count">
+            <label>Deliveries Done</label>
+            <input type="number" min="0" id="dp-log-count-${personId}" placeholder="e.g. 12" onkeydown="if(event.key==='Enter') saveDeliveryLogEntry('${personId}')">
+          </div>
+          <button class="dlog-save-btn" onclick="saveDeliveryLogEntry('${personId}')">💾 Save</button>
         </div>
-        <button class="track-btn" style="align-self:flex-end;" onclick="saveDeliveryLogEntry('${personId}')">💾 Save</button>
+        <div class="dlog-msg" id="dp-log-msg-${personId}"></div>
+        <div class="dlog-history-wrap">
+          <div class="dlog-history-title">History</div>
+          <table class="mini-table">
+            <thead><tr><th>Date</th><th>Deliveries Done</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
       </div>
-      <div class="result-placeholder" id="dp-log-msg-${personId}" style="margin:8px 0 14px;"></div>
-      <table class="mini-table">
-        <thead><tr><th>Date</th><th>Deliveries Done</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="margin-top:10px;font-size:12.5px;color:#8a7a58;">Total logged: <b style="color:#3E3324;">${totalCount}</b> deliveries across ${entries.length} day${entries.length !== 1 ? 's' : ''}</div>
     `;
   }
 
@@ -3311,8 +3441,9 @@ Issued by Processing Team.`;
     const msg = document.getElementById(`dp-log-msg-${personId}`);
     const date = dateInput.value;
     const count = parseInt(countInput.value, 10);
-    if(!date){ msg.textContent = 'Pick a date first.'; return; }
-    if(isNaN(count) || count < 0){ msg.textContent = 'Enter a valid number of deliveries.'; return; }
+    msg.classList.remove('ok', 'err');
+    if(!date){ msg.textContent = 'Pick a date first.'; msg.classList.add('err'); return; }
+    if(isNaN(count) || count < 0){ msg.textContent = 'Enter a valid number of deliveries.'; msg.classList.add('err'); return; }
 
     const record = (await dbGetOne('deliveryDailyLog', personId)) || { personId, entries: [] };
     record.entries = record.entries || [];
@@ -3322,7 +3453,8 @@ Issued by Processing Team.`;
     await dbPut('deliveryDailyLog', personId, record);
 
     countInput.value = '';
-    msg.textContent = `Saved — ${count} deliveries logged for ${new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.`;
+    msg.classList.add('ok');
+    msg.textContent = `✓ Saved — ${count} deliveries logged for ${new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.`;
     renderDeliveryLogPanel(personId, record.entries);
   }
 
