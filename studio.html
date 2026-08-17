@@ -658,6 +658,8 @@
   .dtrack-store-card .avatar{ width:46px; height:46px; font-size:14px; }
   .dtrack-store-card .dsc-name{ font-size:15px; font-weight:700; color:#3E3324; }
   .dtrack-store-card .dsc-sub{ font-size:12.5px; color:#8a7a58; margin-top:2px; }
+  .dtrack-online-order{ cursor:pointer; border-left-color:#3E9C5D; transition:box-shadow 0.15s, transform 0.15s; margin-bottom:12px; }
+  .dtrack-online-order:hover{ box-shadow:0 4px 14px rgba(62,156,93,0.18); transform:translateY(-1px); }
 
   /* --- monthly per-day green-tick delivery tracker --- */
   .month-cal-note{ font-size:12px; color:#8a7a58; margin-bottom:12px; font-style:italic; }
@@ -3264,16 +3266,60 @@ Issued by Processing Team.`;
           <select id="dtrack-person-select" onchange="showDeliveryTrackDetail(this.value)">${personOptions}</select>
         </div>
         <div class="dtrack-select-field">
-          <label>Delivery To</label>
+          <label>Delivery To (Store / Outlet)</label>
           <select id="dtrack-store-select" onchange="renderDeliveryChainInto(document.getElementById('dtrack-person-select').value, this.value)">
             ${storeOptions || '<option>No stores assigned</option>'}
           </select>
         </div>
       </div>
       <div id="dtrack-chain-area"></div>
+      <div class="expand-title" style="margin-top:24px;">📦 Assigned Online Customer Orders</div>
+      <div style="font-size:12.5px;color:#8a7a58;margin:-6px 0 12px;line-height:1.5;">
+        Auto-matched by this person's allotted location — tap an order to open it in Customer Order Tracking and update its delivery stage.
+      </div>
+      <div id="dtrack-online-orders"><div class="result-placeholder">Loading assigned online orders…</div></div>
     `;
     if(selKey) renderDeliveryChainInto(selPerson, selKey);
-    else document.getElementById('dtrack-chain-area').innerHTML = '<div class="result-placeholder">No deliveries assigned to this person yet.</div>';
+    else document.getElementById('dtrack-chain-area').innerHTML = '<div class="result-placeholder">No store/outlet deliveries assigned to this person yet.</div>';
+    renderAssignedOnlineOrders(selPerson);
+  }
+
+  // The online-customer list is independent of which outlet is selected
+  // above — it's every order.deliveryPersonId that matched this person by
+  // allotted location at checkout (see findDeliveryPersonForCity() in
+  // index.html), regardless of B2B outlet assignment.
+  async function renderAssignedOnlineOrders(personId){
+    const wrap = document.getElementById('dtrack-online-orders');
+    if(!wrap) return;
+    const all = await dbGetAll('orders');
+    const mine = (all || []).filter(o => o.deliveryPersonId === personId).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if(!mine.length){
+      wrap.innerHTML = '<div class="result-placeholder">No online customer orders matched to this person\'s allotted location yet.</div>';
+      return;
+    }
+    wrap.innerHTML = mine.map(o => {
+      const d = o.deliveryDetails || {};
+      return `
+        <div class="dtrack-store-card dtrack-online-order" onclick="jumpToCustomerOrder('${o.id}')">
+          <div class="avatar">${(d.fullName || o.email || '?').slice(0, 2).toUpperCase()}</div>
+          <div>
+            <div class="dsc-name">${o.icon || ''} ${o.name} — ${o.qty} × ${o.unit} <span style="font-weight:400;color:#8a7a58;">· ${DELIVERY_STEP_LABELS[o.stage ?? 0]}</span></div>
+            <div class="dsc-sub">${d.fullName || 'Customer'} · 📞 ${d.primaryPhone || '—'} — used first, this is who to call</div>
+            <div class="dsc-sub">${d.primaryAddressLine1 || '—'}${d.landmark ? ', near ' + d.landmark : ''}, ${d.city || '—'}, ${d.state || '—'} — ${d.pincode || '—'}</div>
+            <div class="dsc-sub" style="color:#a89568;">${o.id} · ${o.date} → tap to open &amp; update stage</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Jumps straight into Customer Order Tracking with this order preloaded,
+  // reusing the exact same sidebar click handler (so the active tab state,
+  // shrink/blur layout, etc. all stay correct) instead of duplicating it.
+  function jumpToCustomerOrder(orderId){
+    const btn = document.querySelector('.option-btn[data-detail="dist-customer-orders"]');
+    if(btn) btn.click();
+    setTimeout(() => loadCustomerOrder(orderId), 30);
   }
 
   async function renderDeliveryChainInto(personId, outletKey){
@@ -3281,19 +3327,9 @@ Issued by Processing Team.`;
     const [cat, idxStr] = outletKey.split(':');
     const idx = parseInt(idxStr, 10);
     const o = getDistOutlet(cat, idx);
-    const chain = buildDeliveryChainSteps(o);
 
-    const stepsHtml = chain.steps.map(s => `
-      <div class="chain-step">
-        <div class="chain-line"></div>
-        <div class="chain-node">✓</div>
-        <div class="chain-label">${s.label}</div>
-        <div class="chain-time">${s.elapsedLabel}</div>
-      </div>
-    `).join('');
-
-    // Show the journey immediately; the monthly tick calendar loads its
-    // saved ticks (per outlet, from the server) just after.
+    // Show the summary + store card immediately; the monthly tick calendar
+    // loads its saved ticks (per outlet, from the server) just after.
     document.getElementById('dtrack-chain-area').innerHTML = `
       <div class="dtrack-summary-banner">
         <div class="avatar dsb-avatar">${initials(p.name)}</div>
@@ -3313,8 +3349,6 @@ Issued by Processing Team.`;
           <div class="dsc-sub">${o.contactPerson} · ${o.address}</div>
         </div>
       </div>
-      <div class="expand-title">Delivery Journey</div>
-      <div class="delivery-chain">${stepsHtml}</div>
       <div id="month-cal-section"><div class="month-cal-note">Loading delivery tracker…</div></div>
     `;
 
@@ -4570,9 +4604,10 @@ Issued by Distribution Side.`;
     if(!wrap) return;
     if(!all || !all.length){ wrap.innerHTML = '<div class="result-placeholder">No online orders yet.</div>'; return; }
     const sorted = all.slice().sort((a,b) => (b.ts||0) - (a.ts||0)).slice(0, 12);
-    wrap.innerHTML = `<table class="detail-table"><thead><tr><th>Order ID</th><th>Product</th><th>Customer Email</th><th>Date</th><th>Current Stage</th></tr></thead><tbody>
+    wrap.innerHTML = `<table class="detail-table"><thead><tr><th>Order ID</th><th>Product</th><th>Customer Email</th><th>Date</th><th>Delivery Person</th><th>Current Stage</th></tr></thead><tbody>
       ${sorted.map(o => `<tr class="member-row" style="cursor:pointer;" onclick="loadCustomerOrder('${o.id}')">
         <td>${o.id}</td><td>${o.icon || ''} ${o.name}</td><td>${o.email || '— (guest / older order)'}</td><td>${o.date}</td>
+        <td>${o.deliveryPersonId ? `<span class="dlv-id-chip"><span class="dot"></span>${o.deliveryPersonName || o.deliveryPersonId}</span>` : '<span style="color:#b04a2e;">Unassigned</span>'}</td>
         <td>${DELIVERY_STEP_LABELS[o.stage ?? 0]}</td>
       </tr>`).join('')}
     </tbody></table>`;
@@ -4597,17 +4632,55 @@ Issued by Distribution Side.`;
     renderCustomerOrderCard(order);
   }
 
+  // Delivery Stage editing on an online order: click "✏️ Edit" to enter
+  // edit mode, tap the stage you want (a live preview tick moves as you
+  // click, nothing is saved yet), then "💾 Save Stage" writes it to the
+  // shared 'orders' collection. The customer's own "My Deliveries" pulls
+  // from that same collection (hydrateOrdersFromServer(), called whenever
+  // they open the drawer), so the saved stage shows up there right away —
+  // no extra syncing needed.
+  let _stageEdit = { orderId: null, editing: false, selected: 0 };
+
   function renderCustomerOrderCard(order){
     const col = document.getElementById('custOrderResultCol');
     if(!col) return;
-    const stage = order.stage ?? 0;
+    if(_stageEdit.orderId !== order.id) _stageEdit = { orderId: order.id, editing: false, selected: order.stage ?? 0 };
+
+    const savedStage = order.stage ?? 0;
+    const editing = _stageEdit.editing;
+    const previewStage = editing ? _stageEdit.selected : savedStage;
+
     const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
-      <div class="chain-step ${i > stage ? 'pending' : ''}" style="cursor:pointer;" onclick="setCustomerOrderStage('${order.id}', ${i})">
+      <div class="chain-step ${i > previewStage ? 'pending' : ''}" ${editing ? `style="cursor:pointer;" onclick="pickCustomerOrderStage(${i})"` : ''}>
         <div class="chain-line"></div>
-        <div class="chain-node">${i <= stage ? '✓' : (i + 1)}</div>
+        <div class="chain-node">${i <= previewStage ? '✓' : (i + 1)}</div>
         <div class="chain-label">${label}</div>
       </div>
     `).join('');
+
+    const stageControls = editing
+      ? `<button class="track-btn" onclick="saveCustomerOrderStageEdit('${order.id}')">💾 Save Stage</button>
+         <button class="track-btn" style="background:#8a7a58;margin-left:8px;" onclick="cancelCustomerOrderStageEdit('${order.id}')">✕ Cancel</button>`
+      : `<button class="track-btn" onclick="toggleCustomerOrderStageEdit('${order.id}')">✏️ Edit Stage</button>`;
+
+    const d = order.deliveryDetails || null;
+    const addressHtml = d ? `
+      <div class="expand-title">Delivery Address</div>
+      <div class="dtrack-store-card">
+        <div class="avatar">${(d.fullName || '?').slice(0, 2).toUpperCase()}</div>
+        <div>
+          <div class="dsc-name">${d.fullName || '—'}</div>
+          <div class="dsc-sub">⭐ Primary: 📞 ${d.primaryPhone || '—'} · ${d.primaryAddressLine1 || '—'}${d.landmark ? ', near ' + d.landmark : ''}, ${d.city || '—'}, ${d.state || '—'} — ${d.pincode || '—'}</div>
+          <div class="dsc-sub">🚨 Emergency: 📞 ${d.emergencyPhone || '—'} · ${d.emergencyAddress || '—'}</div>
+          ${d.instructions ? `<div class="dsc-sub">📝 ${d.instructions}</div>` : ''}
+        </div>
+      </div>
+    ` : `<div class="expand-title">Delivery Address</div><div class="result-placeholder">No delivery details on this order (placed before the profile form existed, or a guest order).</div>`;
+
+    const personOptions = `<option value="">— Unassigned —</option>` + DELIVERY_PERSONS.map(p =>
+      `<option value="${p.id}" ${p.id === order.deliveryPersonId ? 'selected' : ''}>${p.id} — ${p.name}${p.locations && p.locations.length ? ' (' + p.locations.join(', ') + ')' : ''}</option>`
+    ).join('');
+
     col.innerHTML = `
       <div class="col-title">Order Detail</div>
       <div class="dtrack-store-card">
@@ -4617,10 +4690,64 @@ Issued by Distribution Side.`;
           <div class="dsc-sub">${order.email || 'No account email on this order'} · ${order.date} · ₹${order.amount}</div>
         </div>
       </div>
-      <div class="expand-title">Delivery Stage — tap a step to mark it reached</div>
+      ${addressHtml}
+      <div class="expand-title">Delivery Person</div>
+      <div class="dtrack-select-bar" style="margin-top:0;">
+        <div class="dtrack-select-field" style="flex:1;">
+          <label>Assigned To</label>
+          <select id="custOrderPersonSelect">${personOptions}</select>
+        </div>
+        <button class="track-btn" style="align-self:flex-end;" onclick="reassignCustomerOrderPerson('${order.id}')">Save</button>
+      </div>
+      <div class="result-placeholder" id="custOrderPersonMsg" style="margin-top:6px;">${order.deliveryPersonId ? `Currently assigned to ${order.deliveryPersonName || order.deliveryPersonId}${order.deliveryPersonPhone ? ' · 📞 ' + order.deliveryPersonPhone : ''} — matched by city on checkout.` : 'No delivery person matched this city automatically. Assign one manually above if needed.'}</div>
+      <div class="expand-title" style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span>Delivery Stage${editing ? ' — tap a step, then Save' : ''}</span>
+        <span>${stageControls}</span>
+      </div>
       <div class="delivery-chain">${stepsHtml}</div>
       <div class="result-placeholder" id="custOrderSaveMsg" style="margin-top:8px;"></div>
     `;
+  }
+
+  function toggleCustomerOrderStageEdit(orderId){
+    _stageEdit = { orderId, editing: true, selected: _stageEdit.selected };
+    dbGetOne('orders', orderId).then(order => { if(order) renderCustomerOrderCard(order); });
+  }
+
+  function pickCustomerOrderStage(stageIdx){
+    _stageEdit.selected = stageIdx;
+    dbGetOne('orders', _stageEdit.orderId).then(order => { if(order) renderCustomerOrderCard(order); });
+  }
+
+  function cancelCustomerOrderStageEdit(orderId){
+    _stageEdit = { orderId, editing: false, selected: 0 };
+    dbGetOne('orders', orderId).then(order => { if(order) renderCustomerOrderCard(order); });
+  }
+
+  async function saveCustomerOrderStageEdit(orderId){
+    const stageIdx = _stageEdit.selected;
+    await setCustomerOrderStage(orderId, stageIdx);
+    _stageEdit = { orderId, editing: false, selected: stageIdx };
+    const order = await dbGetOne('orders', orderId);
+    if(order) renderCustomerOrderCard(order);
+    const msg = document.getElementById('custOrderSaveMsg');
+    if(msg) msg.textContent = `Saved — customer will now see "${DELIVERY_STEP_LABELS[stageIdx]}" in their My Deliveries.`;
+  }
+
+  async function reassignCustomerOrderPerson(orderId){
+    const sel = document.getElementById('custOrderPersonSelect');
+    const msg = document.getElementById('custOrderPersonMsg');
+    if(!sel) return;
+    const order = await dbGetOne('orders', orderId);
+    if(!order) return;
+    const personId = sel.value;
+    const person = personId ? DELIVERY_PERSONS.find(p => p.id === personId) : null;
+    order.deliveryPersonId = person ? person.id : null;
+    order.deliveryPersonName = person ? person.name : null;
+    order.deliveryPersonPhone = person ? person.phone : null;
+    await dbPut('orders', orderId, order);
+    if(msg) msg.textContent = person ? `Saved — assigned to ${person.name} · 📞 ${person.phone}.` : 'Saved — order is now unassigned.';
+    renderRecentCustomerOrders();
   }
 
   async function setCustomerOrderStage(orderId, stageIdx){
