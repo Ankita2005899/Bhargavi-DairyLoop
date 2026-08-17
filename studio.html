@@ -30,35 +30,6 @@
     background:#0B0B0C;
   }
 
-  #studioSearchResult:not(:empty){ background:#17233F; padding:14px 26px 18px; }
-  .ssb-result-card{
-    display:flex; align-items:center; gap:18px; background:#fff;
-    border-radius:14px; padding:16px 20px; margin-top:2px;
-    box-shadow:0 10px 28px rgba(0,0,0,0.22); border:1px solid rgba(62,51,36,0.08);
-  }
-  .ssb-result-avatar{ width:54px; height:54px; font-size:17px; flex-shrink:0; border-radius:50%; box-shadow:0 0 0 3px #fff, 0 0 0 4px rgba(62,51,36,0.12); }
-  .ssb-result-body{ min-width:0; flex:1; }
-  .ssb-result-name{ font-weight:700; font-size:16px; color:#20180D; line-height:1.25; }
-  .ssb-result-sub{ font-size:12.5px; color:#8a7a58; margin-top:3px; }
-  .ssb-result-tag{
-    display:inline-block; margin-top:7px; font-size:10.5px; font-weight:700; letter-spacing:0.05em;
-    text-transform:uppercase; padding:3px 10px; border-radius:999px;
-  }
-  .ssb-result-tag.tag-procurement{ background:rgba(200,155,76,0.16); color:#8a6a2d; }
-  .ssb-result-tag.tag-processing{ background:rgba(79,191,170,0.16); color:#1e746a; }
-  .ssb-result-tag.tag-distributor{ background:rgba(110,155,224,0.18); color:#2c4f92; }
-  .ssb-result-tag.tag-delivery{ background:rgba(23,35,63,0.1); color:#17233F; }
-  .ssb-result-view{
-    margin-left:auto; flex-shrink:0; background:#17233F; color:#fff; font-size:12.5px; font-weight:700;
-    padding:10px 18px; border-radius:999px; white-space:nowrap; transition:background 0.15s;
-  }
-  .ssb-result-view:hover{ background:#28365c; }
-  .ssb-result-empty{ font-size:13px; color:#F4EFE6; font-style:italic; padding:10px 0; }
-  @media (max-width: 640px){
-    .ssb-result-card{ flex-wrap:wrap; }
-    .ssb-result-view{ margin-left:0; width:100%; text-align:center; }
-  }
-
   .page{
     display:flex;
     flex-direction:row;
@@ -282,6 +253,9 @@
   table.detail-table th{ background:#3E3324; color:#F7F3EA; text-align:left; padding:12px 10px; font-weight:700; letter-spacing:0.03em; white-space:nowrap; }
   table.detail-table td{ padding:10px; border-bottom:1px solid #eee2cc; color:#3E3324; vertical-align:middle; }
   table.detail-table tr.member-row:nth-child(even) td{ background:#FBF8F0; }
+  tr.pinned-hit-row td{ background:rgba(217,164,65,0.34) !important; font-weight:700; }
+  @keyframes pinnedHitFlash{ 0%{ background:rgba(217,164,65,0.8); } 100%{ background:rgba(217,164,65,0.34); } }
+  tr.pinned-hit-row td{ animation:pinnedHitFlash 1.4s ease; }
 
   tr.new-member-row td{ background:#F1EAD8 !important; border-top:2px solid #C89B4C; padding:8px 6px; }
   .new-input{
@@ -296,15 +270,6 @@
   }
 
   .avatar{ width:36px; height:36px; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
-  .avatar-photo{ object-fit:cover; display:block; }
-  .photo-picker{ display:flex; align-items:center; gap:10px; grid-column:1 / -1; }
-  .photo-picker-preview{
-    width:56px; height:56px; border-radius:50%; background:#C89B4C; color:#3E3324; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden; border:2px solid rgba(217,164,65,0.5);
-  }
-  .photo-picker-preview img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .photo-picker-btn{ background:#fff; color:#3E3324; border:1px solid rgba(62,51,36,0.25); font-size:12.5px; font-weight:700; padding:9px 16px; border-radius:999px; }
-  .photo-picker-btn:hover{ background:#F4EFE6; }
 
   .view-btn{ font-family:'Times New Roman', Times, serif; background:#17393B; color:#F7F3EA; border:none; padding:6px 14px; border-radius:3px; cursor:pointer; font-size:13px; }
   .view-btn:hover{ background:#4FBFAA; color:#17393B; }
@@ -629,6 +594,55 @@
 
   /* --- distribution: delivery person detail table --- */
   .dperson-avatar{ width:44px; height:44px; font-size:14px; background:#26407a; }
+  .dp-avatar-wrap{ position:relative; width:44px; height:44px; cursor:pointer; flex-shrink:0; }
+  .dp-avatar-wrap .avatar, .dp-avatar-img{ width:44px; height:44px; border-radius:50%; object-fit:cover; display:block; }
+  .dp-avatar-placeholder{ background:#e2d9c4 !important; color:#8a7a58 !important; font-size:18px; font-weight:400; border:1.5px dashed #b8a878; }
+  .dp-avatar-cam{
+    position:absolute; bottom:-2px; right:-2px; width:18px; height:18px; border-radius:50%; background:#26407a;
+    color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; border:2px solid #FBF6EA;
+    opacity:0; transition:opacity 0.15s; pointer-events:none;
+  }
+  .dp-avatar-wrap:hover .dp-avatar-cam{ opacity:1; }
+
+  /* --- daily delivery log panel --- */
+  .dlog-panel{ background:#fffdf8; border:1px solid #e2d9c4; border-radius:10px; padding:20px 22px; margin:6px 0 4px; }
+  .dlog-panel-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .dlog-panel-total{ font-size:12.5px; color:#8a7a58; }
+  .dlog-panel-total b{ color:#3E3324; font-size:14px; }
+  .dlog-form{ display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#fff; border:1px solid #ecdfc0; border-radius:8px; padding:16px; }
+  .dlog-field{ display:flex; flex-direction:column; gap:6px; }
+  .dlog-field label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#8a7a58; }
+  .dlog-field input{
+    font-family:'Times New Roman', Times, serif; font-size:14px; padding:9px 12px; border:1.5px solid #d8cba3;
+    border-radius:6px; background:#fffdf8; color:#3E3324; min-width:170px; transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  .dlog-field input:focus{ outline:none; border-color:#26407a; box-shadow:0 0 0 3px rgba(38,64,122,0.12); }
+  .dlog-field.dlog-count input{ min-width:110px; }
+  .dlog-today-btn{
+    background:none; border:1.5px solid #d8cba3; color:#6E5C3E; border-radius:6px; padding:8.5px 12px;
+    font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .dlog-today-btn:hover{ background:#f4efe0; }
+  .dlog-save-btn{
+    background:#26407a; color:#fff; border:none; border-radius:6px; padding:10.5px 24px; font-weight:700;
+    font-size:13px; cursor:pointer; letter-spacing:0.02em; transition:background 0.15s;
+  }
+  .dlog-save-btn:hover{ background:#1c2f5c; }
+  .dlog-msg{ font-size:12.5px; margin-top:10px; min-height:16px; }
+  .dlog-msg.ok{ color:#2E7D4F; font-weight:700; }
+  .dlog-msg.err{ color:#c0392b; font-weight:700; }
+  .dlog-history-wrap{ margin-top:20px; }
+  .dlog-history-title{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#8a7a58; margin-bottom:8px; }
+  .dlog-history-wrap table{ width:100%; }
+  .dp-loc-edit{ display:flex; align-items:center; gap:6px; }
+  .dp-loc-edit input{
+    width:130px; font-family:'Times New Roman', Times, serif; font-size:12.5px; padding:5px 8px;
+    border:1px solid #d8cba3; border-radius:3px; background:#fffdf8; color:#3E3324; transition:border-color 0.2s;
+  }
+  .dp-loc-save-btn{
+    background:#26407a; color:#fff; border:none; border-radius:3px; padding:5px 8px; cursor:pointer; font-size:12px; flex-shrink:0;
+  }
+  .dp-loc-save-btn:hover{ background:#1c2f5c; }
   .track-btn{
     font-family:'Times New Roman', Times, serif; background:#26407a; color:#fff; border:none;
     padding:6px 14px; border-radius:3px; cursor:pointer; font-size:13px;
@@ -668,19 +682,14 @@
     justify-content:center; font-size:19px; z-index:2; box-shadow:0 0 0 5px #e4f5e8; flex-shrink:0;
   }
   .chain-step.pending .chain-node{ background:#cbbf9e; box-shadow:0 0 0 5px #f4efe0; color:#6b5c42; }
-  .chain-step.active .chain-node{ background:#6E9BE0; box-shadow:0 0 0 5px #e6f0ff; color:#fff; animation:chainPulse 1.4s ease-in-out infinite; }
-  @keyframes chainPulse{ 0%,100%{ box-shadow:0 0 0 5px #e6f0ff; } 50%{ box-shadow:0 0 0 9px #e6f0ff; } }
   .chain-line{
     position:absolute; top:23px; left:calc(-50% + 23px); width:calc(100% - 46px); height:3px; background:#1f8a3b; z-index:1;
   }
   .chain-step:first-child .chain-line{ display:none; }
-  .chain-step.pending .chain-line, .chain-step.active .chain-line{ background:#cbbf9e; }
+  .chain-step.pending .chain-line{ background:#cbbf9e; }
   .chain-label{ font-size:13px; font-weight:700; color:#3E3324; text-align:center; margin-top:12px; max-width:130px; line-height:1.35; }
-  .chain-step.pending .chain-label{ color:#8a7a58; font-weight:600; }
   .chain-time{ font-size:11.5px; color:#8a7a58; margin-top:4px; text-align:center; }
   .chain-elapsed{ font-size:11px; color:#1f8a3b; font-weight:700; margin-top:3px; text-align:center; }
-  .chain-step.pending .chain-elapsed{ color:#8a7a58; }
-  .chain-step.active .chain-elapsed{ color:#2A5CA8; }
 
   .dtrack-store-card{
     display:flex; gap:16px; align-items:center; background:#fff; border:1px solid #e2d9c4; border-left:5px solid #6E9BE0;
@@ -689,6 +698,8 @@
   .dtrack-store-card .avatar{ width:46px; height:46px; font-size:14px; }
   .dtrack-store-card .dsc-name{ font-size:15px; font-weight:700; color:#3E3324; }
   .dtrack-store-card .dsc-sub{ font-size:12.5px; color:#8a7a58; margin-top:2px; }
+  .dtrack-online-order{ cursor:pointer; border-left-color:#3E9C5D; transition:box-shadow 0.15s, transform 0.15s; margin-bottom:12px; }
+  .dtrack-online-order:hover{ box-shadow:0 4px 14px rgba(62,156,93,0.18); transform:translateY(-1px); }
 
   /* --- monthly per-day green-tick delivery tracker --- */
   .month-cal-note{ font-size:12px; color:#8a7a58; margin-bottom:12px; font-style:italic; }
@@ -873,8 +884,6 @@
 
 <div class="page" id="pageRoot" style="display:none;">
 
-  <div id="studioSearchResult"></div>
-
   <section class="stage" id="procurement">
     <div class="stage-number">01 — Sourcing</div>
     <h1 class="stage-title">Procurement<br>Side</h1>
@@ -924,6 +933,7 @@
     <div class="stage-options" id="distribution-options">
       <button class="option-btn" data-detail="dist-members">Member Detail <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-delivery">Delivery Related Detail <span class="arrow">›</span></button>
+      <button class="option-btn" data-detail="dist-customer-orders">Customer Order Tracking <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-returns">Returns / Complaints Log <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-expiry">Expiry / Shelf-Life Tracking <span class="arrow">›</span></button>
       <button class="option-btn" data-detail="dist-orderhistory">Order History (Past Months) <span class="arrow">›</span></button>
@@ -997,7 +1007,6 @@
 <button class="pay-pick-close-btn" id="paymentPickCloseBtn" onclick="closePaymentSelect()">Close ✕</button>
 
 <input type="file" id="shotFileInput" accept="image/*" style="display:none;">
-<input type="file" id="photoFileInput" accept="image/*" style="display:none;">
 
 <div class="custom-modal-overlay" id="paySuccessOverlay">
   <div class="custom-modal-box">
@@ -1340,6 +1349,7 @@
   const stages = [procurement, processing, distribution];
   const detailInner = document.getElementById('detailInner');
   const optionBtns = document.querySelectorAll('.option-btn');
+  let currentOpenDetailType = null;
 
   stages.forEach(stage => {
     stage.addEventListener('mouseenter', () => {
@@ -1439,53 +1449,11 @@
 
   function initials(name){ return name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase(); }
 
-  // Renders a member's real profile photo (uploaded at registration and
-  // stored as a data URL on the record) when one exists, and falls back to
-  // the initials badge otherwise — used everywhere a person's avatar shows
-  // up (tables, search results, form docs) so both stay in sync.
-  function avatarHTML(person, extraClass, styleAttr){
-    const cls = 'avatar' + (extraClass ? ' ' + extraClass : '');
-    const style = styleAttr ? ` style="${styleAttr}"` : '';
-    if(person && person.photo){
-      return `<img class="${cls} avatar-photo" src="${person.photo}" alt="${initials(person.name || '')}"${style}>`;
-    }
-    return `<div class="${cls}"${style}>${initials(person ? (person.name || '') : '')}</div>`;
-  }
-
-  // Opens the shared photo picker and hands back a data URL via callback —
-  // used by every "Add New Member" form's photo picker button.
-  function pickMemberPhoto(previewElId, callback){
-    const input = document.getElementById('photoFileInput');
-    input.onchange = () => {
-      const file = input.files[0];
-      input.value = '';
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        const dataUrl = e.target.result;
-        const preview = document.getElementById(previewElId);
-        if(preview) preview.innerHTML = `<img src="${dataUrl}" alt="Preview">`;
-        callback(dataUrl);
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-  }
-
-  function newMemberPhotoPickerHTML(previewElId, onPick){
-    return `
-      <div class="photo-picker">
-        <div class="photo-picker-preview" id="${previewElId}">📷</div>
-        <button type="button" class="photo-picker-btn" onclick="${onPick}">Upload Photo</button>
-      </div>
-    `;
-  }
-
   function renderMembers(){
     let rows = members.map((m, i) => `
       <tr class="member-row" id="member-row-${i}">
         <td>${i+1}</td>
-        <td>${avatarHTML(m)}</td>
+        <td><div class="avatar">${initials(m.name)}</div></td>
         <td>${m.name}</td>
         <td>${m.email}</td>
         <td class="clickable" onclick="toggleExpand(${i}, 'number', this)"><span class="cell-inner">${m.phone}</span></td>
@@ -1521,7 +1489,6 @@
       <div class="add-member-panel">
         <div class="col-title">Add New Member</div>
         <div class="add-member-grid">
-          ${newMemberPhotoPickerHTML('new-photo-preview', "pickMemberPhoto('new-photo-preview', dataUrl => _newMemberPhoto = dataUrl)")}
           <input type="text" id="new-place" placeholder="Place" />
           <input type="text" id="new-id" placeholder="Member ID (optional)" />
           <input type="text" id="new-name" placeholder="Full name" />
@@ -1538,7 +1505,6 @@
     bindClose();
   }
 
-  let _newMemberPhoto = '';
   function addMemberFromForm(){
     const place = document.getElementById('new-place').value.trim();
     const memberId = document.getElementById('new-id').value.trim();
@@ -1554,7 +1520,6 @@
     const idx = members.length;
     const newMember = buildMemberRecord({
       name,
-      photo: _newMemberPhoto || undefined,
       email: email || '—',
       phone: phone || '—',
       altPhone: '—',
@@ -1569,7 +1534,6 @@
     members.push(newMember);
     renderMembers();
     dbPut('members', newMember.memberId, newMember);
-    _newMemberPhoto = '';
   }
 
   function openMemberFormDoc(i){
@@ -1589,7 +1553,7 @@
           </div>
           <div class="form-doc-body">
             <div class="form-doc-id">
-              ${avatarHTML(m)}
+              <div class="avatar">${initials(m.name)}</div>
               <div class="fname">${m.name}</div>
               <div class="fmeta">${m.memberId} — ${m.place}</div>
             </div>
@@ -1841,7 +1805,7 @@ Issued by Procurement Side.`;
     const strip = document.getElementById('placeHoverStrip');
     strip.innerHTML = matches.map(m => `
       <div class="strip-person">
-        ${avatarHTML(m)}
+        <div class="avatar">${initials(m.name)}</div>
         <div class="strip-name">${m.name}</div>
         <div class="strip-id">${m.memberId}</div>
       </div>
@@ -1879,7 +1843,7 @@ Issued by Procurement Side.`;
     return `
       <div class="member-detail-card">
         <div class="mdc-header">
-          ${avatarHTML(m, null, 'width:52px;height:52px;font-size:16px;')}
+          <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(m.name)}</div>
           <div>
             <div class="mdc-name">${m.name}</div>
             <div class="mdc-id">${m.memberId} — ${m.place}</div>
@@ -1950,7 +1914,7 @@ Issued by Procurement Side.`;
       <div class="col-title">Members in ${place}</div>
       ${matches.map(m => `<div class="member-detail-card" style="cursor:pointer;" onclick="showPaymentFor('${m.memberId}')">
         <div class="mdc-header">
-          ${avatarHTML(m)}
+          <div class="avatar">${initials(m.name)}</div>
           <div><div class="mdc-name">${m.name}</div><div class="mdc-id">${m.memberId}</div></div>
         </div>
       </div>`).join('')}
@@ -2003,7 +1967,7 @@ Issued by Procurement Side.`;
 
     return `
       <div class="pay-member-head">
-        ${avatarHTML(m, null, 'width:52px;height:52px;font-size:16px;')}
+        <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(m.name)}</div>
         <div>
           <div class="mdc-name">${m.name}</div>
           <div class="mdc-id">${m.memberId} — ${m.place}</div>
@@ -2220,6 +2184,7 @@ Issued by Procurement Side.`;
   Object.keys(processingMembersRaw).forEach(cat => {
     processingMembers[cat] = processingMembersRaw[cat].map(m => buildProcessingMember(m, procSeed++, cat));
   });
+  let processingCategoryOrder = Object.keys(processingMembersRaw);
 
   async function hydrateProcessingMembersFromServer(){
     const server = await dbGetAll('processingMembers');
@@ -2254,14 +2219,14 @@ Issued by Procurement Side.`;
   }
 
   function renderProcessingMembers(){
-    const sections = Object.keys(processingMembersRaw).map(cat => {
+    const sections = processingCategoryOrder.map(cat => {
       const meta = CATEGORY_META[cat];
       const list = processingMembers[cat];
       const slug = cat.replace(/\s+/g, '-').toLowerCase();
       const rows = list.map((m, idx) => `
         <tr class="member-row" id="proc-row-${slug}-${idx}">
           <td>${idx+1}</td>
-          <td>${avatarHTML(m)}</td>
+          <td><div class="avatar">${initials(m.name)}</div></td>
           <td>${m.name}</td>
           <td>${m.email}</td>
           <td class="clickable" onclick="toggleProcExpand('${slug}', ${idx}, 'number', this)"><span class="cell-inner">${m.phone}</span></td>
@@ -2291,7 +2256,6 @@ Issued by Procurement Side.`;
           <div class="add-member-panel">
             <div class="col-title">Add New Member — ${cat}</div>
             <div class="add-member-grid">
-              ${newMemberPhotoPickerHTML(`pm-${slug}-photo-preview`, `pickMemberPhoto('pm-${slug}-photo-preview', dataUrl => _newProcMemberPhoto = dataUrl)`)}
               <input type="text" id="pm-${slug}-name" placeholder="Full name" />
               <input type="email" id="pm-${slug}-email" placeholder="Email" />
               <input type="text" id="pm-${slug}-phone" placeholder="Number" />
@@ -2432,7 +2396,7 @@ Issued by Procurement Side.`;
           </div>
           <div class="form-doc-body">
             <div class="form-doc-id">
-              ${avatarHTML(m)}
+              <div class="avatar">${initials(m.name)}</div>
               <div class="fname">${m.name}</div>
               <div class="fmeta">${m.memberId} — ${m.post}</div>
             </div>
@@ -2479,7 +2443,6 @@ Issued by Processing Team.`;
     URL.revokeObjectURL(url);
   }
 
-  let _newProcMemberPhoto = '';
   function addProcessingMember(cat){
     const slug = cat.replace(/\s+/g, '-').toLowerCase();
     const name = document.getElementById(`pm-${slug}-name`).value.trim();
@@ -2494,7 +2457,7 @@ Issued by Processing Team.`;
     if(!name){ alert('Please enter at least the member name.'); return; }
 
     const raw = {
-      name, photo: _newProcMemberPhoto || undefined, email: email || '—', phone: phone || '—', altPhone: altPhone || '—',
+      name, email: email || '—', phone: phone || '—', altPhone: altPhone || '—',
       address: address || '—', altAddress: altAddress || '—',
       post: post || 'Team Member', payment: payment || '₹ 0'
     };
@@ -2503,7 +2466,6 @@ Issued by Processing Team.`;
     processingMembersRaw[cat].push(raw);
     renderProcessingMembers();
     dbPut('processingMembers', newMember.memberId, newMember);
-    _newProcMemberPhoto = '';
   }
 
   function formatKolkataNow(){
@@ -2666,6 +2628,7 @@ Issued by Processing Team.`;
         else { s.classList.add('blurred'); s.classList.remove('shrink'); }
       });
       const type = btn.dataset.detail;
+      currentOpenDetailType = type;
       if(type === 'members') renderMembers();
       else if(type === 'collection') renderCollection();
       else if(type === 'payment') renderPayment();
@@ -2682,6 +2645,7 @@ Issued by Processing Team.`;
       else if(type === 'dist-returns') renderReturnsDetail();
       else if(type === 'dist-expiry') renderExpiryDetail();
       else if(type === 'dist-orderhistory') renderOrderHistoryDetail();
+      else if(type === 'dist-customer-orders') renderCustomerOrderTracking();
     });
   });
 
@@ -2718,16 +2682,36 @@ Issued by Processing Team.`;
     { name: 'Curd', unit: 'kg' }, { name: 'Butter', unit: 'kg' }, { name: 'Buttermilk', unit: 'L' }
   ];
 
+  // Each delivery person's `locations` array is their allotted delivery
+  // area(s) — matched (case-insensitively) against a customer's primary
+  // address city on index.html to auto-assign their order directly to
+  // this person, with no manual step needed in Manage Studio.
   const DELIVERY_PERSONS = [
-    { id: 'DLV001', name: 'Ramesh Pawar', phone: '98221 10011', vehicle: 'Two-Wheeler Milk Carrier', route: 'Karad — Wai Route' },
-    { id: 'DLV002', name: 'Suresh Jagtap', phone: '98221 10022', vehicle: 'Insulated Delivery Van', route: 'Phaltan — Koregaon Route' },
-    { id: 'DLV003', name: 'Vitthal More', phone: '98221 10033', vehicle: 'Mini Tempo (Chiller)', route: 'Pune City Route' },
-    { id: 'DLV004', name: 'Ganesh Kadam', phone: '98221 10044', vehicle: 'Insulated Delivery Van', route: 'Mumbai City Route' },
-    { id: 'DLV005', name: 'Prakash Chavan', phone: '98221 10055', vehicle: 'Mini Tempo (Chiller)', route: 'Nashik City Route' },
-    { id: 'DLV006', name: 'Santosh Deshmukh', phone: '98221 10066', vehicle: 'Insulated Delivery Van', route: 'Kolhapur City Route' },
-    { id: 'DLV007', name: 'Dattatray Salunkhe', phone: '98221 10077', vehicle: 'Auto-Rickshaw (Cans)', route: 'Karad — Phaltan Route' },
-    { id: 'DLV008', name: 'Balaji Shelar', phone: '98221 10088', vehicle: 'Two-Wheeler Milk Carrier', route: 'Wai — Koregaon Route' },
+    { id: 'DLV001', name: 'Ramesh Pawar', phone: '98221 10011', vehicle: 'Two-Wheeler Milk Carrier', route: 'Karad — Wai Route', locations: ['Karad', 'Wai'] },
+    { id: 'DLV002', name: 'Suresh Jagtap', phone: '98221 10022', vehicle: 'Insulated Delivery Van', route: 'Phaltan — Koregaon Route', locations: ['Phaltan', 'Koregaon'] },
+    { id: 'DLV003', name: 'Vitthal More', phone: '98221 10033', vehicle: 'Mini Tempo (Chiller)', route: 'Pune City Route', locations: ['Pune'] },
+    { id: 'DLV004', name: 'Ganesh Kadam', phone: '98221 10044', vehicle: 'Insulated Delivery Van', route: 'Mumbai City Route', locations: ['Mumbai'] },
+    { id: 'DLV005', name: 'Prakash Chavan', phone: '98221 10055', vehicle: 'Mini Tempo (Chiller)', route: 'Nashik City Route', locations: ['Nashik'] },
+    { id: 'DLV006', name: 'Santosh Deshmukh', phone: '98221 10066', vehicle: 'Insulated Delivery Van', route: 'Kolhapur City Route', locations: ['Kolhapur'] },
+    { id: 'DLV007', name: 'Dattatray Salunkhe', phone: '98221 10077', vehicle: 'Auto-Rickshaw (Cans)', route: 'Karad — Phaltan Route', locations: ['Karad', 'Phaltan'] },
+    { id: 'DLV008', name: 'Balaji Shelar', phone: '98221 10088', vehicle: 'Two-Wheeler Milk Carrier', route: 'Wai — Koregaon Route', locations: ['Wai', 'Koregaon'] },
   ];
+
+  // Persisted in the 'deliveryPersons' collection (same generic store
+  // everything else uses) so the list — and each person's allotted
+  // location(s) — survives reloads and redeploys instead of resetting to
+  // the hardcoded seed above every time. Seeds the server once, then every
+  // future load pulls from there.
+  async function hydrateDeliveryPersonsFromServer(){
+    const server = await dbGetAll('deliveryPersons');
+    if(server === null) return;
+    if(server.length === 0){
+      dbBulkSeed('deliveryPersons', DELIVERY_PERSONS);
+      return;
+    }
+    DELIVERY_PERSONS.length = 0;
+    server.forEach(p => DELIVERY_PERSONS.push(p));
+  }
 
   function formatDuration(min){
     if(min < 60) return `${min} min`;
@@ -2741,56 +2725,17 @@ Issued by Processing Team.`;
   ];
   const DELIVERY_STEP_FRACTIONS = [0, 0.10, 0.35, 0.72, 0.9, 1.0];
 
-  // Turns a slot label like "Early Morning (5–7 AM)" or "Evening (5–7 PM)"
-  // into a 24h start hour, so each outlet's delivery cycle for today can be
-  // anchored to its own preferred slot.
-  function slotStartHour(slot){
-    const m = slot.match(/\((\d+)[–-](\d+)\s*(AM|PM)\)/);
-    if(!m) return 8;
-    let h = parseInt(m[1], 10);
-    const ampm = m[3];
-    if(ampm === 'PM' && h !== 12) h += 12;
-    if(ampm === 'AM' && h === 12) h = 0;
-    return h;
-  }
-
-  // Figures out where in the 6-step journey this outlet's delivery is
-  // *right now*, purely from real elapsed time — no manual state to keep in
-  // sync. Each outlet's cycle "starts" at its preferred slot (staggered a
-  // little per-outlet so a whole slot doesn't move in lockstep), runs for
-  // deliveryDurationMinutes, and then sits at "Delivered". This is what
-  // gives naturally mixed stages across outlets instead of every card
-  // showing the same tick, and it keeps advancing — and eventually
-  // completes — on its own as time passes.
-  function getDistDeliveryStage(o){
-    const now = new Date();
-    const startHour = slotStartHour(o.deliverySlot);
-    const jitterMin = Math.floor(seededRand((o._stageSeed || 0) * 131 + 17) * 45); // 0–44 min stagger
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, jitterMin, 0);
-    const total = o.deliveryDurationMinutes;
-    let elapsedMin = (now - start) / 60000;
-    if(elapsedMin < 0) elapsedMin = 0; // slot hasn't started yet today — sits at the first step
-    if(elapsedMin > total) elapsedMin = total; // already completed — caps at Delivered instead of resetting
-    let stageIdx = 0;
-    for(let i = DELIVERY_STEP_FRACTIONS.length - 1; i >= 0; i--){
-      if(elapsedMin >= total * DELIVERY_STEP_FRACTIONS[i]){ stageIdx = i; break; }
-    }
-    return { stageIdx, elapsedMin, total };
-  }
-
   function buildDeliveryChainSteps(o){
     const total = o.deliveryDurationMinutes;
-    const { stageIdx } = getDistDeliveryStage(o);
     const steps = DELIVERY_STEP_LABELS.map((label, i) => {
       const elapsed = Math.round(total * DELIVERY_STEP_FRACTIONS[i]);
       let elapsedLabel;
       if(i === 0) elapsedLabel = 'Start';
       else if(i === DELIVERY_STEP_LABELS.length - 1) elapsedLabel = `Total: ${formatDuration(elapsed)}`;
       else elapsedLabel = `+ ${formatDuration(elapsed)}`;
-      const status = i < stageIdx ? 'done' : (i === stageIdx ? (stageIdx === DELIVERY_STEP_LABELS.length - 1 ? 'done' : 'active') : 'pending');
-      return { label, elapsedLabel, status };
+      return { label, elapsedLabel };
     });
-    return { steps, totalMinutes: total, stageIdx };
+    return { steps, totalMinutes: total };
   }
 
   // Turns a delivery-day label like "Mon, Wed, Fri" or "Daily (Mon–Sat)" into
@@ -2804,96 +2749,14 @@ Issued by Processing Team.`;
     return str.split(',').map(s => map[s.trim()]).filter(v => v !== undefined);
   }
 
-  function pad2(n){ return String(n).padStart(2, '0'); }
-  function dateStrFor(year, month, day){ return `${year}-${pad2(month + 1)}-${pad2(day)}`; }
-  function todayDateStr(){ const d = new Date(); return dateStrFor(d.getFullYear(), d.getMonth(), d.getDate()); }
-
-  // Holds the calendar currently on screen so the click handlers below know
-  // which outlet/member to save a tick against.
-  let _dtrackCal = { memberId: null, ticks: {}, o: null };
-
-  // Builds this calendar month's per-day cell data for one outlet. The grid
-  // itself (today, days in month, weekday layout) is always computed off the
-  // real current date, so it moves forward on its own every day — but a day
-  // only shows a green tick once someone has actually confirmed that
-  // delivery with the button/click (manual tick, stored per outlet).
-  function buildMonthlyTickCalendar(o, ticks){
-    const daySet = parseDeliveryDaySet(o.deliveryDay);
-    const today = new Date();
-    const year = today.getFullYear(), month = today.getMonth(), todayDate = today.getDate();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startWeekday = new Date(year, month, 1).getDay();
-
-    const cells = [];
-    for(let i = 0; i < startWeekday; i++) cells.push(null);
-    let deliveredCount = 0, scheduledCount = 0;
-    for(let d = 1; d <= daysInMonth; d++){
-      const weekday = new Date(year, month, d).getDay();
-      const scheduled = daySet.includes(weekday);
-      const dateStr = dateStrFor(year, month, d);
-      const delivered = !!ticks[dateStr];
-      const isFuture = d > todayDate;
-      if(scheduled) scheduledCount++;
-      if(delivered) deliveredCount++;
-      cells.push({ day: d, dateStr, scheduled, delivered, isFuture, isToday: d === todayDate });
-    }
-    const monthLabel = today.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-    return { cells, monthLabel, deliveredCount, scheduledCount };
-  }
-
-  function renderMonthTickCalendarInner(o, ticks){
-    const cal = buildMonthlyTickCalendar(o, ticks);
-    const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-      .map(d => `<div class="month-cal-weekday-label">${d}</div>`).join('');
-    const dayCells = cal.cells.map(c => {
-      if(!c) return `<div class="month-cal-day empty"></div>`;
-      let cls = 'month-cal-day';
-      const clickable = !c.isFuture;
-      if(c.delivered) cls += ' tick';
-      else if(c.isFuture) cls += ' off future';
-      else if(c.scheduled) cls += ' pending-day';
-      else cls += ' off';
-      if(c.isToday) cls += ' today';
-      if(clickable) cls += ' clickable';
-      const title = clickable ? (c.delivered ? 'Click to undo' : 'Click to mark delivered') : 'Future date';
-      const onclick = clickable ? ` onclick="toggleDeliveryTick('${c.dateStr}')"` : '';
-      return `<div class="${cls}"${onclick} title="${title}"><span class="month-cal-daynum">${c.day}</span>${c.delivered ? '<span class="month-cal-tick">&#10004;</span>' : ''}</div>`;
-    }).join('');
-    return `
-      <div class="expand-title" style="margin-top:28px;">Monthly Delivery Tracker — ${cal.monthLabel}</div>
-      <div class="month-cal-note">Not automatic — click a day (or use the button) once the delivery is actually done. Schedule for this outlet: ${o.deliveryDay}.</div>
-      <div class="month-cal-actions"><button class="track-btn" onclick="markTodayDelivered()">&#10004; Mark Today Delivered</button></div>
-      <div class="month-cal">
-        <div class="month-cal-grid month-cal-headrow">${dayHeaders}</div>
-        <div class="month-cal-grid">${dayCells}</div>
-      </div>
-      <div class="month-cal-summary">${cal.deliveredCount} day(s) confirmed delivered this month</div>
-    `;
-  }
-
-  function renderMonthTickCalendarHtml(o, ticks){
-    return `<div id="month-cal-section">${renderMonthTickCalendarInner(o, ticks)}</div>`;
-  }
-
-  function refreshMonthTickCalendar(){
-    const el = document.getElementById('month-cal-section');
-    if(el && _dtrackCal.o) el.innerHTML = renderMonthTickCalendarInner(_dtrackCal.o, _dtrackCal.ticks);
-  }
-
-  async function toggleDeliveryTick(dateStr){
-    if(!_dtrackCal.o) return;
-    if(_dtrackCal.ticks[dateStr]) delete _dtrackCal.ticks[dateStr];
-    else _dtrackCal.ticks[dateStr] = true;
-    refreshMonthTickCalendar();
-    await dbPut('deliveryLog', _dtrackCal.memberId, { memberId: _dtrackCal.memberId, ticks: _dtrackCal.ticks });
-  }
-
-  async function markTodayDelivered(){
-    if(!_dtrackCal.o) return;
-    _dtrackCal.ticks[todayDateStr()] = true;
-    refreshMonthTickCalendar();
-    await dbPut('deliveryLog', _dtrackCal.memberId, { memberId: _dtrackCal.memberId, ticks: _dtrackCal.ticks });
-  }
+  // NOTE: the old "Monthly Delivery Tracker" tick-box calendar (per-outlet,
+  // stored in the 'deliveryLog' collection) was removed from the Delivery
+  // Detail screen at the user's request. parseDeliveryDaySet() above is
+  // kept because o.deliveryDay is still shown/used elsewhere; the
+  // calendar-building/rendering functions that used to sit here
+  // (buildMonthlyTickCalendar, renderMonthTickCalendarInner,
+  // toggleDeliveryTick, markTodayDelivered, etc.) were deleted along with
+  // the UI that called them, rather than left behind as dead code.
 
   function getAllDeliveryAssignments(personId){
     const result = [];
@@ -2953,7 +2816,7 @@ Issued by Processing Team.`;
       memberId: 'DST' + category.slice(0,1).toUpperCase() + String(seedIndex + 1).padStart(3, '0'),
       gstNumber, deliveryDay, deliverySlot, packagingType, coldStorage, vehicleType, creditLimit, specialInstructions,
       fssaiLicense, orderFrequency, preferredPaymentMode, outstandingDue, memberSince, productsPurchased,
-      deliveryPersonId, deliveryDurationMinutes, _stageSeed: seedIndex,
+      deliveryPersonId, deliveryDurationMinutes,
       upiId: raw.upiId || makeUpiId(raw.contactPerson || raw.storeName, seedIndex + 1300)
     };
   }
@@ -3038,125 +2901,6 @@ Issued by Processing Team.`;
     showDeliveryTrackDetail(personId, outletKey);
   }
 
-  function goToProcMemberDetail(i){
-    const btn = document.querySelector('.option-btn[data-detail="members"]');
-    if(btn) btn.click();
-    openMemberFormDoc(i);
-  }
-  function goToProcessingMemberDetail(slug, i){
-    const btn = document.querySelector('.option-btn[data-detail="proc-members"]');
-    if(btn) btn.click();
-    openProcMemberFormDoc(slug, i);
-  }
-  function goToDistMemberDetail(cat, i){
-    const btn = document.querySelector('.option-btn[data-detail="dist-members"]');
-    if(btn) btn.click();
-    openDistMemberFormDoc(cat, i);
-  }
-
-  // Looks a member up by ID across procurement, processing, distribution
-  // and delivery persons, so typing a single ID at the top of Manage
-  // Studio jumps straight to that person instead of hunting through tabs.
-  function studioFindPersonById(idRaw){
-    const q = (idRaw || '').trim().toLowerCase();
-    if(!q) return null;
-
-    const procIdx = members.findIndex(m => (m.memberId || '').toLowerCase() === q);
-    if(procIdx > -1){
-      const m = members[procIdx];
-      return { name: m.name, photo: m.photo, sub: `${m.memberId} — Procurement Member`, tag: 'Procurement', action: () => goToProcMemberDetail(procIdx) };
-    }
-
-    for(const cat of Object.keys(processingMembers)){
-      const idx = processingMembers[cat].findIndex(m => (m.memberId || '').toLowerCase() === q);
-      if(idx > -1){
-        const m = processingMembers[cat][idx];
-        const slug = cat.replace(/\s+/g, '-').toLowerCase();
-        return { name: m.name, photo: m.photo, sub: `${m.memberId} — Processing (${cat})`, tag: 'Processing', action: () => goToProcessingMemberDetail(slug, idx) };
-      }
-    }
-
-    for(const cat of Object.keys(DISTRIBUTION_OUTLETS)){
-      const idx = DISTRIBUTION_OUTLETS[cat].findIndex(o => (o.memberId || '').toLowerCase() === q);
-      if(idx > -1){
-        const o = DISTRIBUTION_OUTLETS[cat][idx];
-        return { name: o.contactPerson || o.storeName, photo: o.photo, sub: `${o.memberId} — ${o.storeName}`, tag: 'Distributor', action: () => goToDistMemberDetail(cat, idx) };
-      }
-    }
-
-    const dp = DELIVERY_PERSONS.find(p => p.id.toLowerCase() === q);
-    if(dp) return { name: dp.name, photo: dp.photo, sub: `${dp.id} — ${dp.vehicle}`, tag: 'Delivery', action: () => goToDeliveryTracking(dp.id) };
-
-    return null;
-  }
-
-  // Same idea as studioFindPersonById but partial / as-you-type: matches
-  // anywhere in the ID or name and returns every match (capped), so the
-  // Manage Studio bar can show a live dropdown of candidates.
-  function studioFindPeopleByQuery(idRaw, limit){
-    const q = (idRaw || '').trim().toLowerCase();
-    const out = [];
-    if(!q) return out;
-    const cap = limit || 8;
-
-    members.forEach((m, procIdx) => {
-      if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
-        out.push({ name: m.name, photo: m.photo, sub: `${m.memberId} — Procurement Member`, tag: 'Procurement', action: () => goToProcMemberDetail(procIdx) });
-      }
-    });
-
-    Object.keys(processingMembers).forEach(cat => {
-      processingMembers[cat].forEach((m, idx) => {
-        if((m.memberId || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)){
-          const slug = cat.replace(/\s+/g, '-').toLowerCase();
-          out.push({ name: m.name, photo: m.photo, sub: `${m.memberId} — Processing (${cat})`, tag: 'Processing', action: () => goToProcessingMemberDetail(slug, idx) });
-        }
-      });
-    });
-
-    Object.keys(DISTRIBUTION_OUTLETS).forEach(cat => {
-      DISTRIBUTION_OUTLETS[cat].forEach((o, idx) => {
-        if((o.memberId || '').toLowerCase().includes(q) || (o.contactPerson || '').toLowerCase().includes(q) || (o.storeName || '').toLowerCase().includes(q)){
-          out.push({ name: o.contactPerson || o.storeName, photo: o.photo, sub: `${o.memberId} — ${o.storeName}`, tag: 'Distributor', action: () => goToDistMemberDetail(cat, idx) });
-        }
-      });
-    });
-
-    DELIVERY_PERSONS.forEach(p => {
-      if((p.id || '').toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q)){
-        out.push({ name: p.name, photo: p.photo, sub: `${p.id} — ${p.vehicle}`, tag: 'Delivery', action: () => goToDeliveryTracking(p.id) });
-      }
-    });
-
-    return out.slice(0, cap);
-  }
-
-  let _studioSearchAction = null;
-  function runStudioSearch(providedVal){
-    const inputEl = document.getElementById('studioSearchInput');
-    const val = providedVal !== undefined ? providedVal : (inputEl ? inputEl.value : '');
-    const area = document.getElementById('studioSearchResult');
-    const result = studioFindPersonById(val);
-    if(!result){
-      area.innerHTML = val.trim() ? `<div class="ssb-result-empty">No member found for ID "${val.trim()}".</div>` : '';
-      _studioSearchAction = null;
-      return;
-    }
-    _studioSearchAction = result.action;
-    const tag = result.tag || '';
-    area.innerHTML = `
-      <div class="ssb-result-card">
-        ${avatarHTML(result, 'ssb-result-avatar')}
-        <div class="ssb-result-body">
-          <div class="ssb-result-name">${result.name}</div>
-          <div class="ssb-result-sub">${result.sub}</div>
-          ${tag ? `<span class="ssb-result-tag tag-${tag.toLowerCase()}">${tag}</span>` : ''}
-        </div>
-        <button class="ssb-result-view" onclick="_studioSearchAction && _studioSearchAction()">View Full Detail →</button>
-      </div>
-    `;
-  }
-
   function setActiveDistTab(activeId){
     ['dist-tab-small', 'dist-tab-big', 'dist-tab-dperson', 'dist-tab-track'].forEach(id => {
       const el = document.getElementById(id);
@@ -3226,6 +2970,61 @@ Issued by Processing Team.`;
       </div>
     `;
   }
+
+  // ---- Search pin: bring a searched member to the top of whichever
+  // detail page is currently open, if that member actually belongs to it.
+  // Called from the parent window (index.html) after a Member ID search.
+  function flashPinnedRow(rowEl){
+    if(!rowEl) return;
+    rowEl.classList.add('pinned-hit-row');
+    rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => rowEl.classList.remove('pinned-hit-row'), 1600);
+  }
+
+  function pinMemberToTop(memberId, kind){
+    if(kind === 'procurement' && currentOpenDetailType === 'members'){
+      const idx = members.findIndex(m => m.memberId === memberId);
+      if(idx === -1) return false;
+      if(idx > 0){ const [hit] = members.splice(idx, 1); members.unshift(hit); }
+      renderMembers();
+      flashPinnedRow(document.getElementById('member-row-0'));
+      return true;
+    }
+    if(kind === 'processing' && currentOpenDetailType === 'proc-members'){
+      let foundCat = null, slug = null;
+      for(const cat of processingCategoryOrder){
+        const idx = processingMembers[cat].findIndex(m => m.memberId === memberId);
+        if(idx !== -1){
+          if(idx > 0){ const [hit] = processingMembers[cat].splice(idx, 1); processingMembers[cat].unshift(hit); }
+          foundCat = cat;
+          break;
+        }
+      }
+      if(!foundCat) return false;
+      processingCategoryOrder = [foundCat, ...processingCategoryOrder.filter(c => c !== foundCat)];
+      slug = foundCat.replace(/\s+/g, '-').toLowerCase();
+      renderProcessingMembers();
+      flashPinnedRow(document.getElementById(`proc-row-${slug}-0`));
+      return true;
+    }
+    if(kind === 'distribution' && currentOpenDetailType === 'dist-members'){
+      let foundCat = null;
+      for(const cat of Object.keys(DISTRIBUTION_OUTLETS)){
+        const idx = DISTRIBUTION_OUTLETS[cat].findIndex(o => o.memberId === memberId);
+        if(idx !== -1){
+          if(idx > 0){ const [hit] = DISTRIBUTION_OUTLETS[cat].splice(idx, 1); DISTRIBUTION_OUTLETS[cat].unshift(hit); }
+          foundCat = cat;
+          break;
+        }
+      }
+      if(!foundCat) return false;
+      showDistCategory(foundCat);
+      flashPinnedRow(document.getElementById(`dist-row-${foundCat}-0`));
+      return true;
+    }
+    return false;
+  }
+  window.pinMemberToTop = pinMemberToTop;
 
   function addDistMemberRow(cat){
     const val = id => document.getElementById(id).value.trim();
@@ -3307,20 +3106,114 @@ Issued by Processing Team.`;
     `;
   }
 
-  function showDeliveryPersonDetail(){
+  // Renders the avatar cell for a delivery person: their uploaded photo if
+  // they have one, otherwise the initials circle — either way, clicking it
+  // opens a file picker to add/replace the photo, saved straight to the
+  // deliveryPersons collection.
+  function dpAvatarCellHtml(p){
+    const inner = p.photo
+      ? `<img src="${p.photo}" class="dp-avatar-img">`
+      : `<div class="avatar dperson-avatar">${initials(p.name)}</div>`;
+    return `
+      <div class="dp-avatar-wrap" onclick="pickDeliveryPersonPhoto('${p.id}')" title="Click to add/change photo">
+        ${inner}
+        <div class="dp-avatar-cam">📷</div>
+        <input type="file" accept="image/*" id="dp-photo-file-${p.id}" style="display:none;" onchange="handleDeliveryPersonPhotoChange('${p.id}', this)">
+      </div>
+    `;
+  }
+
+  function pickDeliveryPersonPhoto(personId){
+    const input = document.getElementById(`dp-photo-file-${personId}`);
+    if(input) input.click();
+  }
+
+  function handleDeliveryPersonPhotoChange(personId, inputEl){
+    const file = inputEl.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
+      if(!p) return;
+      p.photo = e.target.result;
+      await dbPut('deliveryPersons', personId, p);
+      const wrap = inputEl.closest('.dp-avatar-wrap');
+      if(wrap) wrap.outerHTML = dpAvatarCellHtml(p);
+    };
+    reader.readAsDataURL(file);
+    inputEl.value = '';
+  }
+
+  // Photo picked for a not-yet-saved new person (the "+ Add" input row).
+  // Held here until addDeliveryPersonRow() actually creates the person.
+  let pendingNewPersonPhoto = null;
+
+  function pickNewDeliveryPersonPhoto(){
+    const input = document.getElementById('dp-photo-file-new');
+    if(input) input.click();
+  }
+
+  function handleNewDeliveryPersonPhotoChange(inputEl){
+    const file = inputEl.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      pendingNewPersonPhoto = e.target.result;
+      const cell = document.getElementById('dp-new-photo-cell');
+      if(cell){
+        cell.querySelector('.dp-avatar-wrap').innerHTML = `
+          <img src="${pendingNewPersonPhoto}" class="dp-avatar-img">
+          <div class="dp-avatar-cam">📷</div>
+          <input type="file" accept="image/*" id="dp-photo-file-new" style="display:none;" onchange="handleNewDeliveryPersonPhotoChange(this)">
+        `;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function dpNewPhotoCellHtml(){
+    return `
+      <td id="dp-new-photo-cell">
+        <div class="dp-avatar-wrap" onclick="pickNewDeliveryPersonPhoto()" title="Add a photo">
+          <div class="avatar dperson-avatar dp-avatar-placeholder">＋</div>
+          <div class="dp-avatar-cam">📷</div>
+          <input type="file" accept="image/*" id="dp-photo-file-new" style="display:none;" onchange="handleNewDeliveryPersonPhotoChange(this)">
+        </div>
+      </td>
+    `;
+  }
+
+  async function showDeliveryPersonDetail(){
     setActiveDistTab('dist-tab-dperson');
+    pendingNewPersonPhoto = null;
+    const allOrders = await dbGetAll('orders') || [];
     const rows = DELIVERY_PERSONS.map(p => {
       const assigned = getAllDeliveryAssignments(p.id);
+      // "Deliveries Covered" now counts BOTH the B2B outlets this person is
+      // routed to AND every online customer order auto-matched to them by
+      // allotted location — previously this only counted outlets, so a
+      // delivery person handling online orders always showed 0.
+      const onlineCount = allOrders.filter(o => o.deliveryPersonId === p.id).length;
+      const totalCovered = assigned.length + onlineCount;
       return `
         <tr class="member-row">
           <td>${p.id}</td>
-          <td><div class="avatar dperson-avatar">${initials(p.name)}</div></td>
+          <td>${dpAvatarCellHtml(p)}</td>
           <td>${p.name}</td>
           <td>${p.phone}</td>
           <td>${p.vehicle}</td>
           <td>${p.route}</td>
-          <td>${assigned.length} store${assigned.length !== 1 ? 's' : ''}</td>
-          <td><button class="track-btn" onclick="showDeliveryTrackDetail('${p.id}')">Track Deliveries</button></td>
+          <td>
+            <div class="dp-loc-edit">
+              <input type="text" id="dp-loc-${p.id}" value="${(p.locations || []).join(', ')}" placeholder="e.g. Karad, Wai">
+              <button class="dp-loc-save-btn" onclick="saveDeliveryPersonLocations('${p.id}')" title="Save allotted location(s)">💾</button>
+            </div>
+          </td>
+          <td>${totalCovered} ${totalCovered === 1 ? 'delivery' : 'deliveries'}</td>
+          <td><button class="track-btn" onclick="toggleDeliveryLog('${p.id}')">📅 Daily Log</button></td>
+        </tr>
+        <tr class="expand-row" id="dp-log-row-${p.id}" style="display:none;">
+          <td colspan="9"><div id="dp-log-content-${p.id}"></div></td>
         </tr>
       `;
     }).join('');
@@ -3330,18 +3223,19 @@ Issued by Processing Team.`;
           <thead>
             <tr>
               <th>Delivery Boy ID</th><th>Photo</th><th>Name</th><th>Phone</th><th>Vehicle</th>
-              <th>Assigned Route</th><th>Stores Covered</th><th>Track</th>
+              <th>Assigned Route</th><th>Allotted Location(s)</th><th>Deliveries Covered</th><th>Daily Log</th>
             </tr>
           </thead>
           <tbody id="dpersonTableBody">${rows}
             <tr class="table-input-row">
               <td><input type="text" id="dp-id" placeholder="e.g. DLV009"></td>
-              <td>—</td>
+              ${dpNewPhotoCellHtml()}
               <td><input type="text" id="dp-name" placeholder="Name"></td>
               <td><input type="text" id="dp-phone" placeholder="Phone"></td>
               <td><input type="text" id="dp-vehicle" placeholder="Vehicle"></td>
               <td><input type="text" id="dp-route" placeholder="Route"></td>
-              <td>0 stores</td>
+              <td><input type="text" id="dp-locations" placeholder="e.g. Karad, Wai"></td>
+              <td>0 deliveries</td>
               <td><button class="table-add-btn" onclick="addDeliveryPersonRow()">+ Add</button></td>
             </tr>
           </tbody>
@@ -3350,30 +3244,180 @@ Issued by Processing Team.`;
     `;
   }
 
-  function addDeliveryPersonRow(){
+  async function saveDeliveryPersonLocations(personId){
+    const input = document.getElementById(`dp-loc-${personId}`);
+    if(!input) return;
+    const locations = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    const p = DELIVERY_PERSONS.find(dp => dp.id === personId);
+    if(!p) return;
+    p.locations = locations;
+    await dbPut('deliveryPersons', personId, p);
+    input.style.borderColor = 'var(--success, #2E7D4F)';
+    setTimeout(() => { input.style.borderColor = ''; }, 900);
+  }
+
+  async function addDeliveryPersonRow(){
     const val = id => document.getElementById(id).value.trim();
-    const id_ = val('dp-id') || '—';
+    const id_ = val('dp-id');
+    if(!id_){ document.getElementById('dp-id').focus(); return; }
     const name = val('dp-name') || '—';
     const phone = val('dp-phone') || '—';
     const vehicle = val('dp-vehicle') || '—';
     const route = val('dp-route') || '—';
+    const locations = val('dp-locations').split(',').map(s => s.trim()).filter(Boolean);
+    const photo = pendingNewPersonPhoto || null;
+    const person = { id: id_, name, phone, vehicle, route, locations, photo };
+    DELIVERY_PERSONS.push(person);
+    await dbPut('deliveryPersons', id_, person);
+
     const rowHTML = `<tr class="member-row">
         <td>${id_}</td>
-        <td><div class="avatar dperson-avatar">${initials(name)}</div></td>
+        <td>${dpAvatarCellHtml(person)}</td>
         <td>${name}</td>
         <td>${phone}</td>
         <td>${vehicle}</td>
         <td>${route}</td>
-        <td>0 stores</td>
-        <td><button class="row-delete-btn" onclick="confirmDeleteRow(this)">🗑</button></td>
+        <td>
+          <div class="dp-loc-edit">
+            <input type="text" id="dp-loc-${id_}" value="${locations.join(', ')}" placeholder="e.g. Karad, Wai">
+            <button class="dp-loc-save-btn" onclick="saveDeliveryPersonLocations('${id_}')" title="Save allotted location(s)">💾</button>
+          </div>
+        </td>
+        <td>0 deliveries</td>
+        <td><button class="track-btn" onclick="toggleDeliveryLog('${id_}')">📅 Daily Log</button></td>
+      </tr>
+      <tr class="expand-row" id="dp-log-row-${id_}" style="display:none;">
+        <td colspan="9"><div id="dp-log-content-${id_}"></div></td>
       </tr>`;
     document.querySelector('#dpersonTableBody .table-input-row').insertAdjacentHTML('beforebegin', rowHTML);
-    ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route'].forEach(id => document.getElementById(id).value = '');
+    ['dp-id','dp-name','dp-phone','dp-vehicle','dp-route','dp-locations'].forEach(id => document.getElementById(id).value = '');
+    pendingNewPersonPhoto = null;
+    const photoCell = document.getElementById('dp-new-photo-cell');
+    if(photoCell) photoCell.outerHTML = dpNewPhotoCellHtml();
+  }
+
+  // ---- Daily Delivery Log --------------------------------------------------
+  // Lets each delivery person (via the owner, from this table) record how
+  // many deliveries they completed on a given day. Saved per person in the
+  // 'deliveryDailyLog' collection as { personId, entries: [{date, count}] },
+  // one entry per calendar day (re-saving the same date overwrites that
+  // day's count rather than duplicating it). Surfaced to the owner both
+  // here (inline) and in the storefront's Owner Section -> Delivery tab.
+  async function toggleDeliveryLog(personId){
+    const row = document.getElementById(`dp-log-row-${personId}`);
+    if(!row) return;
+    if(row.style.display !== 'none'){ row.style.display = 'none'; return; }
+    row.style.display = 'table-row';
+    const content = document.getElementById(`dp-log-content-${personId}`);
+    content.innerHTML = '<div class="result-placeholder">Loading…</div>';
+    const record = await dbGetOne('deliveryDailyLog', personId);
+    renderDeliveryLogPanel(personId, (record && record.entries) || []);
+  }
+
+  function renderDeliveryLogPanel(personId, entries){
+    const content = document.getElementById(`dp-log-content-${personId}`);
+    if(!content) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const sorted = entries.slice().sort((a, b) => b.date.localeCompare(a.date));
+    const rows = sorted.length
+      ? sorted.map(e => `<tr><td>${new Date(e.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td>${e.count}</td></tr>`).join('')
+      : `<tr><td colspan="2" style="color:#8a7a58;font-style:italic;">No deliveries logged yet.</td></tr>`;
+    const totalCount = entries.reduce((s, e) => s + (e.count || 0), 0);
+    content.innerHTML = `
+      <div class="dlog-panel">
+        <div class="dlog-panel-head">
+          <div class="expand-title" style="margin-bottom:0;">📅 Daily Delivery Log</div>
+          <div class="dlog-panel-total">Total logged: <b>${totalCount}</b> ${totalCount === 1 ? 'delivery' : 'deliveries'} across ${entries.length} day${entries.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="dlog-form">
+          <div class="dlog-field">
+            <label>Date</label>
+            <input type="date" id="dp-log-date-${personId}" value="${today}" max="${today}">
+          </div>
+          <button type="button" class="dlog-today-btn" onclick="document.getElementById('dp-log-date-${personId}').value='${today}'">Today</button>
+          <div class="dlog-field dlog-count">
+            <label>Deliveries Done</label>
+            <input type="number" min="0" id="dp-log-count-${personId}" placeholder="e.g. 12" onkeydown="if(event.key==='Enter') saveDeliveryLogEntry('${personId}')">
+          </div>
+          <button class="dlog-save-btn" onclick="saveDeliveryLogEntry('${personId}')">💾 Save</button>
+        </div>
+        <div class="dlog-msg" id="dp-log-msg-${personId}"></div>
+        <div class="dlog-history-wrap">
+          <div class="dlog-history-title">History</div>
+          <table class="mini-table">
+            <thead><tr><th>Date</th><th>Deliveries Done</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  async function saveDeliveryLogEntry(personId){
+    const dateInput = document.getElementById(`dp-log-date-${personId}`);
+    const countInput = document.getElementById(`dp-log-count-${personId}`);
+    const msg = document.getElementById(`dp-log-msg-${personId}`);
+    const date = dateInput.value;
+    const count = parseInt(countInput.value, 10);
+    msg.classList.remove('ok', 'err');
+    if(!date){ msg.textContent = 'Pick a date first.'; msg.classList.add('err'); return; }
+    if(isNaN(count) || count < 0){ msg.textContent = 'Enter a valid number of deliveries.'; msg.classList.add('err'); return; }
+
+    const record = (await dbGetOne('deliveryDailyLog', personId)) || { personId, entries: [] };
+    record.entries = record.entries || [];
+    const existingIdx = record.entries.findIndex(e => e.date === date);
+    if(existingIdx !== -1) record.entries[existingIdx].count = count;
+    else record.entries.push({ date, count });
+    await dbPut('deliveryDailyLog', personId, record);
+
+    countInput.value = '';
+    msg.classList.add('ok');
+    msg.textContent = `✓ Saved — ${count} deliveries logged for ${new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.`;
+    renderDeliveryLogPanel(personId, record.entries);
+  }
+
+  // Full boy ⇄ product ⇄ user connection matrix — EVERY outlet this
+  // delivery person is assigned to, with EVERY product bought by each one,
+  // shown together in one table. Previously only the single store/outlet
+  // picked in the dropdown above was shown, which read as "incomplete"
+  // since a delivery boy usually carries products to several outlets.
+  // Online-customer orders (which are single-product each) are listed
+  // separately further down in "Assigned Online Customer Orders" — that
+  // list already names the product per order, so together the two
+  // sections cover 100% of what this person delivers, to whom.
+  function renderFullConnectionsTable(p, assignments){
+    if(!assignments.length){
+      return '<div class="result-placeholder">No outlets assigned to this delivery person yet.</div>';
+    }
+    const rows = assignments.map(a => {
+      const o = a.o;
+      const products = (o.productsPurchased || []).map(pp => `${pp.product} (${pp.qty} ${pp.unit}/mo)`).join(', ') || '—';
+      return `
+        <tr>
+          <td>${o.storeName}</td>
+          <td>${o.place}</td>
+          <td>${o.contactPerson}</td>
+          <td>📞 ${o.phone || '—'}</td>
+          <td>${products}</td>
+        </tr>
+      `;
+    }).join('');
+    return `
+      <div class="dist-table-scroll">
+        <table class="detail-table">
+          <thead>
+            <tr><th>Outlet / User</th><th>Place</th><th>Contact Person</th><th>Phone</th><th>Products Carried</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
   }
 
   function showDeliveryTrackDetail(personId, outletKey){
     setActiveDistTab('dist-tab-track');
     const selPerson = personId || DELIVERY_PERSONS[0].id;
+    const p = DELIVERY_PERSONS.find(dp => dp.id === selPerson);
     const assignments = getAllDeliveryAssignments(selPerson);
     const selKey = (outletKey && assignments.some(a => `${a.cat}:${a.idx}` === outletKey))
       ? outletKey
@@ -3394,16 +3438,124 @@ Issued by Processing Team.`;
           <select id="dtrack-person-select" onchange="showDeliveryTrackDetail(this.value)">${personOptions}</select>
         </div>
         <div class="dtrack-select-field">
-          <label>Delivery To</label>
+          <label>Delivery To (Store / Outlet)</label>
           <select id="dtrack-store-select" onchange="renderDeliveryChainInto(document.getElementById('dtrack-person-select').value, this.value)">
             ${storeOptions || '<option>No stores assigned</option>'}
           </select>
         </div>
       </div>
-      <div id="dtrack-chain-area"></div>
+      <div class="expand-title" style="margin-top:22px;">🔗 Full Delivery Connections — every outlet &amp; product carried by ${p.name}</div>
+      <div id="dtrack-full-connections">${renderFullConnectionsTable(p, assignments)}</div>
+      <div id="dtrack-chain-area" style="margin-top:26px;"></div>
+      <div class="expand-title" style="margin-top:24px;">📦 Assigned Online Customer Orders</div>
+      <div style="font-size:12.5px;color:#8a7a58;margin:-6px 0 12px;line-height:1.5;">
+        Auto-matched by this person's allotted location — tap an order to open it in Customer Order Tracking and update its delivery stage.
+      </div>
+      <div id="dtrack-online-orders"><div class="result-placeholder">Loading assigned online orders…</div></div>
     `;
     if(selKey) renderDeliveryChainInto(selPerson, selKey);
-    else document.getElementById('dtrack-chain-area').innerHTML = '<div class="result-placeholder">No deliveries assigned to this person yet.</div>';
+    else document.getElementById('dtrack-chain-area').innerHTML = '<div class="result-placeholder">No store/outlet deliveries assigned to this person yet.</div>';
+    renderAssignedOnlineOrders(selPerson);
+  }
+
+  // The online-customer list is independent of which outlet is selected
+  // above — it's every order.deliveryPersonId that matched this person by
+  // allotted location at checkout (see findDeliveryPersonForCity() in
+  // index.html), regardless of B2B outlet assignment.
+  //
+  // Previously, tapping one of these cards NAVIGATED AWAY to the separate
+  // Customer Order Tracking page (jumpToCustomerOrder). That only affected
+  // delivery persons who had no B2B outlet assigned (a person added later
+  // via the "+ Add" row in Delivery Person Detail usually has no outlet
+  // yet, only online orders) — so it looked like an inconsistent "some
+  // delivery boys open a dropdown/tick, others jump to another page" bug,
+  // when really it was two different UIs for the same idea. Removed the
+  // navigation: every order here now has its own inline tick-step stage
+  // control, same as the outlet's Delivery Stage section above, so the
+  // behavior is identical no matter how the delivery person was created.
+  async function renderAssignedOnlineOrders(personId){
+    const wrap = document.getElementById('dtrack-online-orders');
+    if(!wrap) return;
+    const all = await dbGetAll('orders');
+    const mine = (all || []).filter(o => o.deliveryPersonId === personId).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if(!mine.length){
+      wrap.innerHTML = '<div class="result-placeholder">No online customer orders matched to this person\'s allotted location yet.</div>';
+      return;
+    }
+    wrap.innerHTML = mine.map(o => renderOnlineOrderCard(o)).join('');
+  }
+
+  function renderOnlineOrderCard(o){
+    const d = o.deliveryDetails || {};
+    const stage = o.stage ?? 0;
+    const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
+      <div class="chain-step ${i > stage ? 'pending' : ''}" style="cursor:pointer;" onclick="setAssignedOrderStage('${o.id}', ${i})" title="Mark stage reached">
+        <div class="chain-line"></div>
+        <div class="chain-node">${i <= stage ? '✓' : (i + 1)}</div>
+        <div class="chain-label">${label}</div>
+      </div>
+    `).join('');
+    return `
+      <div class="dtrack-store-card dtrack-online-order" id="online-order-card-${o.id}">
+        <div class="avatar">${(d.fullName || o.email || '?').slice(0, 2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="dsc-name">${o.icon || ''} ${o.name} — ${o.qty} × ${o.unit} <span style="font-weight:400;color:#8a7a58;">· ${DELIVERY_STEP_LABELS[stage]}</span></div>
+          <div class="dsc-sub">${d.fullName || 'Customer'} · 📞 ${d.primaryPhone || '—'} — used first, this is who to call</div>
+          <div class="dsc-sub">${d.primaryAddressLine1 || '—'}${d.landmark ? ', near ' + d.landmark : ''}, ${d.city || '—'}, ${d.state || '—'} — ${d.pincode || '—'}</div>
+          <div class="dsc-sub" style="color:#a89568;">${o.id} · ${o.date}</div>
+          <div class="delivery-chain" style="margin-top:12px;justify-content:flex-start;gap:18px;">${stepsHtml}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Saves the stage right here, inline — tap a step, it ticks and saves,
+  // same as the outlet's Delivery Stage tracker. No navigation away from
+  // this page. (order.status is kept in sync too since the customer's My
+  // Deliveries view on index.html reads that field.)
+  async function setAssignedOrderStage(orderId, stageIdx){
+    const order = await dbGetOne('orders', orderId);
+    if(!order) return;
+    order.stage = stageIdx;
+    order.status = DELIVERY_STEP_LABELS[stageIdx];
+    await dbPut('orders', orderId, order);
+    const card = document.getElementById(`online-order-card-${orderId}`);
+    if(card) card.outerHTML = renderOnlineOrderCard(order);
+  }
+
+
+  // Holds the outlet's current delivery-stage record on screen so the
+  // click handler below knows which outlet to save a stage change against.
+  // Persisted in the 'outletDeliveryStage' collection, keyed by memberId —
+  // separate from the online-order stage (order.stage) since a B2B outlet
+  // isn't an "order", it's a recurring account.
+  let _dtrackStage = { memberId: null, stage: 0, o: null };
+
+  function renderOutletStageSection(o, stageIdx){
+    const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
+      <div class="chain-step ${i > stageIdx ? 'pending' : ''}" style="cursor:pointer;" onclick="setOutletDeliveryStage(${i})" title="Mark stage reached">
+        <div class="chain-line"></div>
+        <div class="chain-node">${i <= stageIdx ? '✓' : (i + 1)}</div>
+        <div class="chain-label">${label}</div>
+      </div>
+    `).join('');
+    const completed = stageIdx + 1;
+    const total = DELIVERY_STEP_LABELS.length;
+    return `
+      <div class="expand-title" style="margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span>Delivery Stage — tap a step to mark it reached</span>
+        <span class="dsb-metric-value" style="font-size:14px;">${completed} of ${total} stages completed</span>
+      </div>
+      <div class="delivery-chain">${stepsHtml}</div>
+    `;
+  }
+
+  async function setOutletDeliveryStage(stageIdx){
+    if(!_dtrackStage.o) return;
+    _dtrackStage.stage = stageIdx;
+    await dbPut('outletDeliveryStage', _dtrackStage.memberId, { memberId: _dtrackStage.memberId, stage: stageIdx, updatedAt: Date.now() });
+    const el = document.getElementById('outlet-stage-section');
+    if(el) el.innerHTML = renderOutletStageSection(_dtrackStage.o, stageIdx);
   }
 
   async function renderDeliveryChainInto(personId, outletKey){
@@ -3411,30 +3563,20 @@ Issued by Processing Team.`;
     const [cat, idxStr] = outletKey.split(':');
     const idx = parseInt(idxStr, 10);
     const o = getDistOutlet(cat, idx);
-    const chain = buildDeliveryChainSteps(o);
+    const products = (o.productsPurchased || []).map(pp => `${pp.product} (${pp.qty} ${pp.unit}/mo)`).join(', ') || '—';
 
-    const stepsHtml = chain.steps.map((s, i) => `
-      <div class="chain-step ${s.status}">
-        <div class="chain-line"></div>
-        <div class="chain-node">${s.status === 'done' ? '✓' : (i + 1)}</div>
-        <div class="chain-label">${s.label}</div>
-        <div class="chain-time">${s.elapsedLabel}</div>
-        ${s.status === 'active' ? '<div class="chain-elapsed">In progress…</div>' : ''}
-      </div>
-    `).join('');
-
-    // Show the journey immediately; the monthly tick calendar loads its
-    // saved ticks (per outlet, from the server) just after.
+    // Show the summary + store card immediately; the stage tracker loads
+    // its saved state (per outlet, from the server) just after. The
+    // boy→product→user link line lives once, up top, in the full
+    // connections table (renderFullConnectionsTable) instead of repeating
+    // here per outlet. The monthly tick calendar was removed from this
+    // view at the user's request.
     document.getElementById('dtrack-chain-area').innerHTML = `
       <div class="dtrack-summary-banner">
         <div class="avatar dsb-avatar">${initials(p.name)}</div>
         <div>
           <div class="dsb-name">${p.name}</div>
-          <div class="dsb-sub">${p.id} — ${p.vehicle} — ${p.route} — 📞 ${p.phone}</div>
-        </div>
-        <div class="dsb-metric">
-          <div class="dsb-metric-label">Current Status</div>
-          <div class="dsb-metric-value" style="font-size:16px;">${DELIVERY_STEP_LABELS[chain.stageIdx]}</div>
+          <div class="dsb-sub">${p.id} — ${p.vehicle} — ${p.route}</div>
         </div>
         <div class="dsb-metric">
           <div class="dsb-metric-label">Time to Deliver</div>
@@ -3446,31 +3588,26 @@ Issued by Processing Team.`;
         <div>
           <div class="dsc-name">${o.storeName} — ${o.place}</div>
           <div class="dsc-sub">${o.contactPerson} · ${o.address}</div>
+          <div class="dsc-sub">Products: ${products}</div>
         </div>
       </div>
-      <div class="expand-title">Delivery Journey</div>
-      <div class="delivery-chain">${stepsHtml}</div>
-      <div id="month-cal-section"><div class="month-cal-note">Loading delivery tracker…</div></div>
+      <div class="dtrack-contacts" style="display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;">
+        <div style="flex:1;min-width:220px;background:#fff;border:1px solid #e8dfc8;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a7a58;">Delivery Boy Contact</div>
+          <div style="font-size:14.5px;font-weight:700;margin-top:2px;">${p.name} — 📞 ${p.phone}</div>
+        </div>
+        <div style="flex:1;min-width:220px;background:#fff;border:1px solid #e8dfc8;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a7a58;">User (Outlet) Contact</div>
+          <div style="font-size:14.5px;font-weight:700;margin-top:2px;">${o.contactPerson} — 📞 ${o.phone || '—'}</div>
+        </div>
+      </div>
+      <div id="outlet-stage-section"><div class="month-cal-note">Loading delivery stage…</div></div>
     `;
 
-    const logRecord = await dbGetOne('deliveryLog', o.memberId);
-    _dtrackCal = { memberId: o.memberId, ticks: (logRecord && logRecord.ticks) || {}, o };
-    const calSection = document.getElementById('month-cal-section');
-    if(calSection) calSection.innerHTML = renderMonthTickCalendarInner(o, _dtrackCal.ticks);
-
-    startDeliveryChainAutoRefresh(personId, outletKey);
-  }
-
-  // Re-renders the open journey every so often so the active step visibly
-  // moves forward (and the whole chain eventually reaches "Delivered")
-  // without needing to re-select the store.
-  let _chainRefreshInterval = null;
-  function startDeliveryChainAutoRefresh(personId, outletKey){
-    if(_chainRefreshInterval) clearInterval(_chainRefreshInterval);
-    _chainRefreshInterval = setInterval(() => {
-      if(!document.getElementById('dtrack-chain-area')){ clearInterval(_chainRefreshInterval); _chainRefreshInterval = null; return; }
-      renderDeliveryChainInto(personId, outletKey);
-    }, 20000);
+    const stageRecord = await dbGetOne('outletDeliveryStage', o.memberId);
+    _dtrackStage = { memberId: o.memberId, stage: (stageRecord && stageRecord.stage) || 0, o };
+    const stageSection = document.getElementById('outlet-stage-section');
+    if(stageSection) stageSection.innerHTML = renderOutletStageSection(o, _dtrackStage.stage);
   }
 
   function distProductsDetail(cat, i){
@@ -3850,7 +3987,7 @@ Issued by Distribution Side.`;
     `).join('');
     return `
       <div class="pay-member-head">
-        ${avatarHTML(entity, null, 'width:52px;height:52px;font-size:16px;')}
+        <div class="avatar" style="width:52px;height:52px;font-size:16px;">${initials(entity.name)}</div>
         <div>
           <div class="mdc-name">${entity.name}</div>
           <div class="mdc-id">${entity.sub}</div>
@@ -4682,10 +4819,206 @@ Issued by Distribution Side.`;
     ['oh-month','oh-store','oh-product','oh-qty','oh-amount'].forEach(id => document.getElementById(id).value = '');
   }
 
+  // ---- Customer Order Tracking (online storefront orders) ----------------
+  // Looks up a single online order (placed via Buy Now on the storefront) by
+  // its Order ID, and lets the owner move it through the same 6-stage
+  // delivery journey used for outlet distribution. The saved stage is
+  // written back to the shared `orders` collection, so the customer's own
+  // "My Deliveries" view on the storefront (matched by their account email)
+  // picks it up on its next refresh — no separate sync needed.
+  async function renderCustomerOrderTracking(){
+    detailShell(
+      'Customer Order Tracking',
+      'Look up an online customer order by Order ID and move it through the delivery stages — the customer sees the same update in their own "My Deliveries".',
+      `
+      <div class="collection-grid">
+        <div class="collection-col id-col">
+          <div class="col-title">Order ID</div>
+          <input type="text" id="custOrderIdInput" placeholder="e.g. ORD-87650187" onkeydown="if(event.key==='Enter') searchCustomerOrder()" />
+          <button onclick="searchCustomerOrder()">Search</button>
+        </div>
+        <div class="result-col-wrap">
+          <div class="collection-col result-col" id="custOrderResultCol">
+            <div class="col-title">Order Detail</div>
+            <div class="result-placeholder">Enter an Order ID above to view and update its delivery stage.</div>
+          </div>
+        </div>
+      </div>
+      <div class="expand-title" style="margin-top:22px;">Recent Online Orders</div>
+      <div id="custOrderRecentList" class="result-placeholder">Loading…</div>
+    `);
+    renderRecentCustomerOrders();
+  }
+
+  async function renderRecentCustomerOrders(){
+    const all = await dbGetAll('orders');
+    const wrap = document.getElementById('custOrderRecentList');
+    if(!wrap) return;
+    if(!all || !all.length){ wrap.innerHTML = '<div class="result-placeholder">No online orders yet.</div>'; return; }
+    const sorted = all.slice().sort((a,b) => (b.ts||0) - (a.ts||0)).slice(0, 12);
+    wrap.innerHTML = `<table class="detail-table"><thead><tr><th>Order ID</th><th>Product</th><th>Customer Email</th><th>Date</th><th>Delivery Person</th><th>Current Stage</th></tr></thead><tbody>
+      ${sorted.map(o => `<tr class="member-row" style="cursor:pointer;" onclick="loadCustomerOrder('${o.id}')">
+        <td>${o.id}</td><td>${o.icon || ''} ${o.name}</td><td>${o.email || '— (guest / older order)'}</td><td>${o.date}</td>
+        <td>${o.deliveryPersonId ? `<span class="dlv-id-chip"><span class="dot"></span>${o.deliveryPersonName || o.deliveryPersonId}</span>` : '<span style="color:#b04a2e;">Unassigned</span>'}</td>
+        <td>${DELIVERY_STEP_LABELS[o.stage ?? 0]}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  function searchCustomerOrder(){
+    const id = document.getElementById('custOrderIdInput').value.trim();
+    if(!id) return;
+    loadCustomerOrder(id);
+  }
+
+  async function loadCustomerOrder(orderId){
+    const idInput = document.getElementById('custOrderIdInput');
+    if(idInput) idInput.value = orderId;
+    const col = document.getElementById('custOrderResultCol');
+    col.innerHTML = `<div class="col-title">Order Detail</div><div class="result-placeholder">Searching…</div>`;
+    const order = await dbGetOne('orders', orderId);
+    if(!order){
+      col.innerHTML = `<div class="col-title">Order Detail</div><div class="result-placeholder">No order found for ID "${orderId}".</div>`;
+      return;
+    }
+    renderCustomerOrderCard(order);
+  }
+
+  // Delivery Stage editing on an online order: click "✏️ Edit" to enter
+  // edit mode, tap the stage you want (a live preview tick moves as you
+  // click, nothing is saved yet), then "💾 Save Stage" writes it to the
+  // shared 'orders' collection. The customer's own "My Deliveries" pulls
+  // from that same collection (hydrateOrdersFromServer(), called whenever
+  // they open the drawer), so the saved stage shows up there right away —
+  // no extra syncing needed.
+  let _stageEdit = { orderId: null, editing: false, selected: 0 };
+
+  function renderCustomerOrderCard(order){
+    const col = document.getElementById('custOrderResultCol');
+    if(!col) return;
+    if(_stageEdit.orderId !== order.id) _stageEdit = { orderId: order.id, editing: false, selected: order.stage ?? 0 };
+
+    const savedStage = order.stage ?? 0;
+    const editing = _stageEdit.editing;
+    const previewStage = editing ? _stageEdit.selected : savedStage;
+
+    const stepsHtml = DELIVERY_STEP_LABELS.map((label, i) => `
+      <div class="chain-step ${i > previewStage ? 'pending' : ''}" ${editing ? `style="cursor:pointer;" onclick="pickCustomerOrderStage(${i})"` : ''}>
+        <div class="chain-line"></div>
+        <div class="chain-node">${i <= previewStage ? '✓' : (i + 1)}</div>
+        <div class="chain-label">${label}</div>
+      </div>
+    `).join('');
+
+    const stageControls = editing
+      ? `<button class="track-btn" onclick="saveCustomerOrderStageEdit('${order.id}')">💾 Save Stage</button>
+         <button class="track-btn" style="background:#8a7a58;margin-left:8px;" onclick="cancelCustomerOrderStageEdit('${order.id}')">✕ Cancel</button>`
+      : `<button class="track-btn" onclick="toggleCustomerOrderStageEdit('${order.id}')">✏️ Edit Stage</button>`;
+
+    const d = order.deliveryDetails || null;
+    const addressHtml = d ? `
+      <div class="expand-title">Delivery Address</div>
+      <div class="dtrack-store-card">
+        <div class="avatar">${(d.fullName || '?').slice(0, 2).toUpperCase()}</div>
+        <div>
+          <div class="dsc-name">${d.fullName || '—'}</div>
+          <div class="dsc-sub">⭐ Primary: 📞 ${d.primaryPhone || '—'} · ${d.primaryAddressLine1 || '—'}${d.landmark ? ', near ' + d.landmark : ''}, ${d.city || '—'}, ${d.state || '—'} — ${d.pincode || '—'}</div>
+          <div class="dsc-sub">🚨 Emergency: 📞 ${d.emergencyPhone || '—'} · ${d.emergencyAddress || '—'}</div>
+          ${d.instructions ? `<div class="dsc-sub">📝 ${d.instructions}</div>` : ''}
+        </div>
+      </div>
+    ` : `<div class="expand-title">Delivery Address</div><div class="result-placeholder">No delivery details on this order (placed before the profile form existed, or a guest order).</div>`;
+
+    const personOptions = `<option value="">— Unassigned —</option>` + DELIVERY_PERSONS.map(p =>
+      `<option value="${p.id}" ${p.id === order.deliveryPersonId ? 'selected' : ''}>${p.id} — ${p.name}${p.locations && p.locations.length ? ' (' + p.locations.join(', ') + ')' : ''}</option>`
+    ).join('');
+
+    col.innerHTML = `
+      <div class="col-title">Order Detail</div>
+      <div class="dtrack-store-card">
+        <div class="avatar">${(order.email || '?').slice(0, 2).toUpperCase()}</div>
+        <div>
+          <div class="dsc-name">${order.icon || ''} ${order.name} — ${order.qty} × ${order.unit}</div>
+          <div class="dsc-sub">${order.email || 'No account email on this order'} · ${order.date} · ₹${order.amount}</div>
+        </div>
+      </div>
+      ${addressHtml}
+      <div class="expand-title">Delivery Person</div>
+      <div class="dtrack-select-bar" style="margin-top:0;">
+        <div class="dtrack-select-field" style="flex:1;">
+          <label>Assigned To</label>
+          <select id="custOrderPersonSelect">${personOptions}</select>
+        </div>
+        <button class="track-btn" style="align-self:flex-end;" onclick="reassignCustomerOrderPerson('${order.id}')">Save</button>
+      </div>
+      <div class="result-placeholder" id="custOrderPersonMsg" style="margin-top:6px;">${order.deliveryPersonId ? `Currently assigned to ${order.deliveryPersonName || order.deliveryPersonId}${order.deliveryPersonPhone ? ' · 📞 ' + order.deliveryPersonPhone : ''} — matched by city on checkout.` : 'No delivery person matched this city automatically. Assign one manually above if needed.'}</div>
+      <div class="expand-title" style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span>Delivery Stage${editing ? ' — tap a step, then Save' : ''}</span>
+        <span>${stageControls}</span>
+      </div>
+      <div class="delivery-chain">${stepsHtml}</div>
+      <div class="result-placeholder" id="custOrderSaveMsg" style="margin-top:8px;"></div>
+    `;
+  }
+
+  function toggleCustomerOrderStageEdit(orderId){
+    _stageEdit = { orderId, editing: true, selected: _stageEdit.selected };
+    dbGetOne('orders', orderId).then(order => { if(order) renderCustomerOrderCard(order); });
+  }
+
+  function pickCustomerOrderStage(stageIdx){
+    _stageEdit.selected = stageIdx;
+    dbGetOne('orders', _stageEdit.orderId).then(order => { if(order) renderCustomerOrderCard(order); });
+  }
+
+  function cancelCustomerOrderStageEdit(orderId){
+    _stageEdit = { orderId, editing: false, selected: 0 };
+    dbGetOne('orders', orderId).then(order => { if(order) renderCustomerOrderCard(order); });
+  }
+
+  async function saveCustomerOrderStageEdit(orderId){
+    const stageIdx = _stageEdit.selected;
+    await setCustomerOrderStage(orderId, stageIdx);
+    _stageEdit = { orderId, editing: false, selected: stageIdx };
+    const order = await dbGetOne('orders', orderId);
+    if(order) renderCustomerOrderCard(order);
+    const msg = document.getElementById('custOrderSaveMsg');
+    if(msg) msg.textContent = `Saved — customer will now see "${DELIVERY_STEP_LABELS[stageIdx]}" in their My Deliveries.`;
+  }
+
+  async function reassignCustomerOrderPerson(orderId){
+    const sel = document.getElementById('custOrderPersonSelect');
+    const msg = document.getElementById('custOrderPersonMsg');
+    if(!sel) return;
+    const order = await dbGetOne('orders', orderId);
+    if(!order) return;
+    const personId = sel.value;
+    const person = personId ? DELIVERY_PERSONS.find(p => p.id === personId) : null;
+    order.deliveryPersonId = person ? person.id : null;
+    order.deliveryPersonName = person ? person.name : null;
+    order.deliveryPersonPhone = person ? person.phone : null;
+    await dbPut('orders', orderId, order);
+    if(msg) msg.textContent = person ? `Saved — assigned to ${person.name} · 📞 ${person.phone}.` : 'Saved — order is now unassigned.';
+    renderRecentCustomerOrders();
+  }
+
+  async function setCustomerOrderStage(orderId, stageIdx){
+    const order = await dbGetOne('orders', orderId);
+    if(!order) return;
+    order.stage = stageIdx;
+    order.status = DELIVERY_STEP_LABELS[stageIdx];
+    await dbPut('orders', orderId, order);
+    renderCustomerOrderCard(order);
+    const msg = document.getElementById('custOrderSaveMsg');
+    if(msg) msg.textContent = `Saved — customer will now see "${DELIVERY_STEP_LABELS[stageIdx]}" in their My Deliveries.`;
+    renderRecentCustomerOrders();
+  }
+
   const studioDataReady = Promise.all([
     hydrateMembersFromServer(),
     hydrateProcessingMembersFromServer(),
     hydrateDistributionOutletsFromServer(),
+    hydrateDeliveryPersonsFromServer(),
     hydratePaymentHistoryFromServer()
   ]);
 </script>
