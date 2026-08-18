@@ -141,28 +141,33 @@
   .float-badge .dot{ width:9px; height:9px; border-radius:50%; background:#4CAF6D; box-shadow:0 0 0 4px rgba(76,175,109,0.2); animation:pulseDot 1.8s ease-in-out infinite; }
   @keyframes pulseDot{ 0%,100%{ box-shadow:0 0 0 4px rgba(76,175,109,0.2);} 50%{ box-shadow:0 0 0 8px rgba(76,175,109,0.08);} }
 
-  /* ---------- category marquee ---------- */
+  /* ---------- category marquee (now with real product photography) ---------- */
   .cat-section{ padding:64px 0 10px; }
   .cat-head{ text-align:center; margin-bottom:34px; }
+  .cat-head .eyebrow{ justify-content:center; }
   .cat-head h2{ font-size:clamp(26px,3vw,36px); color:var(--navy); margin-top:10px; }
   .cat-head p{ color:var(--ink-soft); margin-top:10px; max-width:52ch; margin-inline:auto; }
   .marquee-mask{ overflow:hidden; -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
-  .marquee-track{ display:flex; gap:22px; width:max-content; animation:scrollCats 26s linear infinite; padding:6px 0 30px; }
+  .marquee-track{ display:flex; gap:22px; width:max-content; animation:scrollCats 34s linear infinite; padding:6px 0 30px; }
   .marquee-track:hover{ animation-play-state:paused; }
   @keyframes scrollCats{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
   .cat-chip{
-    flex:0 0 auto; width:222px; background:var(--white); border:1px solid rgba(28,53,82,0.08); border-radius:var(--radius);
-    padding:24px 22px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 20px rgba(28,53,82,0.05);
+    flex:0 0 auto; width:236px; background:var(--white); border:1px solid rgba(28,53,82,0.08); border-radius:var(--radius);
+    overflow:hidden; cursor:pointer; box-shadow:0 8px 20px rgba(28,53,82,0.05);
     transition:transform 0.35s var(--ease), box-shadow 0.35s var(--ease), border-color 0.35s ease;
   }
-  .cat-chip:hover{ transform:translateY(-8px) scale(1.02); box-shadow:var(--shadow); border-color:var(--gold); }
-  .cat-chip .icon{
-    font-size:24px; width:48px; height:48px; border-radius:14px; background:var(--cream-2);
-    display:flex; align-items:center; justify-content:center; transition:all 0.35s ease;
+  .cat-chip:hover{ transform:translateY(-8px) scale(1.02); box-shadow:var(--shadow-lg); border-color:var(--gold); }
+  .cat-chip-media{ position:relative; height:150px; overflow:hidden; background:linear-gradient(160deg,var(--cream-2),var(--cream-3)); }
+  .cat-chip-media img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform 0.6s var(--ease); }
+  .cat-chip:hover .cat-chip-media img{ transform:scale(1.12); }
+  .cat-chip-time{
+    position:absolute; top:10px; right:10px; background:rgba(251,246,234,0.95); color:var(--navy);
+    font-size:10px; font-weight:700; letter-spacing:0.03em; padding:5px 9px; border-radius:999px;
+    box-shadow:0 6px 14px rgba(18,36,56,0.18);
   }
-  .cat-chip:hover .icon{ background:var(--navy); transform:rotate(-8deg) scale(1.08); }
-  .cat-chip .cname{ font-family:'Fraunces', serif; font-weight:600; font-size:16.5px; color:var(--navy); }
-  .cat-chip .cdesc{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+  .cat-chip-body{ padding:16px 18px 20px; display:flex; flex-direction:column; gap:6px; }
+  .cat-chip .cname{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; color:var(--navy); }
+  .cat-chip .cdesc{ font-size:12px; color:var(--ink-soft); line-height:1.5; }
 
   /* ---------- products ---------- */
   .products{ padding:60px 0 90px; }
@@ -461,7 +466,6 @@
     .journey-steps{ grid-template-columns:1fr; }
     .foot-grid{ grid-template-columns:1fr 1fr; }
     .hero-stats{ flex-wrap:wrap; row-gap:18px; }
-    .range-grid{ gap:16px; }
     .prod-grid{ gap:18px; }
   }
   @media(max-width:560px){
@@ -470,7 +474,7 @@
     .deliveries-pill span.txt{ display:none; }
     .modal-grid{ grid-template-columns:1fr; }
     .hero h1{ font-size:34px; }
-    .range-grid{ grid-template-columns:1fr 1fr; }
+    .cat-chip{ width:198px; }
     .prod-grid{ grid-template-columns:1fr; }
   }
 
@@ -656,65 +660,7 @@
   .em-actions .em-back{ background:var(--cream-2); color:var(--navy); }
   .em-actions .em-back:hover{ background:rgba(28,53,82,0.12); }
 
-  /* ---------- our range showcase ---------- */
-  .range{ padding:66px 0 22px; }
-  .range-head{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:20px; }
-  .range-head p{ max-width:540px; color:var(--ink-soft); margin-top:10px; }
-  .range-grid{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(252px,1fr)); gap:22px;
-    margin-top:38px; perspective:1400px;
-  }
-  .range-card{
-    position:relative; border-radius:20px; overflow:hidden; height:300px; cursor:pointer;
-    box-shadow:0 14px 32px rgba(18,36,56,0.16); transform-style:preserve-3d;
-    transition:transform 0.18s ease-out, box-shadow 0.4s ease; will-change:transform; background:var(--navy-3);
-  }
-  .range-grid .range-card:nth-child(3n+1){ height:340px; }
-  .range-grid .range-card:nth-child(3n+2){ height:278px; }
-  .range-grid .range-card:nth-child(3n){ height:310px; }
-  .range-card:hover{ box-shadow:0 30px 56px rgba(18,36,56,0.32); }
-  .range-card img{
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-    transform:scale(1.05); transition:transform 0.7s cubic-bezier(.2,.8,.2,1); filter:saturate(1.04);
-  }
-  .range-card:hover img{ transform:scale(1.18); }
-  .range-card::before{
-    content:''; position:absolute; inset:0; z-index:1;
-    background:linear-gradient(180deg, rgba(13,27,43,0.02) 26%, rgba(13,27,43,0.9) 100%);
-  }
-  .range-shine{
-    position:absolute; top:0; left:-150%; width:55%; height:100%; z-index:2; pointer-events:none;
-    background:linear-gradient(112deg, transparent 0%, rgba(255,255,255,0) 32%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 68%, transparent 100%);
-    transform:skewX(-18deg); transition:left 0.85s ease;
-  }
-  .range-card:hover .range-shine{ left:150%; }
-  .range-days{
-    position:absolute; top:14px; right:14px; z-index:3; background:rgba(251,246,234,0.95); color:var(--navy);
-    font-size:10.5px; font-weight:700; letter-spacing:0.03em; padding:6px 11px; border-radius:999px;
-    transform:translateY(-8px); opacity:0; transition:all 0.4s ease 0.05s; box-shadow:0 6px 14px rgba(18,36,56,0.2);
-  }
-  .range-card:hover .range-days{ transform:translateY(0); opacity:1; }
-  .range-icon{
-    position:absolute; top:14px; left:14px; z-index:3; font-size:22px;
-    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.35)); transition:transform 0.4s ease;
-  }
-  .range-card:hover .range-icon{ transform:scale(1.15) rotate(-6deg); }
-  .range-info{ position:absolute; left:0; right:0; bottom:0; padding:20px; z-index:3; }
-  .range-info .range-tag{
-    display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
-    color:var(--gold); margin-bottom:6px;
-  }
-  .range-info h3{ font-family:'Fraunces', serif; font-size:20px; color:#fff; line-height:1.15; }
-  .range-info .range-sub{ font-size:12.5px; color:rgba(251,246,234,0.75); margin-top:5px; line-height:1.4; }
-  .range-cta{
-    display:inline-flex; align-items:center; gap:6px; margin-top:12px; font-size:12px; font-weight:700;
-    color:var(--gold); opacity:0; transform:translateY(8px); transition:all 0.4s ease 0.08s;
-  }
-  .range-card:hover .range-cta{ opacity:1; transform:translateY(0); }
-  .range-cta .arrow{ transition:transform 0.3s ease; display:inline-block; }
-  .range-card:hover .range-cta .arrow{ transform:translateX(5px); }
-
-  /* range detail modal */
+  /* range detail modal (opened from the auto-scrolling category cards) */
   .range-modal-card .modal-media{ padding:0; min-height:250px; background:var(--navy-3); }
   .range-modal-card .modal-media img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .range-badges{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
@@ -735,7 +681,6 @@
     font-weight:700; font-size:14px; transition:background 0.25s ease, transform 0.25s ease;
   }
   .range-modal-shop:hover{ background:var(--brick-2); transform:translateY(-2px); }
-  @media(max-width:560px){ .range-card:nth-child(3n+1){ height:280px; } .range-grid .range-card:nth-child(3n+2){ height:260px; } }
 </style>
 </head>
 <body>
@@ -919,27 +864,15 @@
   <div class="wrap cat-head reveal">
     <div class="eyebrow">What we deliver</div>
     <h2>One loop, every dairy essential</h2>
-    <p>Swipe through our categories — every one of them sourced, tested and packed the same day.</p>
+    <p>Swipe through our range — every one of them sourced, tested and packed the same day. Tap a card to see exactly how it's made.</p>
   </div>
   <div class="marquee-mask">
     <div class="marquee-track" id="catTrack"></div>
   </div>
 </section>
 
-<section class="range" id="range">
-  <div class="wrap">
-    <div class="range-head reveal">
-      <div>
-        <div class="eyebrow">The full Bhargavi range</div>
-        <h2>Nine dairy staples, one trusted loop</h2>
-        <p>Tap any product to see exactly how it's made, how many days it takes, and how it reaches your kitchen fresh.</p>
-      </div>
-    </div>
-    <div class="range-grid" id="rangeGrid"></div>
-  </div>
-</section>
-
 <section class="products" id="products">
+
   <div class="wrap">
     <div class="prod-head reveal">
       <div>
@@ -1156,14 +1089,6 @@
   const BUILTIN_IDS = new Set(PRODUCTS.map(p => p.id));
 
 
-  const CATEGORIES = [
-    { name:'Milk & Beverages', icon:'🥛', desc:'Full cream, toned & flavoured milk, chilled daily.' },
-    { name:'Curd & Yogurt', icon:'🍶', desc:'Set curd, chaas & probiotic yogurt, cultured fresh.' },
-    { name:'Paneer & Cheese', icon:'🧀', desc:'Soft paneer & aged artisan cheese, hand-pressed.' },
-    { name:'Butter & Ghee', icon:'🧈', desc:'Hand-churned butter and bilona-method ghee.' },
-    { name:'Cream & Specialty', icon:'🍦', desc:'Thick fresh cream for desserts and coffee.' }
-  ];
-
   // ---- Our Range showcase (real packaging photography + "how it's made" story) ----
   const RANGE_ITEMS = [
     {
@@ -1257,37 +1182,6 @@
       ]
     }
   ];
-
-  function renderRange(){
-    document.getElementById('rangeGrid').innerHTML = RANGE_ITEMS.map((r, i) => `
-      <div class="range-card reveal" style="transition-delay:${(i % 3) * 0.08}s" onclick="openRangeModal('${r.key}')">
-        <img src="${r.img}" alt="${r.name}" loading="lazy">
-        <div class="range-shine"></div>
-        <div class="range-icon">${r.icon}</div>
-        <div class="range-days">⏱ ${r.time}</div>
-        <div class="range-info">
-          <span class="range-tag">${r.category}</span>
-          <h3>${r.name}</h3>
-          <div class="range-sub">${r.sub}</div>
-          <div class="range-cta">See how it's made <span class="arrow">→</span></div>
-        </div>
-      </div>
-    `).join('');
-    initRangeTilt();
-  }
-
-  function initRangeTilt(){
-    document.querySelectorAll('.range-card').forEach(card => {
-      card.addEventListener('mousemove', e => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
-        const rx = ((y / rect.height) - 0.5) * -10;
-        const ry = ((x / rect.width) - 0.5) * 10;
-        card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02) translateY(-4px)`;
-      });
-      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
-    });
-  }
 
   function openRangeModal(key){
     const r = RANGE_ITEMS.find(x => x.key === key);
@@ -2754,11 +2648,16 @@
   }
 
   function renderCategories(){
-    const chips = CATEGORIES.map(c => `
-      <div class="cat-chip">
-        <div class="icon">${c.icon}</div>
-        <div class="cname">${c.name}</div>
-        <div class="cdesc">${c.desc}</div>
+    const chips = RANGE_ITEMS.map(r => `
+      <div class="cat-chip" onclick="openRangeModal('${r.key}')">
+        <div class="cat-chip-media">
+          <img src="${r.img}" alt="${r.name}" loading="lazy">
+          <div class="cat-chip-time">⏱ ${r.time}</div>
+        </div>
+        <div class="cat-chip-body">
+          <div class="cname">${r.name}</div>
+          <div class="cdesc">${r.sub}</div>
+        </div>
       </div>`).join('');
     document.getElementById('catTrack').innerHTML = chips + chips;
   }
@@ -3327,7 +3226,6 @@
   })();
 
   renderCategories();
-  renderRange();
   renderFilters();
   renderProducts();
   updateOrderCount();
