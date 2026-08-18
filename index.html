@@ -1451,6 +1451,100 @@
     }
   }
 
+  // ---- Refund Request ------------------------------------------------
+  // A simple, guided way for a customer to raise a refund — captures which
+  // order (if any) it relates to, why (late/missing/damaged/wrong item/
+  // other), and any extra details, then hands back a clear assurance with
+  // a contact number so the customer isn't left wondering what happens
+  // next. Saved to its own `refundRequests` collection so nothing is lost.
+  const REFUND_CONTACT_PHONE = '+91 98765 43210';
+  const REFUND_REASONS = [
+    'Product not delivered on time',
+    'Product not delivered at all',
+    'Wrong product delivered',
+    'Product damaged / spoiled',
+    'Product quality issue',
+    'Other'
+  ];
+
+  function openRefundRequest(){
+    if(!currentAccount){ openInfoModal('Refund', '<div class="info-empty">Please log in first.</div>'); return; }
+    const orders = getOrders();
+    const orderOptions = orders.map(o => `<option value="${o.id}">${o.id} — ${o.name} (${o.date})</option>`).join('');
+    openInfoModal('💰 Request a Refund', `
+      <div class="pf-subtext">Tell us what happened and we'll get it sorted. Fields marked * are required.</div>
+
+      <div class="ap-field">
+        <label>Which order is this about? ${orders.length ? '*' : ''}</label>
+        <select id="rfOrder">
+          ${orders.length ? orderOptions : '<option value="">No past orders found on this account</option>'}
+          ${orders.length ? '<option value="">Not related to a specific order</option>' : ''}
+        </select>
+      </div>
+
+      <div class="ap-field">
+        <label>Reason for the refund *</label>
+        <select id="rfReason">
+          <option value="">Select a reason</option>
+          ${REFUND_REASONS.map(r => `<option value="${r}">${r}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="ap-field">
+        <label>Tell us more (what happened, when, anything that helps) *</label>
+        <textarea id="rfDetails" placeholder="e.g. Order was supposed to arrive by 8 AM, it's now 11 AM and there's no update from the delivery person."></textarea>
+      </div>
+
+      <div class="ap-field">
+        <label>Contact number for this refund</label>
+        <input type="tel" id="rfPhone" maxlength="10" placeholder="10-digit mobile number" value="${pfEsc((currentAccount.deliveryDetails || {}).primaryPhone || currentAccount.phone || '')}">
+        <div class="pf-hint">We'll call you on this number to sort out your refund.</div>
+      </div>
+
+      <div id="rfError"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="submitRefundRequest()">Submit Refund Request</button>
+    `);
+  }
+
+  async function submitRefundRequest(){
+    const errEl = document.getElementById('rfError');
+    errEl.textContent = '';
+    const orderId = document.getElementById('rfOrder').value;
+    const reason = document.getElementById('rfReason').value;
+    const details = document.getElementById('rfDetails').value.trim();
+    const phone = document.getElementById('rfPhone').value.trim();
+
+    if(!reason){ errEl.textContent = 'Please select a reason for the refund.'; return; }
+    if(!details){ errEl.textContent = 'Please tell us a bit more so we can help faster.'; return; }
+    if(!/^\d{10}$/.test(phone)){ errEl.textContent = 'Please enter a valid 10-digit contact number.'; return; }
+
+    const order = orderId ? getOrders().find(o => o.id === orderId) : null;
+    const request = {
+      id: 'RFD-' + Date.now().toString().slice(-8),
+      email: currentAccount.email,
+      name: currentAccount.name || currentAccount.email,
+      orderId: orderId || null,
+      orderLabel: order ? `${order.name} (${order.id})` : 'Not related to a specific order',
+      reason, details, phone,
+      status: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+    await dbPut('refundRequests', request.id, request);
+
+    openInfoModal('✅ Refund Request Received', `
+      <div class="pf-subtext">Your request <b>${request.id}</b> has been recorded.</div>
+      <p style="font-size:14px;line-height:1.7;color:var(--ink);margin:14px 0;">
+        Rest assured — the <b>Bhargavi Dairy Loop</b> team will try to contact you on
+        <b>${pfEsc(phone)}</b> in <b>less than 30 minutes</b> to sort out your refund.
+      </p>
+      <p style="font-size:14px;line-height:1.7;color:var(--ink);margin:14px 0;">
+        If you don't hear from us in time, you can reach us directly at
+        <b>📞 ${REFUND_CONTACT_PHONE}</b>.
+      </p>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="closeInfoModal()">Done</button>
+    `);
+  }
+
   // ---- Auto-assign a delivery person by allotted location ---------------
   // Delivery persons and the location(s) they're allotted to are managed in
   // Manage Studio → Distribution → Delivery Person Detail, and persisted in
@@ -2563,6 +2657,7 @@
       <div class="menu-sub">Account</div>
       <button class="menu-item" onclick="closeDrawer(); openMyProfile(false)"><span class="mi-icon">👤</span>My Profile${isProfileComplete(currentAccount) ? '' : ' <span class="mi-alert-dot" title="Delivery details missing"></span>'}</button>
       <button class="menu-item" onclick="renderDeliveryView()"><span class="mi-icon">📦</span>View Your Delivery</button>
+      <button class="menu-item" onclick="closeDrawer(); openRefundRequest()"><span class="mi-icon">💰</span>Refund</button>
       <button class="menu-item" onclick="openStudio()"><span class="mi-icon">🛠</span>Manage Studio</button>
     `;
   }
