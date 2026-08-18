@@ -1079,14 +1079,16 @@
   }
 
   async function lookupMemberById(id){
-    const [proc, processing, dist] = await Promise.all([
+    const [proc, processing, dist, delivery] = await Promise.all([
       dbGetOne('members', id),
       dbGetOne('processingMembers', id),
-      dbGetOne('distributionOutlets', id)
+      dbGetOne('distributionOutlets', id),
+      dbGetOne('deliveryPersons', id)
     ]);
     if(proc) return { record: proc, name: proc.name, type: 'procurement', role: `Procurement — Farmer Member${proc.place ? ' · ' + proc.place : ''}` };
     if(processing) return { record: processing, name: processing.name, type: 'processing', role: `Processing — ${processing.category || 'Team'}${processing.post ? ' · ' + processing.post : ''}` };
     if(dist) return { record: dist, name: dist.contactPerson || dist.storeName, type: 'distribution', role: `Distribution — ${dist.category === 'big' ? 'Bulk Buyer' : 'Retail Outlet'}${dist.storeName ? ' · ' + dist.storeName : ''}` };
+    if(delivery) return { record: delivery, name: delivery.name, type: 'delivery', role: `Delivery Person${(delivery.locations || []).length ? ' · ' + delivery.locations.join(', ') : ''}` };
     return null;
   }
 
@@ -1097,13 +1099,14 @@
       return;
     }
     const name = result.name || '—';
+    const recordId = result.record.memberId || result.record.id;
     container.innerHTML = `
       <div class="mstudio-search-hit">
         <div class="avatar">${mSearchInitials(name)}</div>
         <div class="mstudio-search-hit-info">
           <div class="mstudio-search-hit-name">${name}</div>
           <div class="mstudio-search-hit-role">${result.role}</div>
-          <div class="mstudio-search-hit-role">ID: ${result.record.memberId}</div>
+          <div class="mstudio-search-hit-role">ID: ${recordId}</div>
         </div>
       </div>
       ${pinnedHint ? `<div class="mstudio-search-hint">${pinnedHint}</div>` : ''}
@@ -1133,7 +1136,7 @@
     let hint = null;
     const frameWin = document.getElementById('studioFrame') && document.getElementById('studioFrame').contentWindow;
     if(result && frameWin && typeof frameWin.pinMemberToTop === 'function'){
-      const pinned = frameWin.pinMemberToTop(result.record.memberId, result.type);
+      const pinned = frameWin.pinMemberToTop(result.record.memberId || result.record.id, result.type);
       if(pinned) hint = 'Moved to the top of the open page.';
     }
     renderMemberSearchResult(container, id, result, hint);
@@ -1149,7 +1152,7 @@
     const { id, result, container } = outcome;
     let hint = null;
     if(result && result.type === ownerActiveTab){
-      ownerPinnedMemberId = result.record.memberId;
+      ownerPinnedMemberId = result.record.memberId || result.record.id;
       renderOwnerTab(ownerActiveTab);
       const body = document.getElementById('ownerPanelBody');
       if(body) body.scrollTop = 0;
@@ -1803,7 +1806,14 @@
     } else if(tab === 'delivery'){
       const logByPerson = {};
       ownerData.deliveryDailyLogs.forEach(r => { logByPerson[r.personId] = r.entries || []; });
-      const rows = ownerData.deliveryPersons.map(p => {
+      let people = ownerData.deliveryPersons.slice();
+      let pinnedIndex = null;
+      if(ownerPinnedMemberId){
+        const idx = people.findIndex(p => p.id === ownerPinnedMemberId);
+        if(idx > 0){ const [hit] = people.splice(idx, 1); people.unshift(hit); pinnedIndex = 0; }
+        else if(idx === 0) pinnedIndex = 0;
+      }
+      const rows = people.map(p => {
         const entries = logByPerson[p.id] || [];
         const total = entries.reduce((s, e) => s + (e.count || 0), 0);
         const onlineCount = ownerData.orders.filter(o => o.deliveryPersonId === p.id).length;
@@ -1816,7 +1826,7 @@
       });
       body.innerHTML = `
         <div class="op-section-head">Delivery Persons — Daily Delivery Log<span class="op-count-pill">${rows.length}</span></div>
-        ${opTable(['ID', 'Name', 'Phone', 'Allotted Location(s)', 'Online Orders Assigned', 'Total Deliveries Logged', 'Most Recent Log'], rows)}
+        ${opTable(['ID', 'Name', 'Phone', 'Allotted Location(s)', 'Online Orders Assigned', 'Total Deliveries Logged', 'Most Recent Log'], rows, pinnedIndex)}
       `;
     }
   }
