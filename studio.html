@@ -148,6 +148,18 @@
     border-top:2px solid rgba(244,239,230,0.2); position:fixed; left:0; right:0; bottom:0; z-index:60;
     box-shadow:0 -10px 30px rgba(0,0,0,0.35);
   }
+  /* Small lock toggle pinned to the top-left corner of the common payment
+     bar. Tapping it opens the owner-password prompt; the bar's content
+     stays blurred and unusable until the correct password is entered. */
+  .gpb-lock-btn{
+    position:absolute; top:-16px; left:14px; width:32px; height:32px; border-radius:50%;
+    background:#1c2f52; border:1px solid rgba(244,239,230,0.4); color:var(--ink-light);
+    font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    z-index:2; box-shadow:0 4px 10px rgba(0,0,0,0.35);
+  }
+  .gpb-lock-btn:hover{ opacity:0.85; }
+  .gpb-content{ display:flex; align-items:center; gap:14px; width:100%; flex-wrap:wrap; }
+  .gpb-content.gpb-locked{ filter:blur(6px); pointer-events:none; user-select:none; }
   .global-payment-title{
     font-weight:700; font-size:13px; letter-spacing:0.08em; text-transform:uppercase;
     color: var(--ink-light); flex-shrink:0; white-space:nowrap;
@@ -989,18 +1001,37 @@
 </div>
 
 <div class="global-payment-bar" id="globalPaymentBar">
-  <div class="global-payment-title">Make a Payment</div>
-  <input type="text" id="globalPaymentSelect" class="global-payment-select" placeholder="Click to select a member / store" readonly onclick="openPaymentSelect()">
-  <input type="number" id="globalPaymentAmount" placeholder="Amount (₹)">
-  <select id="globalPaymentMode">
-    <option value="UPI">UPI</option>
-    <option value="Cash">Cash</option>
-    <option value="Bank Transfer">Bank Transfer</option>
-    <option value="Cheque">Cheque</option>
-  </select>
-  <button class="global-payment-btn" onclick="processGlobalPayment()">Pay Now</button>
-  <div id="globalPaymentStatus"></div>
-  <div class="pay-history" id="paymentHistoryList"></div>
+  <button class="gpb-lock-btn" id="gpbLockBtn" onclick="openGlobalPaymentLock()" title="Payments locked — tap to unlock">🔒</button>
+  <div class="gpb-content gpb-locked" id="gpbContent">
+    <div class="global-payment-title">Make a Payment</div>
+    <input type="text" id="globalPaymentSelect" class="global-payment-select" placeholder="Click to select a member / store" readonly onclick="openPaymentSelect()">
+    <input type="number" id="globalPaymentAmount" placeholder="Amount (₹)">
+    <select id="globalPaymentMode">
+      <option value="UPI">UPI</option>
+      <option value="Cash">Cash</option>
+      <option value="Bank Transfer">Bank Transfer</option>
+      <option value="Cheque">Cheque</option>
+    </select>
+    <button class="global-payment-btn" onclick="processGlobalPayment()">Pay Now</button>
+    <div id="globalPaymentStatus"></div>
+    <div class="pay-history" id="paymentHistoryList"></div>
+  </div>
+</div>
+
+<div class="custom-modal-overlay" id="gpbLockOverlay">
+  <div class="custom-modal-box">
+    <div class="custom-modal-icon">🔒</div>
+    <div class="custom-modal-title">Payments Locked</div>
+    <div class="custom-modal-text">Enter the owner password to unlock the payment bar.</div>
+    <input type="password" id="gpbLockPassInput" placeholder="Password"
+      style="width:100%;padding:10px 12px;margin:12px 0 4px;border-radius:6px;border:1px solid #d8cba3;font-family:'Times New Roman', Times, serif;font-size:14px;box-sizing:border-box;"
+      onkeydown="if(event.key==='Enter') submitGlobalPaymentLock()">
+    <div class="custom-modal-text" id="gpbLockMsg" style="color:#c0392b;min-height:16px;"></div>
+    <div class="custom-modal-actions">
+      <button class="custom-modal-btn cancel" onclick="closeGlobalPaymentLock()">Cancel</button>
+      <button class="custom-modal-btn confirm" id="gpbLockSubmitBtn" onclick="submitGlobalPaymentLock()">Unlock</button>
+    </div>
+  </div>
 </div>
 
 <div id="yellowSelectOverlay" aria-hidden="true"></div>
@@ -4142,6 +4173,40 @@ Issued by Distribution Side.`;
       renderPaymentHistory();
     }
   }
+
+  // ---- Common payment bar lock (bottom bar shared by all three stages) --
+  // Blurred and unusable by default. Tapping the small lock in its
+  // top-left corner asks for the same single owner password used
+  // everywhere else in Studio; entering it correctly unblurs the bar.
+  function openGlobalPaymentLock(){
+    if(!document.getElementById('gpbContent').classList.contains('gpb-locked')) return;
+    document.getElementById('gpbLockPassInput').value = '';
+    document.getElementById('gpbLockMsg').textContent = '';
+    document.getElementById('gpbLockOverlay').classList.add('show');
+    setTimeout(() => document.getElementById('gpbLockPassInput').focus(), 50);
+  }
+  function closeGlobalPaymentLock(){
+    document.getElementById('gpbLockOverlay').classList.remove('show');
+  }
+  function submitGlobalPaymentLock(){
+    const input = document.getElementById('gpbLockPassInput');
+    const msgEl = document.getElementById('gpbLockMsg');
+    if(input.value === STUDIO_OWNER_PASSWORD){
+      document.getElementById('gpbContent').classList.remove('gpb-locked');
+      const lockBtn = document.getElementById('gpbLockBtn');
+      lockBtn.textContent = '🔓';
+      lockBtn.title = 'Payments unlocked';
+      closeGlobalPaymentLock();
+    } else {
+      msgEl.textContent = 'Incorrect password.';
+      input.value = '';
+      input.focus();
+    }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('gpbLockOverlay');
+    if(overlay) overlay.addEventListener('click', e => { if(e.target === overlay) closeGlobalPaymentLock(); });
+  });
 
   function processGlobalPayment(){
     const selEl = document.getElementById('globalPaymentSelect');

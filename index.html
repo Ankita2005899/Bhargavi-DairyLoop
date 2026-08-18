@@ -539,6 +539,8 @@
   table.op-table th{ text-align:left; padding:10px 14px; background:var(--navy); color:var(--cream); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em; position:sticky; top:0; }
   table.op-table td{ padding:10px 14px; border-top:1px solid rgba(28,53,82,0.08); color:var(--ink); }
   table.op-table tr:nth-child(even) td{ background:var(--cream-2); }
+  .op-avatar{ width:32px; height:32px; border-radius:50%; background:#C89B4C; color:#3E3324; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; }
+  .op-avatar-img{ width:32px; height:32px; border-radius:50%; object-fit:cover; display:block; }
   .op-row-pinned td{ background:rgba(217,164,65,0.32) !important; font-weight:700; }
   @keyframes opPinFlash{ 0%{ background:rgba(217,164,65,0.75); } 100%{ background:rgba(217,164,65,0.32); } }
   .op-row-pinned td{ animation:opPinFlash 1.2s ease; }
@@ -1660,6 +1662,31 @@
 
   function opEsc(v){ return (v === undefined || v === null || v === '') ? '—' : String(v); }
 
+  // Profile-photo cell for the Site Accounts table — a real uploaded photo
+  // if the account has one, otherwise the same initials avatar used
+  // everywhere else in the app.
+  function opAvatarCellHtml(a){
+    return a.photo
+      ? `<img src="${a.photo}" class="op-avatar-img" alt="">`
+      : `<div class="op-avatar">${mSearchInitials(a.name || a.email)}</div>`;
+  }
+
+  // A stable, human-readable User ID for every account. Accounts are keyed
+  // by email in the database, so there's no separate ID field to read —
+  // instead this is derived from signup order (oldest account = USR001)
+  // against the full account list, so the same account always gets the
+  // same ID no matter which tab or table it's shown in.
+  function opUserIdFor(account, allAccounts){
+    const sorted = (allAccounts || []).slice().sort((x, y) => new Date(x.createdAt || 0) - new Date(y.createdAt || 0));
+    const idx = sorted.findIndex(a => a.email === account.email);
+    return 'USR' + String(idx + 1).padStart(3, '0');
+  }
+
+  // Every order this account has placed, matched by email.
+  function opOrdersForAccount(email){
+    return (ownerData.orders || []).filter(o => (o.email || '').toLowerCase() === (email || '').toLowerCase());
+  }
+
   function opTable(headers, rows, pinnedIndex){
     if(!rows.length) return '<div class="op-empty">Nothing here yet.</div>';
     const head = headers.map(h => `<th>${h}</th>`).join('');
@@ -1679,8 +1706,19 @@
       const rows = ownerVerified.map(a => {
         const history = (a.ownerAccessHistory || []).slice().reverse();
         const lastEntry = history[0];
+        // Every order this account placed, and every delivery person
+        // assigned to those orders — connected to this exact user, not
+        // just listed side by side. An account with no orders yet simply
+        // shows '—' in both columns.
+        const myOrders = opOrdersForAccount(a.email);
+        const orderIds = myOrders.length ? myOrders.map(o => o.id).join(', ') : '—';
+        const deliveryIds = myOrders.length
+          ? ([...new Set(myOrders.map(o => o.deliveryPersonId).filter(Boolean))].join(', ') || '—')
+          : '—';
         return [
-          a.name || '—', a.email, a.phone || '—',
+          opAvatarCellHtml(a), a.name || a.email,
+          opUserIdFor(a, ownerData.accounts), orderIds, deliveryIds,
+          a.email, a.phone || '—',
           a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-IN') : '—',
           lastEntry ? new Date(lastEntry.at).toLocaleString('en-IN') : '—',
           history.length
@@ -1688,7 +1726,7 @@
       });
       body.innerHTML = `
         <div class="op-section-head">Site Accounts — Owner Password Verified<span class="op-count-pill">${ownerVerified.length}</span></div>
-        ${opTable(['Name','Email','Phone','Joined','Owner Password Entered','Times Entered'], rows)}
+        ${opTable(['Profile','Username','User ID','Order ID','Delivery ID','Email','Phone','Joined','Owner Password Entered','Times Entered'], rows)}
       `;
     } else if(tab === 'procurement'){
       const list = ownerData.procurement.slice();
