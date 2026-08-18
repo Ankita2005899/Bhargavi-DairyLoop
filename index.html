@@ -606,6 +606,87 @@
   .em-actions .em-submit:hover{ background:var(--brick-2); }
   .em-actions .em-back{ background:var(--cream-2); color:var(--navy); }
   .em-actions .em-back:hover{ background:rgba(28,53,82,0.12); }
+
+  /* ---------- our range showcase ---------- */
+  .range{ padding:66px 0 22px; }
+  .range-head{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:20px; }
+  .range-head p{ max-width:540px; color:var(--ink-soft); margin-top:10px; }
+  .range-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(252px,1fr)); gap:22px;
+    margin-top:38px; perspective:1400px;
+  }
+  .range-card{
+    position:relative; border-radius:20px; overflow:hidden; height:300px; cursor:pointer;
+    box-shadow:0 14px 32px rgba(18,36,56,0.16); transform-style:preserve-3d;
+    transition:transform 0.18s ease-out, box-shadow 0.4s ease; will-change:transform; background:var(--navy-3);
+  }
+  .range-grid .range-card:nth-child(3n+1){ height:340px; }
+  .range-grid .range-card:nth-child(3n+2){ height:278px; }
+  .range-grid .range-card:nth-child(3n){ height:310px; }
+  .range-card:hover{ box-shadow:0 30px 56px rgba(18,36,56,0.32); }
+  .range-card img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    transform:scale(1.05); transition:transform 0.7s cubic-bezier(.2,.8,.2,1); filter:saturate(1.04);
+  }
+  .range-card:hover img{ transform:scale(1.18); }
+  .range-card::before{
+    content:''; position:absolute; inset:0; z-index:1;
+    background:linear-gradient(180deg, rgba(13,27,43,0.02) 26%, rgba(13,27,43,0.9) 100%);
+  }
+  .range-shine{
+    position:absolute; top:0; left:-150%; width:55%; height:100%; z-index:2; pointer-events:none;
+    background:linear-gradient(112deg, transparent 0%, rgba(255,255,255,0) 32%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 68%, transparent 100%);
+    transform:skewX(-18deg); transition:left 0.85s ease;
+  }
+  .range-card:hover .range-shine{ left:150%; }
+  .range-days{
+    position:absolute; top:14px; right:14px; z-index:3; background:rgba(251,246,234,0.95); color:var(--navy);
+    font-size:10.5px; font-weight:700; letter-spacing:0.03em; padding:6px 11px; border-radius:999px;
+    transform:translateY(-8px); opacity:0; transition:all 0.4s ease 0.05s; box-shadow:0 6px 14px rgba(18,36,56,0.2);
+  }
+  .range-card:hover .range-days{ transform:translateY(0); opacity:1; }
+  .range-icon{
+    position:absolute; top:14px; left:14px; z-index:3; font-size:22px;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.35)); transition:transform 0.4s ease;
+  }
+  .range-card:hover .range-icon{ transform:scale(1.15) rotate(-6deg); }
+  .range-info{ position:absolute; left:0; right:0; bottom:0; padding:20px; z-index:3; }
+  .range-info .range-tag{
+    display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:6px;
+  }
+  .range-info h3{ font-family:'Fraunces', serif; font-size:20px; color:#fff; line-height:1.15; }
+  .range-info .range-sub{ font-size:12.5px; color:rgba(251,246,234,0.75); margin-top:5px; line-height:1.4; }
+  .range-cta{
+    display:inline-flex; align-items:center; gap:6px; margin-top:12px; font-size:12px; font-weight:700;
+    color:var(--gold); opacity:0; transform:translateY(8px); transition:all 0.4s ease 0.08s;
+  }
+  .range-card:hover .range-cta{ opacity:1; transform:translateY(0); }
+  .range-cta .arrow{ transition:transform 0.3s ease; display:inline-block; }
+  .range-card:hover .range-cta .arrow{ transform:translateX(5px); }
+
+  /* range detail modal */
+  .range-modal-card .modal-media{ padding:0; min-height:250px; background:var(--navy-3); }
+  .range-modal-card .modal-media img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .range-badges{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
+  .range-badge{ flex:1; min-width:150px; background:var(--cream-2); border-radius:14px; padding:13px 16px; }
+  .range-badge .rb-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--brick); font-weight:700; }
+  .range-badge .rb-value{ font-family:'Fraunces', serif; font-size:16.5px; color:var(--navy); margin-top:4px; }
+  .range-process{ margin-top:20px; }
+  .range-process-step{ display:flex; gap:14px; padding:13px 0; border-bottom:1px dashed rgba(28,53,82,0.16); }
+  .range-process-step:last-child{ border-bottom:none; }
+  .range-process-num{
+    width:28px; height:28px; border-radius:50%; background:var(--navy); color:var(--cream); flex-shrink:0;
+    font-family:'Fraunces', serif; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center;
+  }
+  .range-process-text h4{ font-size:13.5px; color:var(--navy); margin-bottom:2px; }
+  .range-process-text p{ font-size:12.8px; color:var(--ink-soft); line-height:1.5; }
+  .range-modal-shop{
+    margin-top:22px; width:100%; padding:13px; border-radius:999px; background:var(--brick); color:#fff;
+    font-weight:700; font-size:14px; transition:background 0.25s ease, transform 0.25s ease;
+  }
+  .range-modal-shop:hover{ background:var(--brick-2); transform:translateY(-2px); }
+  @media(max-width:560px){ .range-card:nth-child(3n+1){ height:280px; } .range-grid .range-card:nth-child(3n+2){ height:260px; } }
 </style>
 </head>
 <body>
@@ -796,6 +877,19 @@
   </div>
 </section>
 
+<section class="range" id="range">
+  <div class="wrap">
+    <div class="range-head reveal">
+      <div>
+        <div class="eyebrow">The full Bhargavi range</div>
+        <h2>Nine dairy staples, one trusted loop</h2>
+        <p>Tap any product to see exactly how it's made, how many days it takes, and how it reaches your kitchen fresh.</p>
+      </div>
+    </div>
+    <div class="range-grid" id="rangeGrid"></div>
+  </div>
+</section>
+
 <section class="products" id="products">
   <div class="wrap">
     <div class="prod-head reveal">
@@ -882,6 +976,10 @@
 
 <div class="modal-back" id="modalBack" onclick="if(event.target===this) closeModal();">
   <div class="modal-card" id="modalCard"></div>
+</div>
+
+<div class="modal-back" id="rangeModalBack" onclick="if(event.target===this) closeRangeModal();">
+  <div class="modal-card range-modal-card" id="rangeModalCard"></div>
 </div>
 
 <div class="studio-overlay" id="studioOverlay">
@@ -1016,6 +1114,167 @@
     { name:'Butter & Ghee', icon:'🧈', desc:'Hand-churned butter and bilona-method ghee.' },
     { name:'Cream & Specialty', icon:'🍦', desc:'Thick fresh cream for desserts and coffee.' }
   ];
+
+  // ---- Our Range showcase (real packaging photography + "how it's made" story) ----
+  const RANGE_ITEMS = [
+    {
+      key:'milk', name:'Premium Fresh Milk', category:'Milk & Beverages', icon:'🥛',
+      img:'img/range-milk.jpg', sub:'Pasteurised & homogenised, milked at dawn',
+      time:'Same Day', freshness:'Best within 48 hrs, chilled end to end',
+      steps:[
+        { t:'Milked at dawn', d:'Collected from 120+ verified grass-fed-cow farms before sunrise.' },
+        { t:'Chilled & tested', d:'Instantly cooled to 4°C and checked on the spot for fat content and purity.' },
+        { t:'Pasteurised & pouched', d:'Gently pasteurised, homogenised and pouched the very same morning.' }
+      ]
+    },
+    {
+      key:'condensed', name:'Premium Condensed Milk', category:'Milk & Beverages', icon:'🥫',
+      img:'img/range-condensed-milk.jpg', sub:'Slow-simmered milk & sugar, reduced to a rich, creamy set',
+      time:'2–3 Days', freshness:'Sealed tins keep for months; chill after opening',
+      steps:[
+        { t:'Fresh milk simmered', d:'Whole milk is slow-cooked with sugar in wide copper vats.' },
+        { t:'Reduced & thickened', d:'Continuously stirred over 2 days until it reaches a smooth, caramel-toned set.' },
+        { t:'Sealed & tinned', d:'Vacuum-sealed into tins while warm to lock in freshness for months.' }
+      ]
+    },
+    {
+      key:'powder', name:'Premium Milk Powder', category:'Milk & Beverages', icon:'🧂',
+      img:'img/range-milk-powder.jpg', sub:'Spray-dried from real cow milk for quick, long-life mixing',
+      time:'~3 Days', freshness:'Stays fresh up to 12 months, sealed & airtight',
+      steps:[
+        { t:'Pasteurised milk collected', d:'Fresh batches are quality-checked before entering the drying line.' },
+        { t:'Spray-dried', d:'Milk is atomised into a fine mist and instantly dried at a controlled temperature.' },
+        { t:'Milled & tinned', d:'The powder is sifted for consistency and packed airtight to lock out moisture.' }
+      ]
+    },
+    {
+      key:'cream', name:'Premium Fresh Cream', category:'Cream & Specialty', icon:'🍦',
+      img:'img/range-cream.jpg', sub:'Thick, pourable cream skimmed off chilled whole milk',
+      time:'Same Day', freshness:'Best within 5–6 days, refrigerated',
+      steps:[
+        { t:'Milk chilled', d:'Whole milk is cooled right after collection to keep the cream layer intact.' },
+        { t:'Centrifugal separation', d:'Cream is skimmed off in separators within hours of arrival.' },
+        { t:'Cooled & jarred', d:'Chilled and jarred the same day for a thick, dessert-ready texture.' }
+      ]
+    },
+    {
+      key:'paneer', name:'Natural Handmade Paneer', category:'Paneer & Cheese', icon:'🧀',
+      img:'img/range-paneer.jpg', sub:'Soft, malai-rich cottage cheese pressed the same day',
+      time:'3–4 Hours', freshness:'Best within 3 days, vacuum-sealed for seal integrity',
+      steps:[
+        { t:'Milk brought to a boil', d:'Full cream milk is heated gently in small batches.' },
+        { t:'Naturally curdled', d:'Curdled with lemon or vinegar, then strained through muslin cloth.' },
+        { t:'Hand-pressed', d:'Pressed by hand into soft blocks and chilled — ready within hours.' }
+      ]
+    },
+    {
+      key:'curd', name:'Natural Handmade Dahi (Yogurt)', category:'Curd & Yogurt', icon:'🍶',
+      img:'img/range-curd.jpg', sub:'Thick, set curd cultured overnight the traditional way',
+      time:'1 Day (Overnight)', freshness:'Best within 4–5 days, refrigerated',
+      steps:[
+        { t:'Milk boiled & cooled', d:'Brought to a boil, then cooled to the exact temperature culturing needs.' },
+        { t:'Cultured with starter', d:'A spoon of live starter curd is folded in to begin fermentation.' },
+        { t:'Set overnight', d:'Left to set undisturbed in earthen pots for that classic thick, tangy body.' }
+      ]
+    },
+    {
+      key:'cheese', name:'Artisanal Cheddar Cheese', category:'Paneer & Cheese', icon:'🧀',
+      img:'img/range-cheese.jpg', sub:'Aged, semi-hard cheese crafted in small artisan batches',
+      time:'30–60 Days Aged', freshness:'Wrapped & chilled, flavour deepens with time',
+      steps:[
+        { t:'Curdled & pressed', d:'Milk is curdled, cut and pressed into wheel-shaped blocks.' },
+        { t:'Salted', d:'Lightly salted to draw out moisture and build flavour.' },
+        { t:'Aged by hand', d:'Turned and matured in a cool cellar for weeks — our longest journey.' }
+      ]
+    },
+    {
+      key:'ghee', name:'Premium Ghee', category:'Butter & Ghee', icon:'🫙',
+      img:'img/range-ghee.jpg', sub:'Slow-simmered, golden cow ghee with a deep, nutty aroma',
+      time:'4–5 Days', freshness:'No refrigeration needed, keeps for months',
+      steps:[
+        { t:'Cream cultured', d:'Fresh cream is cultured lightly to develop flavour, the bilona way.' },
+        { t:'Churned to butter', d:'Hand-churned until it separates into butter and buttermilk.' },
+        { t:'Slow-simmered', d:'Butter is simmered over a low flame until golden — aroma only gets richer with age.' }
+      ]
+    },
+    {
+      key:'butter', name:'Farmstead Butter', category:'Butter & Ghee', icon:'🧈',
+      img:'img/range-butter.jpg', sub:'Hand-churned white butter, unsalted and naturally aromatic',
+      time:'1–2 Days', freshness:'Best within 3 weeks, refrigerated',
+      steps:[
+        { t:'Cream lightly cultured', d:'Fresh cream is set aside to develop a naturally sweet, grassy note.' },
+        { t:'Hand-churned', d:'Churned in small batches until butter separates from the buttermilk.' },
+        { t:'Washed & wrapped', d:'Rinsed, shaped and wrapped fresh — no preservatives, ever.' }
+      ]
+    }
+  ];
+
+  function renderRange(){
+    document.getElementById('rangeGrid').innerHTML = RANGE_ITEMS.map((r, i) => `
+      <div class="range-card reveal" style="transition-delay:${(i % 3) * 0.08}s" onclick="openRangeModal('${r.key}')">
+        <img src="${r.img}" alt="${r.name}" loading="lazy">
+        <div class="range-shine"></div>
+        <div class="range-icon">${r.icon}</div>
+        <div class="range-days">⏱ ${r.time}</div>
+        <div class="range-info">
+          <span class="range-tag">${r.category}</span>
+          <h3>${r.name}</h3>
+          <div class="range-sub">${r.sub}</div>
+          <div class="range-cta">See how it's made <span class="arrow">→</span></div>
+        </div>
+      </div>
+    `).join('');
+    initRangeTilt();
+  }
+
+  function initRangeTilt(){
+    document.querySelectorAll('.range-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        const rx = ((y / rect.height) - 0.5) * -10;
+        const ry = ((x / rect.width) - 0.5) * 10;
+        card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02) translateY(-4px)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+    });
+  }
+
+  function openRangeModal(key){
+    const r = RANGE_ITEMS.find(x => x.key === key);
+    if(!r) return;
+    document.getElementById('rangeModalCard').innerHTML = `
+      <div class="modal-grid">
+        <div class="modal-media">
+          <button class="modal-close" onclick="closeRangeModal()">✕</button>
+          <img src="${r.img}" alt="${r.name}">
+        </div>
+        <div class="modal-content">
+          <div class="cat-tag">${r.category}</div>
+          <h2>${r.name}</h2>
+          <p class="mdesc">${r.sub}</p>
+          <div class="range-badges">
+            <div class="range-badge"><div class="rb-label">Time to make</div><div class="rb-value">${r.time}</div></div>
+            <div class="range-badge"><div class="rb-label">Reaches you</div><div class="rb-value">${r.freshness}</div></div>
+          </div>
+          <div class="range-process">
+            ${r.steps.map((s, i) => `
+              <div class="range-process-step">
+                <div class="range-process-num">${i + 1}</div>
+                <div class="range-process-text"><h4>${s.t}</h4><p>${s.d}</p></div>
+              </div>`).join('')}
+          </div>
+          <button class="range-modal-shop" onclick="closeRangeModal(); setFilter('${r.category}'); document.getElementById('products').scrollIntoView({behavior:'smooth'});">Shop ${r.category}</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('rangeModalBack').classList.add('show');
+    document.getElementById('backdrop').classList.add('show');
+  }
+  function closeRangeModal(){
+    document.getElementById('rangeModalBack').classList.remove('show');
+    document.getElementById('backdrop').classList.remove('show');
+  }
 
   // The Razorpay Key ID is never written into this file — it's fetched from
   // the server, which reads it from the RAZORPAY_KEY_ID environment
@@ -2644,7 +2903,7 @@
     } else renderMenuView();
   }
   function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('backdrop').classList.remove('show'); }
-  function closeAllOverlays(){ closeDrawer(); closeModal(); }
+  function closeAllOverlays(){ closeDrawer(); closeModal(); closeRangeModal(); }
 
   function renderMenuView(){
     document.getElementById('drawerTitle').innerHTML = '☰ Menu';
@@ -3011,6 +3270,7 @@
   }
 
   renderCategories();
+  renderRange();
   renderFilters();
   renderProducts();
   updateOrderCount();
@@ -3018,7 +3278,7 @@
   hydrateProductManagement();
   setupReveal();
   tryRestoreSession();
-  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeDrawer(); closeInfoModal(); closeOwnerPasswordModal(); closeOwnerPanel(); closeAddProductForm(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); closeRangeModal(); closeDrawer(); closeInfoModal(); closeOwnerPasswordModal(); closeOwnerPanel(); closeAddProductForm(); if(document.getElementById('studioOverlay').classList.contains('open')) closeStudio(); } });
 </script>
 
 </body>
